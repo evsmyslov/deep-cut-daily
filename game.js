@@ -389,13 +389,18 @@ function question(draft = "", focus = true) {
   input.addEventListener("input", () => { status.textContent = ""; });
   get("finish-endless").hidden = route.mode !== "endless";
   get("finish-endless").onclick = complete;
-  get("next").onclick = () => {
-    mineScene.finishReveal();
-    round.feedback = false;
-    if (route.mode !== "endless" && round.answers.length === questionsPerRound) { complete(); return; }
-    round.deadline = null;
-    save();
-    question();
+  get("next").onclick = event => {
+    const activeRound = round;
+    const activeRoute = route;
+    event.currentTarget.disabled = true;
+    mineScene.afterJourney(() => {
+      if (page!=="question" || round!==activeRound || route!==activeRoute || !round.feedback) return;
+      round.feedback = false;
+      if (route.mode !== "endless" && round.answers.length === questionsPerRound) { complete(); return; }
+      round.deadline = null;
+      save();
+      question();
+    });
   };
   get("skip").hidden=strict;
   if (!strict) get("skip").onclick = () => settle("", null, "skip");

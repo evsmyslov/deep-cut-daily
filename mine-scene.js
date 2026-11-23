@@ -3,11 +3,14 @@
 // Distance is expressed in shaft coordinates and projected onto the current viewport.
 class MineScene {
   static unitsPerPoint = 4.2;
-  static rewards = [
-    {minimum:55, inset:.14, glow:"#92dfb4", white:"#d6ffe3", particles:14},
-    {minimum:85, inset:.19, glow:"#d8b3f3", white:"#f7e5ff", particles:20},
-    {minimum:120,inset:.24, glow:"#ffc36f", white:"#fff0b8", particles:26}
+  static finds = [
+    {minimum:10, inset:0,    stone:"#657d79", light:"#c1d2bb", core:"#eef3d5", size:7,  shards:5},
+    {minimum:25, inset:0,    stone:"#a47855", light:"#e7ba83", core:"#ffdfa7", size:10, shards:9},
+    {minimum:55, inset:.27,  stone:"#348778", light:"#87dfc4", core:"#ddffdb", size:15, shards:16},
+    {minimum:85, inset:.35,  stone:"#7861a6", light:"#c6a0f7", core:"#f3e3ff", size:19, shards:24},
+    {minimum:120,inset:.43,  stone:"#b7753d", light:"#ffd078", core:"#fff4bc", size:23, shards:33}
   ];
+  static impact = .71;
   static palettes = [
     ["#1b292f","#263c42","#395055","#746557","#b9b991"],
     ["#1d252f","#363437","#51473f","#876651","#e6ae7a"],
@@ -69,9 +72,9 @@ class MineScene {
     this.target = target;
     const distance = target - this.position;
     if (animate && distance>0 && !this.motion.matches) {
-      const reward = MineScene.rewards.findLast(tier => gained >= tier.minimum);
-      const duration = Math.min(2350,590+Math.sqrt(distance)*74)+(reward ? 340 : 0);
-      this.startJourney(now,duration,reward);
+      const find = MineScene.finds.findLast(tier => gained >= tier.minimum);
+      const duration = Math.min(3500, 1130+Math.sqrt(distance)*75+(find?.inset ? 510 : 0));
+      this.startJourney(now,duration,find);
     } else {
       this.journey = null;
       this.position = target;
@@ -82,18 +85,16 @@ class MineScene {
     this.requestFrame();
   }
 
-  startJourney(started,duration,reward) {
+  startJourney(started,duration,find) {
     this.journey = {
-      started,duration,reward,from:this.position,distance:this.target-this.position,
+      started,duration,find,from:this.position,distance:this.target-this.position,
       fromLead:this.lead,fromZoom:this.zoom
     };
   }
 
-  finishReveal() {
-    if (!this.journey?.reward) return;
-    const now = performance.now();
-    this.updatePosition(now);
-    if (this.journey) this.startJourney(now,440);
+  afterJourney(action) {
+    if (this.journey) this.journey.onArrival = action;
+    else action();
   }
 
   ease(value) {
@@ -103,14 +104,14 @@ class MineScene {
 
   updatePosition(time) {
     if (!this.journey) return;
-    const {from,started,duration,distance,reward,fromLead,fromZoom} = this.journey;
+    const {from,started,duration,distance,find,fromLead,fromZoom} = this.journey;
     const fraction = this.motion.matches ? 1 : Math.min(1,Math.max(0,(time-started)/duration));
-    const progress = this.ease(reward ? (fraction-.12)/.73 : fraction);
+    const progress = this.travelProgress(fraction,find);
     this.position = from + distance*progress;
     this.lead = fromLead*(1-this.ease(fraction/.34)) + Math.sin(Math.PI*progress)*Math.min(34,distance*.12);
-    if (reward) {
-      const wide = 1-reward.inset*(this.mobile ? .82 : 1);
-      this.zoom = fromZoom+(wide-fromZoom)*this.ease(fraction/.32)+(1-wide)*this.ease((fraction-.71)/.29);
+    if (find?.inset) {
+      const wide = 1-find.inset*(this.mobile ? .88 : 1);
+      this.zoom = fromZoom+(wide-fromZoom)*this.ease(fraction/.28)+(1-wide)*this.ease((fraction-.77)/.23);
     } else {
       this.zoom = fromZoom+(1-fromZoom)*this.ease(fraction);
     }
@@ -122,6 +123,11 @@ class MineScene {
     }
   }
 
+  travelProgress(fraction,find) {
+    const starting = find?.inset ? .09 : .02;
+    return this.ease((fraction-starting)/(.54-starting));
+  }
+
   requestFrame() {
     if (this.frame || this.motion.matches) return;
     this.frame = requestAnimationFrame(time => this.frameStep(time));
@@ -129,8 +135,10 @@ class MineScene {
 
   frameStep(time) {
     this.frame = null;
+    const journey = this.journey;
     this.updatePosition(time);
     this.render(time);
+    if (!this.journey) journey?.onArrival?.();
     this.requestFrame();
   }
 
@@ -175,9 +183,12 @@ class MineScene {
     ctx.globalAlpha = 1;
   }
 
+  layerAt(depth) {
+    return Math.max(0,this.thresholds.findLastIndex(limit => depth>=limit));
+  }
+
   paletteAt(depth) {
-    const layer = Math.max(0,this.thresholds.findLastIndex(limit => depth>=limit));
-    return MineScene.palettes[layer];
+    return MineScene.palettes[this.layerAt(depth)];
   }
 
   screenY(depth) {
@@ -206,6 +217,11 @@ class MineScene {
     darkness.addColorStop(1,"#0b1520");
     ctx.fillStyle = darkness;
     ctx.fillRect(0,0,width,height);
+    const core = this.screenY(this.thresholds.at(-1));
+    if (core<height) {
+      const coreLight = .55+Math.sin(time/1700)*.12;
+      this.glow("#dd834e",this.center,Math.max(0,core)+86,154,coreLight);
+    }
     this.rows(76,(depth,index) => {
       this.wall(depth,index,-1,time);
       this.wall(depth,index,1,time);
@@ -220,7 +236,8 @@ class MineScene {
     const bottom = this.screenY(depth+76);
     if (bottom<0 || top>height) return;
     const outside = side<0 ? 0 : width;
-    const [shadow,base,stone,edge,bright] = this.paletteAt(depth+38);
+    const palette = this.paletteAt(depth+38);
+    const [shadow,base,stone,edge,bright] = palette;
     const lip = [];
     for (let row=0;row<=76;row+=4) {
       lip.push([this.wallEdge(depth+row,side),this.screenY(depth+row)]);
@@ -247,13 +264,18 @@ class MineScene {
       this.glow(bright,x,y,19,.12);
     }
     const fossil = this.fossil;
-    if (side<0 && index%14===6 && fossil?.complete && fossil.naturalWidth) {
+    if ((index+Number(side>0)*5)%13===6 && this.layerAt(depth)<4 && fossil?.complete && fossil.naturalWidth) {
       ctx.globalAlpha = .47;
-      ctx.drawImage(fossil,Math.round(ledge-66),Math.round(y-18),56,38);
+      ctx.drawImage(fossil,Math.round(ledge+(side<0 ? -66 : 10)),Math.round(y-18),56,38);
       ctx.globalAlpha = 1;
     }
-    if (depth>=76 && (index+Number(side<0)*2)%4===0) {
-      this.alcove(ledge+side*32,y,index,side,time);
+    if (depth>0 && (index+Number(side<0)*2)%3===0) {
+      const inset = 13+this.hash(index,side+33)*18;
+      this.decorateRock(seam,ledge+side*inset,y,index,side,time,palette);
+    }
+    if (this.layerAt(seam)===8) {
+      const crust = Math.min(96,reach);
+      this.shape("#966044",[[ledge+side*9,y+34],[ledge+side*26,y+28],[ledge+side*crust,y+31],[ledge+side*(crust+61),y+26],[ledge+side*(crust+72),y+30],[ledge+side*crust,y+34],[ledge+side*28,y+31]]);
     }
   }
 
@@ -277,42 +299,109 @@ class MineScene {
     ctx.globalAlpha = 1;
   }
 
-  alcove(x,y,index,side,time) {
+  decorateRock(depth,x,y,index,side,time,palette) {
+    const layer = this.layerAt(depth);
     const ctx = this.context;
-    const warm = index%3===0;
-    const moss = warm ? "#877652" : "#4a7063";
-    const herb = warm ? "#c9a567" : "#8eb58a";
-    this.shape("#17252b",[[x-27,y+5],[x-24,y-8],[x-17,y-13],[x+12,y-13],[x+22,y-7],[x+26,y+5],[x+17,y+9],[x-19,y+10]]);
-    this.shape(moss,[[x-27,y+6],[x-17,y+4],[x+19,y+4],[x+27,y+6],[x+18,y+10],[x-20,y+10]]);
-    this.block(herb,x-15,y+5,7,1);
-    this.block(herb,x+10,y+5,11,1);
-    for (const [dx,stem] of [[-21,5],[-16,8],[16,8],[23,4]]) {
-      this.block(moss,x+dx,y-stem+5,1,stem+2);
-      this.block(herb,x+dx-2,y-stem+4,5,2);
-    }
+    const choice = this.hash(index,side+73);
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.scale(side,1);
+    if (layer===0 || (layer===1 && choice>.25)) this.rootVein(index,time);
+    else if (layer<=2 || (layer===3 && choice>.7)) this.waterPocket(index,time);
+    else if (layer<=5) this.mineralPocket(index,time,palette,choice);
+    else this.heatFissure(index,time,layer===8);
+    ctx.restore();
+  }
 
-    const t = time/2700+index*.81+side;
-    const direction = Math.cos(t)>=0 ? 1 : -1;
-    const head = x+Math.sin(t)*13;
-    const wriggle = time/370+index;
-    const headY = y+Math.sin(wriggle)*.95-1;
-    for (let j=4;j>=0;j--) {
-      const segmentX = x+Math.sin(t-j*.22)*13;
-      const segmentY = y+Math.sin(wriggle-j*.82)*.95-(j===0 ? 1 : 0);
-      this.block("#233637",segmentX-2,segmentY,5,5);
-      this.block(j%2 ? moss : herb,segmentX-2,segmentY,4,3);
-      this.block("#e0dc9f",segmentX-1,segmentY,2,1);
+  rootVein(index,time) {
+    const reach = 36+this.hash(index,74)*15;
+    this.shape("#303630",[[0,-15],[9,-12],[16,-3],[reach,-1],[reach-9,5],[21,5],[10,-2]]);
+    this.shape("#816955",[[0,-17],[13,-12],[23,-4],[reach,-4],[reach-2,-1],[20,0],[9,-10]]);
+    this.shape("#5a6b4f",[[4,-9],[13,-7],[20,0],[reach,-2],[reach-7,4],[18,4],[9,-4]]);
+    for (const [dx,stem] of [[13,6],[reach-12,8],[reach-6,3]]) {
+      this.block("#638065",dx,1-stem,1,stem);
+      this.block("#a6b67d",dx-2,1-stem,5,1);
     }
-    this.block("#1e3535",head+direction,headY+1,1,1);
+    const clock = time/2750+index*.82;
+    const glint = time/440+index;
+    for (let segment=4;segment>=0;segment--) {
+      const x = 22+Math.sin(clock-segment*.23)*10;
+      const y = Math.sin(glint-segment*.7)*1.2;
+      this.block("#344d47",x-2,y-4,5,4);
+      this.block(segment%2 ? "#83a47c" : "#aec285",x-2,y-4,4,2);
+      if (!segment) this.block("#273835",x+Math.sign(Math.cos(clock)),y-4,1,1);
+    }
+    const px = reach-8+Math.cos(time/1900+index)*7;
+    const py = -11+Math.sin(time/1600+index)*4;
+    const shine = .36+.28*Math.sin(time/620+index);
+    this.glow("#c6ce92",px,py,7,shine*.5);
+    const ctx = this.context;
+    ctx.globalAlpha = shine;
+    this.block("#e7e1b1",px,py,1,1);
+    ctx.globalAlpha = 1;
+  }
 
-    for (let j=0;j<2;j++) {
-      const orbit = time/(1800+j*520)+index+j*1.6;
-      const px = x+Math.sin(orbit)*13+(j-1)*8;
-      const py = y-10+Math.cos(orbit*.83)*4;
-      const shine = .21+.29*(.5+.5*Math.sin(time/510+index+j));
-      this.glow(herb,px,py,6,shine*.36);
-      ctx.globalAlpha = shine;
-      this.block("#e1d79b",px,py,1,1);
+  waterPocket(index,time) {
+    const reach = 29+this.hash(index,134)*19;
+    this.shape("#2d4950",[[0,-21],[12,-20],[19,-7],[reach,-13],[reach-8,-4],[13,-3],[8,-12]]);
+    this.shape("#426b70",[[6,-20],[10,-20],[17,-12],[16,-3],[14,-5],[13,-11]]);
+    this.shape("#a4bbb0",[[9,-20],[12,-20],[16,-13],[15,-6],[14,-11]]);
+    this.shape("#27454e",[[4,10],[15,6],[reach,6],[reach+9,10],[reach-6,15],[12,14]]);
+    this.shape("#789c97",[[9,10],[16,7],[reach-2,7],[reach+2,10],[16,10]]);
+    const phase = (time/1390+this.hash(index,111))%1;
+    if (phase<.67) {
+      this.block("#80b6ac",16,-6+(phase/.67)**2*15,1,4);
+      this.block("#d2ded2",16,-6+(phase/.67)**2*15,1,1);
+    } else {
+      const spread = (phase-.67)/.33;
+      const ctx = this.context;
+      ctx.globalAlpha = 1-spread;
+      this.block("#adbfb0",16-spread*9,10,2+spread*18,1);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  mineralPocket(index,time,palette,choice) {
+    const [shadow,base,stone,edge,bright] = palette;
+    if (choice<.43) {
+      this.shape(shadow,[[1,-5],[14,-15],[30,-11],[45,-14],[49,-3],[43,10],[26,12],[8,7]]);
+      this.shape(edge,[[7,-2],[14,-10],[27,-7],[43,-10],[43,-1],[38,6],[25,7],[10,4]]);
+      this.shape(base,[[13,-2],[24,-5],[40,-7],[36,3],[25,5],[17,3]]);
+      this.shape(bright,[[20,1],[26,-4],[35,-4],[30,2]]);
+    } else {
+      for (const [x,tip,height,width] of [[10,7,14,6],[23,19,23,8],[37,41,17,7]]) {
+        const y = 7+this.hash(index+x,81)*5;
+        this.shape(shadow,[[x-width,y],[tip-4,y-height],[tip+3,y-height],[x+width,y-3],[x+4,y+4]]);
+        this.shape(edge,[[x-width+2,y],[tip-1,y-height+2],[tip+1,y-height+2],[x+1,y+1]]);
+        this.shape(stone,[[tip+1,y-height+2],[x+width-1,y-3],[x+4,y+3],[x+1,y+1]]);
+      }
+    }
+    const glow = .5+.5*Math.sin(time/870+index*1.7);
+    const x = choice<.43 ? 29 : 22;
+    const y = choice<.43 ? -2 : -11;
+    this.glow(bright,x,y,18,glow*.26);
+    if (glow>.54) {
+      const ctx = this.context;
+      ctx.globalAlpha = (glow-.54)*1.6;
+      this.block(bright,x-2,y,5,1);
+      this.block(bright,x,y-2,1,5);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  heatFissure(index,time,core) {
+    const far = (core ? 65 : 45)+this.hash(index,29)*20;
+    const glow = core ? "#ffcf79" : "#e6844f";
+    const pulse = .58+.27*Math.sin(time/980+index);
+    this.shape(core ? "#824d3e" : "#643d39",[[1,1],[13,-5],[24,-2],[36,-11],[far,-12],[far-4,-5],[40,-4],[28,6],[14,4]]);
+    this.shape(glow,[[1,0],[14,-3],[25,0],[36,-8],[far-2,-10],[far-5,-8],[38,-6],[25,3],[14,-1]]);
+    this.glow(glow,25,0,core ? 49 : 33,pulse*.36);
+    const ctx = this.context;
+    for (let j=0;j<(core ? 7 : 4);j++) {
+      const phase = (time/(1100+j*100)+this.hash(index*8+j,51))%1;
+      const x = 12+this.hash(index*8+j,88)*27+Math.sin(phase*4+j)*6;
+      ctx.globalAlpha = (1-phase)*pulse;
+      this.block(glow,x,-3-phase*(16+j*3),j%3===0 ? 2 : 1,1);
     }
     ctx.globalAlpha = 1;
   }
@@ -454,32 +543,151 @@ class MineScene {
     ctx.globalAlpha = 1;
   }
 
-  rewardLight(time) {
-    const journey = this.journey;
-    if (!journey?.reward) return;
+  miningFrame(time) {
+    const find = this.journey?.find;
+    if (!find) return null;
+    const phase = (time-this.journey.started)/this.journey.duration;
+    return {find,phase,x:this.center+72,y:this.screenY(this.target)-5};
+  }
+
+  drawVein(frame) {
+    const {x,y,find,phase} = frame;
+    if (y>this.viewHeight+45 || y< -45) return;
+    const wall = Math.max(x+4,this.wallEdge(this.target,1));
+    const width = find.size;
+    const breaking = this.ease((phase-MineScene.impact)/.1);
     const ctx = this.context;
-    const {started,duration,reward} = journey;
-    const progress = (time-started)/duration;
-    const shine = this.ease(progress/.23)*(1-this.ease((progress-.65)/.35));
-    const x = this.center;
-    const y = this.screenY(this.position)-7;
-    this.glow(reward.glow,x,y,130,shine*.28);
-    this.glow(reward.white,x,y-22,51,shine*.18);
-    for (let i=0;i<reward.particles;i++) {
-      const age = (progress-.06-this.hash(i,131)*.32)/.6;
-      if (age<0 || age>=1) continue;
-      const side = i%2 ? 1 : -1;
-      const spread = .43+this.hash(i,115)*.57;
-      const sx = x+side*(18+this.ease(age)*spread*111);
-      const sy = y+(this.hash(i,117)-.53)*37-age*(22+spread*57)+age*age*16;
-      const alpha = this.ease(age/.13)*(1-this.ease((age-.48)/.52));
-      ctx.globalAlpha = alpha*.89;
-      if (i%5===0) {
-        this.block(reward.glow,sx-1,sy-4,2,8);
-        this.block(reward.glow,sx-4,sy-1,8,2);
-        this.block(reward.white,sx-1,sy-1,2,2);
+    ctx.save();
+    ctx.globalAlpha = 1-this.ease((phase-.91)/.09);
+    this.shape("#212a2d",[[x-3,y+13],[x+7,y-10],[wall+11,y-18],[wall+18,y+11],[x+6,y+19]]);
+    this.shape("#4c514c",[[x-2,y+9],[x+10,y-8],[wall+11,y-15],[wall+7,y-2],[x+7,y+12]]);
+    this.block(find.stone,x-3,y+4,11,3);
+    ctx.restore();
+    if (breaking>=1) return;
+    const light = (1-breaking)*this.ease((phase-.17)/.38);
+    this.glow(find.light,x,y,22+width*1.3,light*.44);
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.scale(1-.3*breaking,1-.59*breaking);
+    ctx.globalAlpha = 1-breaking;
+    this.shape(find.stone,[[-10,0],[-4,-width],[5,-width*.7],[8,-4],[5,9],[-4,7]]);
+    this.shape(find.light,[[-10,0],[-4,-width],[-1,-width*.72],[-2,3],[-4,7]]);
+    this.shape(find.core,[[-10,0],[-4,-width],[-3,-width*.64],[-6,0]]);
+    if (find.minimum>=25) {
+      this.shape(find.stone,[[0,2],[7,-width*.85],[14,-width*.55],[13,7],[7,11]]);
+      this.shape(find.light,[[4,4],[7,-width*.85],[10,-width*.52],[8,5]]);
+    }
+    if (find.inset) {
+      this.shape(find.core,[[2,-3],[5,-12],[8,-5],[5,1]]);
+    }
+    if (find.minimum===120) {
+      this.shape(find.light,[[2,-width],[9,-width-6],[14,-width+1],[9,-width+5]]);
+      this.block(find.core,8,-width,3,2);
+    }
+    ctx.restore();
+  }
+
+  drawPickaxe(frame) {
+    const {x,y,phase} = frame;
+    if (phase<.45 || phase>=.96) return;
+    const liftY = this.screenY(this.position);
+    const ctx = this.context;
+    const reach = 34;
+    const angleAtImpact = -.26;
+    const poses = [
+      [.45,20,13,1.18], [.54,22,1,-.75], [.63,16,-16,-1.91],
+      [MineScene.impact,x-10-this.center-reach*Math.cos(angleAtImpact),y-liftY-reach*Math.sin(angleAtImpact),angleAtImpact],
+      [.78,27,5,.04], [.89,22,5,.7], [.96,20,13,1.18]
+    ];
+    const next = poses.findIndex(([time])=>time>phase);
+    const first = poses[next-1];
+    const second = poses[next];
+    const t = this.ease((phase-first[0])/(second[0]-first[0]));
+    const [handX,handY,angle] = first.slice(1).map((value,index)=>value+(second[index+1]-value)*t);
+    const wristX = this.center+handX;
+    const wristY = liftY+handY;
+    const shoulderX = this.center+13;
+    const shoulderY = liftY+4;
+    const elbowX = shoulderX+(wristX-shoulderX)*.62+3;
+    const elbowY = shoulderY+(wristY-shoulderY)*.63+5;
+    const opacity = this.ease((phase-.45)/.065)*(1-this.ease((phase-.891)/.069));
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.lineJoin = "round";
+    for (const [color,width] of [["#192528",7],["#a8654d",5],["#ddab75",2]]) {
+      ctx.beginPath();
+      ctx.moveTo(shoulderX,shoulderY);
+      ctx.lineTo(elbowX,elbowY);
+      ctx.lineTo(wristX,wristY);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.stroke();
+    }
+    ctx.translate(wristX,wristY);
+    ctx.rotate(angle);
+    this.block("#293036",-7,-2,36,4);
+    this.block("#98684a",-6,-1,35,2);
+    this.block("#e4b47a",-4,-1,32,1);
+    this.shape("#344147",[[23,-3],[26,-9],[30,-10],[28,-3],[30,0],[34,0],[31,4],[26,4],[25,1]]);
+    this.shape("#a9bab0",[[25,-3],[27,-8],[29,-9],[28,-3],[30,0],[34,0],[31,3],[27,3]]);
+    this.block("#e3cc9b",26,-2,4,1);
+    this.block("#d3a272",-3,-3,5,5);
+    this.block("#f3cf9b",-2,-2,3,3);
+    ctx.restore();
+  }
+
+  rewardBurst(frame) {
+    const {find,x,y,phase} = frame;
+    if (phase<MineScene.impact) return;
+    const ctx = this.context;
+    const age = this.ease((phase-MineScene.impact)/(1-MineScene.impact));
+    const pulse = this.ease(age/.14)*(1-age);
+    const fade = 1-this.ease((phase-.9)/.1);
+    const width = find.size*4;
+    this.glow(find.light,x-8,y,28+width,pulse*(find.inset ? .58 : .34));
+    if (find.minimum>=85) {
+      for (let ring=0;ring<(find.minimum===120 ? 2 : 1);ring++) {
+        const wave = Math.max(0,age-ring*.14);
+        if (wave===0) continue;
+        const radius = 8+wave*(width+23-ring*18);
+        ctx.globalAlpha = pulse*(ring ? .32 : .63);
+        ctx.beginPath();
+        for (let step=0;step<=8;step++) {
+          const angle = step*Math.PI/4;
+          const dx = x-8+Math.cos(angle)*radius;
+          const dy = y+Math.sin(angle)*radius*.67;
+          if (step) ctx.lineTo(dx,dy);
+          else ctx.moveTo(dx,dy);
+        }
+        ctx.strokeStyle = ring ? find.light : find.core;
+        ctx.lineWidth = ring ? 1 : 2;
+        ctx.stroke();
+      }
+    }
+    if (find.minimum===120) {
+      ctx.globalAlpha = pulse*.30;
+      for (let ray=0;ray<8;ray++) {
+        const angle = ray*Math.PI/4+.22*age;
+        const short = 12+age*20;
+        const long = 18+age*(100+ray%2*25);
+        this.shape(find.core,[[x-10+Math.cos(angle)*short,y+Math.sin(angle)*short],[x-10+Math.cos(angle-.06)*long,y+Math.sin(angle-.06)*long*.72],[x-10+Math.cos(angle+.06)*long,y+Math.sin(angle+.06)*long*.72]]);
+      }
+    }
+    for (let i=0;i<find.shards;i++) {
+      const flight = Math.max(0,age-this.hash(i,214)*.2);
+      const angle = this.hash(i,211)*Math.PI*2;
+      const speed = .36+this.hash(i,99)*.64;
+      const dx = x-10+Math.cos(angle)*speed*flight*width*1.8;
+      const dy = y+Math.sin(angle)*speed*flight*width+flight*flight*23;
+      const glow = this.ease(flight/.12)*(1-flight);
+      const color = i%3 ? find.light : find.core;
+      ctx.globalAlpha = glow*fade;
+      if (find.inset && i%4===0) {
+        this.block(color,dx-1,dy-4,2,8);
+        this.block(color,dx-4,dy-1,8,2);
+        this.block(find.core,dx-1,dy-1,2,2);
       } else {
-        this.shape(i%3 ? reward.glow : reward.white,[[sx,sy-3],[sx+2,sy],[sx,sy+3],[sx-2,sy]]);
+        this.shape(color,[[dx,dy-3],[dx+2,dy],[dx,dy+3],[dx-2,dy]]);
       }
     }
     ctx.globalAlpha = 1;
@@ -490,7 +698,8 @@ class MineScene {
     const x = this.center;
     const y = this.screenY(this.position);
     const rocking = this.motion.matches ? 0 : Math.sin(time/385)*.013;
-    const speed = this.journey ? Math.sin(Math.PI*(time-this.journey.started)/this.journey.duration) : 0;
+    const phase = this.journey ? (time-this.journey.started)/this.journey.duration : 1;
+    const speed = Math.sin(Math.PI*this.travelProgress(phase,this.journey?.find));
     const lean = rocking + Math.sin(this.position*.26)*.008*Math.max(0,speed);
     const cableStart = Math.max(0,this.screenY(-34));
     const cableLength = Math.max(0,y-18-cableStart);
@@ -542,8 +751,13 @@ class MineScene {
     this.surface(now);
     this.rails(now);
     this.driftingDust(now);
-    this.rewardLight(now);
+    const find = this.miningFrame(now);
+    if (find) this.drawVein(find);
     this.drawLift(now);
+    if (find) {
+      this.drawPickaxe(find);
+      this.rewardBurst(find);
+    }
     this.context.restore();
   }
 }
