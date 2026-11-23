@@ -750,19 +750,8 @@ add("long-films","Name a film longer than 2 hours 30 minutes.","Назовите
 `);
 
 const mineDecks = {1:firstDeck, 2:secondDeck, 3:Object.keys(catalog)};
-const MINE_DECK_VERSION = 5;
-const mineCalendars = [
-  {from:MINE_DAY, order:dailyOrder},
-  {from:Date.parse("2026-11-24") / 86400000, order:[
-    "fictional-robots","city-films","non-electric-clocks","numbered-albums","fictional-places","drinkware","mountains","myth",
-    "shipwrecks","desserts","countries","programming","painting","lens","water-machines","card-games",
-    "gemstones","africa","films","instruments","craters","video-games","currency","rivers",
-    "novels","americas","spacecraft","languages","birds","capitals","metals","dinosaurs",
-    "europe","architects","board-games","islands","asia","composers","oceania","herbs","weapons","observatory","elements"
-  ]},
-  {from:Date.parse("2026-11-25") / 86400000, order:["long-films",...secondDeck.filter(id=>id!=="films"),"films",
-    "fictional-robots","city-films","non-electric-clocks","numbered-albums"]}
-];
+const MINE_DECK_VERSION = 6;
+const mineCalendars = [{from:MINE_DAY,order:dailyOrder}];
 function mineIds(seed, mode, version = MINE_DECK_VERSION) {
   if (mode === "daily") {
     const {from,order} = mineCalendars.findLast(period => seed >= period.from);
@@ -770,6 +759,7 @@ function mineIds(seed, mode, version = MINE_DECK_VERSION) {
     return Array.from({length:8}, (_,i) => order[(start + i) % order.length]);
   }
   if (version===5) return mixedBank(seed);
+  if (version===6) return interleaveQuestionGroups(everydayGroups,seed);
   return shuffleMine(mineDecks[version],seed);
 }
 function shuffleMine(deck,seed) {
@@ -845,7 +835,7 @@ add("breads","Name a regional type of bread.","Назовите разновид
 3;georgian shotis puri|shotis puri;шотис пури|шоти
 3;broa de milho|broa;броа де милью|португальский кукурузный хлеб
 `);
-add("constellations","Name a constellation recognized by the International Astronomical Union.","Назовите созвездие, признанное Международным астрономическим союзом.",`
+add("constellations","Name a constellation.","Назовите созвездие.",`
 0;Orion;Орион
 0;Ursa Major|Great Bear;Большая Медведица
 0;Ursa Minor|Little Bear;Малая Медведица
@@ -1119,7 +1109,10 @@ for (const [id,[group]] of generatedQuestions) {
 }
 mineDecks[5]=[...Object.keys(catalog),...generatedQuestions.keys()];
 function mixedBank(seed) {
-  const groups=shuffleMine([...bankGroups.values()],seed).map((ids,index)=>shuffleMine(ids,(seed+index*11369)>>>0));
+  return interleaveQuestionGroups([...bankGroups.values()],seed);
+}
+function interleaveQuestionGroups(questionGroups,seed) {
+  const groups=shuffleMine(questionGroups,seed).map((ids,index)=>shuffleMine(ids,(seed+index*11369)>>>0));
   const deck=[];
   const longest=Math.max(...groups.map(group=>group.length));
   for (let index=0;index<longest;index++) {
@@ -1150,10 +1143,30 @@ function bankLookup(group,id) {
   if (!entity || !relation) return null;
   return {field:relation[0],types:relation[1],entity:`Q${entity}`,species:group==="named-species"};
 }
-mineCalendars.push({from:Date.parse("2026-11-26")/86400000,order:mixedBank(20261126)});
-const REPLAY_DAY = Date.parse("2026-11-23") / 86400000;
-const latestEditionRevision = day => day === REPLAY_DAY ? 2 : 1;
-const currentDailyQuestions = ["long-films","trees","constellations","fictional-places","breads","animation","water-machines","herbs"];
+for (const card of everydayCards) add(...card);
+const everydayGroups = [
+  ["carry-light","zippers","things-on-wheels","measuring-scales","hinged-things","headwear","paper-marks","inflatable-things","first-aid-kit","key-locks","lens","drinkware","non-electric-clocks","glass-objects","buttons","tool-teeth","erasable-marks"],
+  ["citrus","jam-fruits","potato-dishes","desserts","herbs","breads","fermented-foods","fruit-pits","breakfast-dishes","plants-you-can-eat-leaves"],
+  ["length-units","star-flags","visible-weather","elements","countries","capitals","mountains","rivers","islands","constellations","gemstones","public-transport"],
+  ["animal-shells","swimming-birds","striped-animals","houseplants","birds","trees","freshwater-fish","underwater-mammals"],
+  ["films","video-games","board-games","space-trip-films","animated-dogs","winged-characters","animation","fictional-places","fictional-vehicles","fictional-robots","myth","racket-sports","instruments","blown-instruments","plucked-strings","card-games","school-shows","weapons"]
+];
+mineDecks[6]=everydayGroups.flat();
+const REPLAY_DAY = MINE_DAY;
+const replayQuestions = {
+  2:["long-films","trees","constellations","fictional-places","breads","animation","water-machines","herbs"],
+  3:["carry-light","citrus","swimming-birds","zippers","elements","blown-instruments","animated-dogs","potato-dishes"]
+};
+const [upcoming,repeatAfterLaunch] = [[],[]];
+for (const id of interleaveQuestionGroups(everydayGroups,20261124)) {
+  (replayQuestions[3].includes(id) ? repeatAfterLaunch : upcoming).push(id);
+}
+mineCalendars.push({from:MINE_DAY+1,order:[...upcoming,...repeatAfterLaunch]});
+const latestEditionRevision = day => day === REPLAY_DAY ? 3 : 1;
+function validDailyRevision(day,revision) {
+  return revision===1 || (day===REPLAY_DAY && Number.isInteger(revision) && Object.hasOwn(replayQuestions,revision));
+}
 function dailyIds(day,revision=1) {
-  return revision===2 && day===REPLAY_DAY ? currentDailyQuestions : mineIds(day,"daily");
+  if (day===REPLAY_DAY && replayQuestions[revision]) return replayQuestions[revision];
+  return mineIds(day,"daily");
 }

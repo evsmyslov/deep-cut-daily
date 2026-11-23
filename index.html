@@ -7,15 +7,16 @@
 <meta name="description" content="A daily open-answer quiz. Find the facts that others overlook. Play in English or Russian.">
 <title>Rare Below</title>
 <link rel="icon" href="art/mark.png">
-<link rel="stylesheet" href="style.css?v=full-recap">
+<link rel="stylesheet" href="style.css?v=everyday">
 <script defer src="catalog-data.js"></script>
 <script defer src="question-bank.js?v=full-recap"></script>
-<script defer src="open-questions.js?v=full-recap"></script>
+<script defer src="everyday-questions.js?v=everyday"></script>
+<script defer src="open-questions.js?v=everyday"></script>
 <script defer src="suggestions.js?v=full-recap"></script>
 <script defer src="live-client.js?v=full-recap"></script>
 <script defer src="audio.js?v=full-recap"></script>
 <script defer src="friends.js?v=direct-duels"></script>
-<script defer src="game.js?v=full-recap"></script>
+<script defer src="game.js?v=everyday"></script>
 </head>
 <body>
 <header class="top"><div class="shell top-inner">
@@ -26,9 +27,9 @@
   <div class="daily-bar"><p><span class="live" aria-hidden="true"></span><span id="edition"></span></p><div class="mode-buttons"><button id="endless" data-text="endless" aria-haspopup="dialog"></button><button id="duel" data-text="duel" aria-haspopup="dialog"></button><button id="friends" aria-haspopup="dialog"><span data-text="friends"></span><span id="friend-unread" hidden></span></button><button id="archive" data-text="archive"></button></div></div>
   <section class="machine" id="machine">
     <div class="world" aria-hidden="true">
-      <div class="world-track" id="world-track"></div>
+      <div class="world-sway"><div class="world-track" id="world-track"></div></div>
       <div class="world-shade"></div>
-      <div class="miner" id="miner"><span class="miner-body"></span></div>
+      <div class="miner" id="miner"><div class="miner-idle"><span class="miner-body"></span></div></div>
     </div>
     <div class="mission-hud">
       <div class="readout"><span data-text="depth"></span><strong id="depth" aria-live="polite"></strong></div>

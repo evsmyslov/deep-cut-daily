@@ -99,7 +99,7 @@ Object.assign(strings.en, {
   getReady:"Get ready", answerLocked:"Answer locked. Waiting for your friend.", rush:"Your friend answered. You have up to 10 seconds.",
   autoNext:"Next question starts automatically.",
   roomExpired:"This invite has expired. Create a new duel.", roomFull:"This room already has two players.",
-  suggestion:"Did you mean?", joinCode:"Join by code", roomCode:"Room code", badCode:"Enter the six-character room code.", originalEdition:"Original edition",
+  suggestion:"Did you mean?", joinCode:"Join by code", roomCode:"Room code", badCode:"Enter the six-character room code.", originalEdition:"Original edition", secondEdition:"Second edition",
   createRoom:"Create a room", retryLive:"Retry connection", duelMenu:"Duel menu",
   wrongRetry:"That answer doesn’t fit. Try again.", lookupRetry:"Answer check unavailable. Try again or enter another answer.",
   retryRule:"If an answer doesn’t fit, you can try again until time runs out.",
@@ -127,7 +127,7 @@ Object.assign(strings.ru, {
   getReady:"Приготовьтесь", answerLocked:"Ответ принят. Ждём друга.", rush:"Друг ответил. У вас до 10 секунд.",
   autoNext:"Следующий вопрос начнётся автоматически.",
   roomExpired:"Срок действия ссылки истёк. Создайте новую дуэль.", roomFull:"В этой комнате уже два игрока.",
-  suggestion:"Имели в виду?", joinCode:"Войти по коду", roomCode:"Код комнаты", badCode:"Введите код комнаты из шести символов.", originalEdition:"Первый выпуск",
+  suggestion:"Имели в виду?", joinCode:"Войти по коду", roomCode:"Код комнаты", badCode:"Введите код комнаты из шести символов.", originalEdition:"Первый выпуск", secondEdition:"Второй выпуск",
   createRoom:"Создать комнату", retryLive:"Повторить подключение", duelMenu:"Меню дуэли",
   wrongRetry:"Ответ не подходит. Попробуйте ещё раз.", lookupRetry:"Проверка недоступна. Повторите попытку или введите другой ответ.",
   retryRule:"Если ответ не подходит, можно попробовать снова, пока есть время.",
@@ -179,7 +179,7 @@ function normalizeRoomCode(value) {
   if (/^[a-f0-9]{16}$/i.test(value ?? "")) return value.toLowerCase();
   return null;
 }
-const editionKey = (day, revision) => `daily:${day}${revision===2 ? ":2" : ""}`;
+const editionKey = (day, revision) => `daily:${day}${revision>1 ? `:${revision}` : ""}`;
 function readRoute() {
   const args=new URLSearchParams(location.search);
   const continued=normalizeRoomCode(args.get("continue"));
@@ -207,7 +207,8 @@ function readRoute() {
   const date=/^\d{4}-\d\d-\d\d$/.test(key) ? Date.parse(key)/DAY : NaN;
   const fixed=date>=START && date<=today() && iso(date)===key;
   const day=fixed ? date : today();
-  const revision=fixed && args.get("set")!=="2" ? 1 : latestEditionRevision(day);
+  const requested=Number(args.get("set") ?? 1);
+  const revision=fixed ? (validDailyRevision(day,requested) ? requested : 1) : latestEditionRevision(day);
   const scoreText=args.get("score") ?? "";
   const rival=fixed && /^\d{1,3}$/.test(scoreText) && Number(scoreText)<=maximum ? Number(scoreText) : null;
   return {mode:"daily",day,fixed,revision,rival,key:editionKey(day,revision)};
@@ -219,6 +220,7 @@ function dailyRoute() {
 }
 let cachedDeck;
 function questionAt(index) {
+  if (round.answers[index]?.prompt) return mineQuestion(round.answers[index].prompt);
   if (route.mode==="daily") return mineQuestion(dailyIds(route.day,route.revision)[index]);
   const version=round.deckVersion ?? 1;
   const size=mineDecks[version].length;
@@ -388,6 +390,12 @@ function intro(focus = false) {
       if (route !== current || !button.isConnected) return;
     }
     round = existing ?? { answers:[], feedback:false, done:false, deckVersion, seed:seed ?? crypto.getRandomValues(new Uint32Array(1))[0] };
+    if (current.mode==="endless" && !round.done && (round.deckVersion ?? 1)<MINE_DECK_VERSION) {
+      round.answers=round.answers.map((answer,index)=>({...answer,prompt:questionAt(index).id}));
+      round.deckVersion=MINE_DECK_VERSION;
+      round.pending=null;
+      round.deadline=null;
+    }
     save();
     if (round.done) results();
     else question();
@@ -466,7 +474,7 @@ function question(draft = "", focus = true) {
     if (round.feedback) return;
     if (entry && pointsFor(entry)<minimumPoints) { reject("rareRetry"); return; }
     clearInterval(questionTimer);
-    round.answers.push({text, id:entry?.id ?? null, tier:entry?.tier ?? -1, en:entry?.en, ru:entry?.ru, reason});
+    round.answers.push({text, prompt:model.id, id:entry?.id ?? null, tier:entry?.tier ?? -1, en:entry?.en, ru:entry?.ru, reason});
     round.pending = null;
     round.feedback = true;
     save();
@@ -569,7 +577,7 @@ function results(focus = true) {
     const url = new URL(gameRoot);
     url.searchParams.set("mode", "mine");
     url.searchParams.set("edition", iso(route.day));
-    if (route.revision===2) url.searchParams.set("set","2");
+    if (route.revision>1) url.searchParams.set("set",route.revision);
     url.searchParams.set("score", points);
     const card = round.answers.map(answer => marks[answer.tier] ?? "⬛").join("");
     copyChallenge(`${GAME_NAME} · ${iso(route.day)}
@@ -716,7 +724,8 @@ function openEdition(day,mode,duel,revision) {
   if (day!==undefined) {
     url.searchParams.set("mode","mine");
     url.searchParams.set("edition",iso(day));
-    if ((revision ?? latestEditionRevision(day))===2) url.searchParams.set("set","2");
+    const edition=revision ?? latestEditionRevision(day);
+    if (edition>1) url.searchParams.set("set",edition);
   } else if (mode) {
     url.searchParams.set("mode",mode);
     if (duel) url.searchParams.set(mode==="endless" ? "difficulty" : "room",duel);
@@ -764,7 +773,12 @@ function showStats() {
   const completed = Object.entries(library).filter(([key,item])=>key.startsWith("daily:") && item.done).map(([,item])=>item);
   let day = today();
   let consecutive = 0;
-  const finished = day => library[editionKey(day,latestEditionRevision(day))]?.done || library[editionKey(day,1)]?.done;
+  const finished = day => {
+    for (let revision=1;revision<=latestEditionRevision(day);revision++) {
+      if (library[editionKey(day,revision)]?.done) return true;
+    }
+    return false;
+  };
   if (!finished(day)) day--;
   while (finished(day)) {consecutive++;day--;}
   const grid = element("div", "");
@@ -833,10 +847,12 @@ function launch() {
       list.append(button);
     }
     if (today()-REPLAY_DAY<=14) {
-      const first=element("button",`${displayDate(REPLAY_DAY)} · ${ui.originalEdition}`);
-      first.className="archive-item";
-      first.onclick=()=>{get("modal").close();openEdition(REPLAY_DAY,undefined,undefined,1);};
-      list.append(first);
+      for (const [revision,label] of [[2,ui.secondEdition],[1,ui.originalEdition]]) {
+        const button=element("button",`${displayDate(REPLAY_DAY)} · ${label}`);
+        button.className="archive-item";
+        button.onclick=()=>{get("modal").close();openEdition(REPLAY_DAY,undefined,undefined,revision);};
+        list.append(button);
+      }
     }
     const classic = element("a", ui.classic);
     classic.href = "classic/";
