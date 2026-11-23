@@ -110,7 +110,7 @@ Object.assign(strings.en, {
   easy:"Easy", hard:"Hard", rare:"Rare only",
   endlessModes:["Skip any question and keep digging.","Skipping is disabled. The run ends when time runs out.","Keep the streak alive with answers worth at least 55 points."],
   rareRetry:"It fits, but this mode needs a Crystal or rarer. Try again.", streakEnded:"Time ran out. Your streak has ended.", answersFound:"answers found",
-  sound:"Audio", music:"Music", effects:"Sound effects",
+  sound:"Audio", music:"Music", effects:"Sound effects", musicVolume:"Music volume", effectsVolume:"Sound effects volume",
   friends:"Friends", friendCode:"Your friend code", friendAdd:"Add friend", friendCodeInput:"Friend code",
   friendIntro:"Share your friend code to keep in touch and invite each other to duels.",
   friendDevice:"This profile is saved in this browser.", noFriends:"No friends added yet.",
@@ -136,7 +136,7 @@ Object.assign(strings.ru, {
   easy:"Обычный", hard:"На вылет", rare:"Только редкие",
   endlessModes:["Пропускайте любые вопросы и копайте дальше.","Без пропусков. Когда время истечёт, забег завершится.","Поддерживайте серию ответами от 55 очков."],
   rareRetry:"Ответ подходит, но здесь нужен «Кристалл» или выше. Попробуйте ещё раз.", streakEnded:"Время вышло. Серия завершена.", answersFound:"ответов засчитано",
-  sound:"Звук", music:"Музыка", effects:"Звуковые эффекты",
+  sound:"Звук", music:"Музыка", effects:"Звуковые эффекты", musicVolume:"Громкость музыки", effectsVolume:"Громкость эффектов",
   friends:"Друзья", friendCode:"Ваш код друга", friendAdd:"Добавить друга", friendCodeInput:"Код друга",
   friendIntro:"Поделитесь своим кодом, чтобы добавлять друзей и приглашать их на дуэли.",
   friendDevice:"Профиль сохранён в этом браузере.", noFriends:"Пока здесь нет друзей.",
@@ -233,10 +233,12 @@ function depthAt(points) {
 const layerName = stop => strata[stop][lang === "ru" ? 2 : 1];
 
 let rideTimer;
+const digTime = 1080;
 function setWorld(count = 0, points = 0, animate = false) {
   const machine = get("machine");
   const progress = get("progress");
   const {stop, travel, km} = depthAt(points);
+  machine.style.setProperty("--dig-delay", animate ? "240ms" : "0ms");
   machine.style.setProperty("--stop", travel);
   machine.dataset.stop = stop;
   machine.dataset.depth = km;
@@ -254,10 +256,11 @@ function setWorld(count = 0, points = 0, animate = false) {
   if (animate) {
     const miner = get("miner");
     clearTimeout(rideTimer);
+    miner.style.setProperty("--dig-time", `${digTime}ms`);
     miner.classList.remove("moving");
     void miner.offsetWidth;
     miner.classList.add("moving");
-    rideTimer = setTimeout(() => miner.classList.remove("moving"),950);
+    rideTimer = setTimeout(() => miner.classList.remove("moving"),digTime);
   }
 }
 

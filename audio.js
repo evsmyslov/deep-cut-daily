@@ -2,12 +2,18 @@
 
 const audioStorage="rare-below-audio";
 const audioOptions={music:true,effects:true};
+const audioVolume={music:75,effects:75};
 try {
   const saved=JSON.parse(localStorage.getItem(audioStorage));
-  for (const key of Object.keys(audioOptions)) if (typeof saved?.[key]==="boolean") audioOptions[key]=saved[key];
+  for (const key of Object.keys(audioOptions)) {
+    if (typeof saved?.[key]==="boolean") audioOptions[key]=saved[key];
+    const volume=saved?.volume?.[key];
+    if (Number.isFinite(volume)) audioVolume[key]=Math.min(100,Math.max(0,Math.round(volume)));
+  }
 } catch { /* Audio can run without saved settings. */ }
 
 let gameAudio, musicChannel, effectsChannel, musicBuffer, musicSource;
+let musicRequested=false;
 const chipRate=22050;
 const beat=60/88;
 const bassLine=[45,41,48,43,45,41,50,43,45,41,48,43,45,41,50,43];
@@ -50,7 +56,8 @@ function chipLoop(context) {
   return buffer;
 }
 
-function activateAudio() {
+function activateAudio(startMusic=true) {
+  if (startMusic) musicRequested=true;
   const Audio=window.AudioContext ?? window.webkitAudioContext;
   if (!Audio || (!audioOptions.music && !audioOptions.effects)) return;
   try {
@@ -59,12 +66,12 @@ function activateAudio() {
       musicChannel=gameAudio.createGain();
       effectsChannel=gameAudio.createGain();
       musicChannel.gain.value=0;
-      effectsChannel.gain.value=.22;
+      effectsChannel.gain.value=audioOptions.effects ? audioVolume.effects*.0029 : 0;
       musicChannel.connect(gameAudio.destination);
       effectsChannel.connect(gameAudio.destination);
     }
     if (gameAudio.state!=="running") gameAudio.resume().catch(()=>{});
-    refreshMusic();
+    refreshAudio();
   } catch { /* A device without Web Audio still plays the game. */ }
 }
 
@@ -83,29 +90,36 @@ function note(output,frequency,delay,length,volume,type="square",end=frequency,a
   tone.start(start);
   tone.stop(start+length);
 }
-function refreshMusic() {
+function refreshAudio() {
   if (!gameAudio) return;
-  const enabled=audioOptions.music && !document.hidden;
-  musicChannel.gain.setTargetAtTime(enabled ? .135 : 0,gameAudio.currentTime,.15);
-  if (audioOptions.music && !musicSource) {
+  const time=gameAudio.currentTime;
+  const musicPlaying=musicRequested && audioOptions.music;
+  musicChannel.gain.setTargetAtTime(musicPlaying && !document.hidden ? audioVolume.music*.0018 : 0,time,.08);
+  effectsChannel.gain.setTargetAtTime(audioOptions.effects ? audioVolume.effects*.0029 : 0,time,.02);
+  if (musicPlaying && audioVolume.music>0 && !musicSource) {
     musicBuffer ??= chipLoop(gameAudio);
     musicSource=gameAudio.createBufferSource();
     musicSource.buffer=musicBuffer;
     musicSource.loop=true;
     musicSource.connect(musicChannel);
     musicSource.start();
-  } else if (!audioOptions.music && musicSource) {
-    musicSource.stop(gameAudio.currentTime+.12);
+  } else if (!musicPlaying && musicSource) {
+    musicSource.stop(time+.16);
     musicSource=null;
   }
 }
 function playCue(kind,tier) {
-  if (!gameAudio || !audioOptions.effects || document.hidden || gameAudio.state!=="running") return;
-  if (kind==="find") {
-    note(effectsChannel,190,0,.07,.19,"square",100);
-    note(effectsChannel,136,.08,.09,.14,"square",76);
+  if (!gameAudio || !audioOptions.effects || !audioVolume.effects || document.hidden) return;
+  if (gameAudio.state!=="running" && kind!=="click") return;
+  if (kind==="click") {
+    note(effectsChannel,670,0,.047,.23,"square",465,.003);
+  } else if (kind==="find") {
+    const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const [first,second]=reduced ? [0,.08] : [.288,.72];
+    note(effectsChannel,190,first,.07,.19,"square",100);
+    note(effectsChannel,136,second,.09,.14,"square",76);
     const root=[392,494,587,698,330][tier] ?? 330;
-    [1,1.25,1.5].forEach((ratio,index)=>note(effectsChannel,root*ratio,.13+index*.06,.09,.21-index*.03));
+    [1,1.25,1.5].forEach((ratio,index)=>note(effectsChannel,root*ratio,second+.08+index*.06,.09,.21-index*.03));
   } else if (kind==="finish") {
     [261.63,329.63,392,523.25].forEach((pitch,index)=>note(effectsChannel,pitch,index*.09,index===3 ? .32 : .13,.19));
   } else if (kind==="reject") {
@@ -118,25 +132,57 @@ function playCue(kind,tier) {
     note(effectsChannel,523,.065,.079,.12);
   }
 }
+function saveAudio() {
+  try { localStorage.setItem(audioStorage,JSON.stringify({...audioOptions,volume:audioVolume})); }
+  catch { /* Use current settings if storage is unavailable. */ }
+}
 function showAudioMenu() {
   const controls=element("div","");
   controls.className="audio-options";
   for (const key of Object.keys(audioOptions)) {
-    const label=element("label","");
-    const input=element("input","");
-    input.type="checkbox";
-    input.checked=audioOptions[key];
-    input.onchange=()=>{
-      audioOptions[key]=input.checked;
-      try { localStorage.setItem(audioStorage,JSON.stringify(audioOptions)); } catch { /* Use current settings. */ }
-      if (input.checked) activateAudio();
-      else refreshMusic();
+    const group=element("div","");
+    group.className="audio-channel";
+    const label=element("label",words()[key]);
+    const toggle=element("input","");
+    toggle.type="checkbox";
+    toggle.checked=audioOptions[key];
+    toggle.onchange=()=>{
+      audioOptions[key]=toggle.checked;
+      saveAudio();
+      if (toggle.checked) activateAudio(key==="music");
+      else refreshAudio();
     };
-    label.append(input,element("span",words()[key]));
-    controls.append(label);
+    label.prepend(toggle);
+    const range=element("input","");
+    range.type="range";
+    range.id=`volume-${key}`;
+    range.min="0";
+    range.max="100";
+    range.value=audioVolume[key];
+    range.setAttribute("aria-label",words()[`${key}Volume`]);
+    const value=element("output",`${range.value}%`);
+    value.setAttribute("for",range.id);
+    range.oninput=()=>{
+      audioVolume[key]=Number(range.value);
+      value.value=`${range.value}%`;
+      if (audioOptions[key]) activateAudio(key==="music");
+      else refreshAudio();
+    };
+    range.onchange=()=>{
+      saveAudio();
+      if (key==="effects") playCue("click");
+    };
+    group.append(label,range,value);
+    controls.append(group);
   }
   modal(words().sound,controls);
 }
 function prepareAudio() {
-  document.addEventListener("visibilitychange",refreshMusic);
+  document.addEventListener("visibilitychange",refreshAudio);
+  document.addEventListener("click",event=>{
+    const button=event.target.closest?.("button");
+    if (!button || button.disabled || !audioOptions.effects || !audioVolume.effects) return;
+    activateAudio(false);
+    playCue("click");
+  },{capture:true});
 }
