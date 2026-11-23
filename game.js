@@ -29,7 +29,7 @@ const strings = {
     openRules:"Give a specific name when the question asks for one. A plain category name does not count.",
     moreRules:"You get 30 seconds per question. Some categories can check unfamiliar names in Wikidata.",
     matchIntro:"Play the same eight questions as your friend. Scores appear when both players finish.",
-    matchWait:"Waiting for your friend to finish.", matchJoined:"Your friend has joined.", matchReady:"Invite ready. You can play now.",
+    matchWait:"Waiting for your friend to finish.", matchReady:"Invite ready. You can play now.",
     matchError:"Could not open this duel. Try again.", endlessIntro:"Keep digging as long as you like. Finish the run whenever you’re ready.",
     mineRun:"Endless run", fresh:"New run", previous:"Previous eight-question expedition",
     rules:"How to play", stats:"Stats", archive:"Archive", reset:"New expedition at 00:00 UTC", daily:"Daily expedition",
@@ -46,7 +46,7 @@ const strings = {
     pending:"Loading anonymous picks…", noData:"Too few completed expeditions for anonymous counts. The list shows the quiz’s rarity tiers.",
     surveyError:"Community counts are unavailable. The list shows the quiz’s rarity tiers.",
     surveyData:"Community picks, from least to most selected. Other valid answers are listed below.",
-    community:"Community picks", dictionary:"Answer key by rarity", early:"Previous four-question expedition",
+    community:"Community picks", dictionary:"Examples by rarity", early:"Previous four-question expedition",
     language:"Switch to Russian", menu:"Game menu", tiers:["Pebble","Ore","Relic","Core Gem"],
     categories:{science:"Science",places:"Geography",culture:"Pop culture",variety:"General knowledge"},
     rulesText:["Eight questions, eight stops below ground. Type one answer per question in English or Russian to move down.",
@@ -61,7 +61,7 @@ const strings = {
     openRules:"Если вопрос просит конкретное название, введите имя или модель. Одного названия категории недостаточно.",
     moreRules:"На вопрос даётся 30 секунд. Для части тем незнакомые названия проверяются по Викиданным.",
     matchIntro:"У вас и друга восемь одинаковых вопросов. Счёт соперника откроется, когда оба завершат дуэль.",
-    matchWait:"Ждём, пока друг закончит дуэль.", matchJoined:"Друг присоединился.", matchReady:"Приглашение готово. Можно начинать.",
+    matchWait:"Ждём, пока друг закончит дуэль.", matchReady:"Приглашение готово. Можно начинать.",
     matchError:"Не удалось открыть дуэль. Попробуйте ещё раз.", endlessIntro:"Копайте сколько угодно. Забег можно завершить в любой момент.",
     mineRun:"Бесконечный забег", fresh:"Новый забег", previous:"Прежняя экспедиция из восьми вопросов",
     rules:"Правила", stats:"Статистика", archive:"Архив", reset:"Новый выпуск в 03:00 МСК", daily:"Ежедневная экспедиция",
@@ -78,7 +78,7 @@ const strings = {
     pending:"Загружаем анонимные ответы…", noData:"Пока мало завершённых экспедиций для анонимной сводки. Ниже — ответы по уровням редкости в игре.",
     surveyError:"Сводка игроков недоступна. Ниже — ответы по уровням редкости в игре.",
     surveyData:"Выбор игроков, от самых редких до самых частых. Другие верные ответы указаны ниже.",
-    community:"Выбор игроков", dictionary:"Все ответы по редкости", early:"Прошлая экспедиция из четырёх вопросов",
+    community:"Выбор игроков", dictionary:"Примеры по редкости", early:"Прошлая экспедиция из четырёх вопросов",
     language:"Переключить на английский", menu:"Меню игры", tiers:["Галька","Руда","Реликт","Самоцвет ядра"],
     categories:{science:"Наука",places:"География",culture:"Поп-культура",variety:"Общие знания"},
     rulesText:["Восемь вопросов и восемь остановок под землёй. Введите по одному ответу на русском или английском, чтобы спуститься глубже.",
@@ -218,6 +218,7 @@ function intro(focus = false) {
   const invite = get("invite");
   get("challenge").hidden = route.mode !== "daily" || route.rival === null;
   if (route.mode !== "daily") {
+    get("stage").querySelector("[data-text=daily]").hidden = true;
     get("topic").textContent = ui[route.mode];
     get("pitch").textContent = route.mode === "endless" ? ui.endlessIntro : ui.matchIntro;
     get("lobby-status").textContent = route.mode === "duel" ? ui.matchReady : "";
@@ -529,9 +530,12 @@ function showStats() {
   modal(ui.stats, grid, element("h3", ui.badges), awards);
 }
 function clock() {
+  const countdown = get("countdown");
+  countdown.hidden = route.mode !== "daily";
+  if (countdown.hidden) return;
   const seconds = Math.ceil((DAY - Date.now() % DAY) / 1000);
   const units = [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60];
-  get("countdown").textContent = `${words().nextIn} ${units.map(n => String(n).padStart(2, "0")).join(":")}`;
+  countdown.textContent = `${words().nextIn} ${units.map(n => String(n).padStart(2, "0")).join(":")}`;
 }
 function launch() {
   const params = new URLSearchParams(location.search);
