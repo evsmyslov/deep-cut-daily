@@ -5,44 +5,69 @@ const START = Date.parse(debut) / DAY;
 const scores = [25, 55, 85, 120];
 const colors = ["#b1bba6", "#c58f6f", "#94c1a9", "#eac57f"];
 const marks = ["⬜", "🟫", "🟩", "🟨"];
-const maximum = groups.length * scores.at(-1);
-const storage = "deep-cut-daily-descent";
+const questionsPerRound = 8;
+const maximum = questionsPerRound * scores.at(-1);
+const storage = "deep-cut-daily-shaft";
+const answerService = "https://deep-cut-answer-data.choicehelix2.chatgpt.site";
+const strata = [
+  [0,"Surface","Поверхность"],
+  [8,"Upper crust","Верхняя кора"],
+  [32,"Lower crust","Нижняя кора"],
+  [100,"Upper mantle","Верхняя мантия"],
+  [550,"Mantle transition zone","Переходная зона мантии"],
+  [1700,"Lower mantle","Нижняя мантия"],
+  [2890,"Core–mantle boundary","Граница ядра и мантии"],
+  [4300,"Outer core","Внешнее ядро"],
+  [6371,"Inner core · Earth’s center","Внутреннее ядро · Центр Земли"]
+];
 const strings = {
   en: {
     rules:"How to play", stats:"Stats", archive:"Archive", reset:"New expedition at 00:00 UTC", daily:"Daily expedition",
     hero:"Journey to\nthe Core", pitch:"Find a correct answer most people would overlook. The rarer the find, the deeper you go.",
     challenge:"A friend sent you this expedition.", answerLabel:"Your answer", submit:"Submit", skip:"Skip", finished:"Expedition complete",
     share:"Challenge a friend", todayButton:"Today’s expedition", today:"Today", past:"Archive", nextIn:"Next in", next:"Go deeper", result:"See result",
-    play:"Begin descent", resume:"Resume descent", replay:"See my result", active:"4 questions · Answers in EN or RU",
-    versus:"Friend challenge · Same four questions", placeholder:"Answer in English or Russian…", question:"Question",
+    play:"Begin descent", resume:"Resume descent", replay:"See my result", active:"8 questions · Answers in EN or RU",
+    versus:"Friend challenge · Same eight questions", placeholder:"Answer in English or Russian…", question:"Question",
     wrong:"Answer not found", skipped:"Skipped", sample:"A valid answer", points:"points", target:"Friend’s score",
     won:"You beat their score.", tied:"You tied.", lost:"Your friend wins this one.", copied:"Challenge copied.",
     copy:"Copy your challenge", dare:"Can you find rarer answers?", noPast:"Past expeditions appear here after their daily release.",
     classic:"Classic edition and old results", completed:"Completed", best:"Best score", streak:"Day streak", badges:"Achievements", close:"Close",
+    depth:"Depth", scoreLabel:"Score", km:"km", arrived:"Reached", answerBoard:"Answer survey",
+    pending:"Loading anonymous picks…", noData:"Too few completed expeditions for anonymous counts. The list shows the quiz’s rarity tiers.",
+    surveyError:"Community counts are unavailable. The list shows the quiz’s rarity tiers.",
+    surveyData:"Community picks, from least to most selected. Other valid answers are listed below.",
+    community:"Community picks", dictionary:"Answer key by rarity", early:"Previous four-question expedition",
     language:"Switch to Russian", menu:"Game menu", tiers:["Pebble","Ore","Relic","Core Gem"],
     categories:{science:"Science",places:"Geography",culture:"Pop culture",variety:"General knowledge"},
-    rulesText:["Four prompts, each with more than one correct answer. Write one answer in English or Russian, regardless of your interface language.",
+    rulesText:["Eight questions, eight stops below ground. Type one answer per question in English or Russian to move down.",
       "A find earns 25, 55, 85 or 120 points, based on an editorial estimate of its rarity. Both languages share the same answers and points.",
-      "A new set opens at 00:00 UTC. Everyone gets the same questions. Your progress stays in this browser."],
-    awards:[["First Footstep","Complete an expedition."],["Gem Hunter","Find three Core Gems in one expedition."],["Corebreaker","Earn 480 points in one expedition."]]
+      "A new set opens at 00:00 UTC. Everyone gets the same questions. Your progress stays in this browser.",
+      "After the expedition, accepted choices are counted anonymously. A challenge link shares your score."],
+    awards:[["First Footstep","Complete an expedition."],["Gem Hunter","Find three Core Gems in one expedition."],["Corebreaker","Earn 960 points in one expedition."]]
   },
   ru: {
     rules:"Правила", stats:"Статистика", archive:"Архив", reset:"Новый выпуск в 03:00 МСК", daily:"Ежедневная экспедиция",
     hero:"К центру\nЗемли", pitch:"Найдите верный ответ, который не сразу придёт в голову. Чем реже находка, тем глубже вы спускаетесь.",
     challenge:"Друг отправил вам эту экспедицию.", answerLabel:"Ваш ответ", submit:"Ответить", skip:"Пропустить", finished:"Экспедиция завершена",
     share:"Бросить вызов другу", todayButton:"Сегодняшний выпуск", today:"Сегодня", past:"Архив", nextIn:"До нового", next:"Спуститься глубже", result:"Посмотреть итог",
-    play:"Начать спуск", resume:"Продолжить спуск", replay:"Мой результат", active:"4 вопроса · Ответы на EN или RU",
-    versus:"Вызов друга · Те же четыре вопроса", placeholder:"Ответ на русском или английском…", question:"Вопрос",
+    play:"Начать спуск", resume:"Продолжить спуск", replay:"Мой результат", active:"8 вопросов · Ответы на EN или RU",
+    versus:"Вызов друга · Те же восемь вопросов", placeholder:"Ответ на русском или английском…", question:"Вопрос",
     wrong:"Ответ не найден в словаре", skipped:"Пропуск", sample:"Верный вариант", points:"очков", target:"Счёт друга",
     won:"Вы набрали больше.", tied:"У вас ничья.", lost:"Друг набрал больше.", copied:"Вызов скопирован.",
     copy:"Скопируйте вызов", dare:"Сможешь найти ответы пореже?", noPast:"Здесь появятся выпуски, которые уже вышли.",
     classic:"Классическая версия и прежние результаты", completed:"Пройдено", best:"Рекорд", streak:"Дней подряд", badges:"Достижения", close:"Закрыть",
+    depth:"Глубина", scoreLabel:"Счёт", km:"км", arrived:"Достигнуто", answerBoard:"Ответы игроков",
+    pending:"Загружаем анонимные ответы…", noData:"Пока мало завершённых экспедиций для анонимной сводки. Ниже — ответы по уровням редкости в игре.",
+    surveyError:"Сводка игроков недоступна. Ниже — ответы по уровням редкости в игре.",
+    surveyData:"Выбор игроков, от самых редких до самых частых. Другие верные ответы указаны ниже.",
+    community:"Выбор игроков", dictionary:"Все ответы по редкости", early:"Прошлая экспедиция из четырёх вопросов",
     language:"Переключить на английский", menu:"Меню игры", tiers:["Галька","Руда","Реликт","Самоцвет ядра"],
     categories:{science:"Наука",places:"География",culture:"Поп-культура",variety:"Общие знания"},
-    rulesText:["Четыре вопроса, у каждого несколько верных ответов. Напишите один на русском или английском независимо от языка интерфейса.",
+    rulesText:["Восемь вопросов и восемь остановок под землёй. Введите по одному ответу на русском или английском, чтобы спуститься глубже.",
       "Находка приносит 25, 55, 85 или 120 очков по заранее заданной оценке редкости. Ответы и баллы одинаковы для обоих языков.",
-      "Новый выпуск выходит в 03:00 по Москве. Вопросы у всех одинаковые. Прогресс сохраняется в этом браузере."],
-    awards:[["Первый шаг","Завершить экспедицию."],["Искатель самоцветов","Найти три самоцвета ядра за экспедицию."],["Покоритель ядра","Набрать 480 очков за экспедицию."]]
+      "Новый выпуск выходит в 03:00 по Москве. Вопросы у всех одинаковые. Прогресс сохраняется в этом браузере.",
+      "После экспедиции засчитанные ответы попадают в анонимную сводку. Ссылка-вызов передаёт ваш счёт."],
+    awards:[["Первый шаг","Завершить экспедицию."],["Искатель самоцветов","Найти три самоцвета ядра за экспедицию."],["Покоритель ядра","Набрать 960 очков за экспедицию."]]
   }
 };
 const get = id => document.getElementById(id);
@@ -53,7 +78,8 @@ let lang = navigator.language.startsWith("ru") ? "ru" : "en";
 try {
   const saved = JSON.parse(localStorage.getItem(storage));
   library = saved?.library ?? {};
-  if (strings[saved?.lang]) lang = saved.lang;
+  const preference = saved?.lang ?? JSON.parse(localStorage.getItem("deep-cut-daily-descent"))?.lang;
+  if (strings[preference]) lang = preference;
 } catch { /* Play remains available without storage. */ }
 const words = () => strings[lang];
 const displayDate = day => new Intl.DateTimeFormat(lang, { timeZone:"UTC", day:"numeric", month:"short", year:"numeric" }).format(day * DAY);
@@ -77,8 +103,44 @@ function readRoute() {
   const rival = /^\d{1,3}$/.test(scoreText) && Number(scoreText) <= maximum ? Number(scoreText) : null;
   return { day: valid ? date : today(), fixed: valid, rival: valid ? rival : null };
 }
-function questionAt(index) {
-  return questionFor(route.day - START, index, groups[index][1]);
+function questionAt(index, day = route.day) {
+  return shaftQuestion(day - START, index);
+}
+const layerName = stop => strata[stop][lang === "ru" ? 2 : 1];
+
+let rideTimer;
+function setWorld(stop, points = 0, animate = false) {
+  const machine = get("machine");
+  const progress = get("progress");
+  machine.style.setProperty("--stop", stop);
+  machine.dataset.stop = stop;
+  get("depth").textContent = `${strata[stop][0].toLocaleString(lang)} ${words().km}`;
+  get("hud-score").textContent = points;
+  get("hud-step").textContent = layerName(stop);
+  [...progress.children].forEach((bar, i) => bar.classList.toggle("active", i < stop));
+  [...get("depth-map").children].forEach((dot, i) => {
+    dot.title = `${layerName(i)} · ${strata[i][0]} ${words().km}`;
+    dot.classList.toggle("active", i === stop);
+    dot.classList.toggle("reached", i < stop);
+    if (i === stop) dot.setAttribute("aria-current", "step");
+    else dot.removeAttribute("aria-current");
+  });
+  if (animate) {
+    get("miner").classList.add("moving");
+    clearTimeout(rideTimer);
+    rideTimer = setTimeout(() => get("miner").classList.remove("moving"), 950);
+  }
+}
+
+function mountWorld() {
+  strata.forEach((_, index) => {
+    const layer = element("div", "");
+    layer.className = "world-layer";
+    layer.style.backgroundImage = `url("art/shaft/${index}.png")`;
+    get("world-track").append(layer);
+    get("depth-map").append(element("span", ""));
+    if (index > 0) get("progress").append(element("i", ""));
+  });
 }
 function element(name, text) {
   const el = document.createElement(name);
@@ -115,6 +177,7 @@ function swap(id) {
 }
 function intro(focus = false) {
   swap("intro");
+  setWorld(0);
   get("challenge").hidden = route.rival === null;
   const existing = library[route.day];
   get("start").textContent = existing?.done ? words().replay : existing ? words().resume : words().play;
@@ -131,11 +194,9 @@ function question(draft = "", focus = true) {
   const index = round.answers.length - Number(round.feedback);
   const model = questionAt(index);
   const ui = words();
-  get("level").textContent = `${ui.question} ${index + 1} / ${groups.length}`;
-  get("round-score").textContent = `${score(round)} / ${maximum}`;
-  get("category").textContent = ui.categories[model.category];
+  setWorld(round.answers.length, score(round));
+  get("category").textContent = `${ui.question} ${index + 1} / ${questionsPerRound} · ${ui.categories[model.category]}`;
   get("prompt").textContent = model.prompt[lang === "en" ? 0 : 1];
-  [...get("progress").children].forEach((bar, n) => bar.classList.toggle("active", n <= index));
   get("answer").placeholder = ui.placeholder;
   get("answer").value = draft;
   function settle(text) {
@@ -144,6 +205,7 @@ function question(draft = "", focus = true) {
     round.answers.push({ text, id: entry?.id ?? null, tier: entry?.tier ?? -1 });
     round.feedback = true;
     save();
+    setWorld(round.answers.length, score(round), true);
     reveal(true);
   }
   get("answer-form").onsubmit = event => {
@@ -154,7 +216,7 @@ function question(draft = "", focus = true) {
   get("skip").onclick = () => settle("");
   get("next").onclick = () => {
     round.feedback = false;
-    round.done = round.answers.length === groups.length;
+    round.done = round.answers.length === questionsPerRound;
     save();
     if (round.done) results();
     else question();
@@ -169,8 +231,8 @@ function question(draft = "", focus = true) {
       ? `${found[lang]} · ${ui.tiers[answer.tier]} · +${pointsFor(answer)}`
       : answer.text ? ui.wrong : ui.skipped;
     get("sample").textContent = found ? "" : `${ui.sample} · ${model.entries[0][lang]}`;
-    get("round-score").textContent = `${score(round)} / ${maximum}`;
-    get("next").textContent = index === groups.length - 1 ? ui.result : ui.next;
+    get("arrival").textContent = `${ui.arrived} · ${layerName(index + 1)}`;
+    get("next").textContent = index === questionsPerRound - 1 ? ui.result : ui.next;
     if (moveFocus) get("next").focus({ preventScroll:true });
   }
   if (round.feedback) reveal(focus);
@@ -187,6 +249,7 @@ function results(focus = true) {
   const ui = words();
   const points = score(round);
   get("finished-topic").textContent = displayDate(route.day);
+  setWorld(questionsPerRound, points);
   get("total").textContent = `${points} / ${maximum} ${ui.points}`;
   get("badge").textContent = earned([round]).flatMap((unlocked, index) => unlocked ? [ui.awards[index][0]] : []).at(-1);
   get("comparison").hidden = route.rival === null;
@@ -200,12 +263,13 @@ function results(focus = true) {
     row.append(element("span", name), element("strong", `+${pointsFor(answer)}`));
     get("recap").append(row);
   });
+  showAnswerSurvey();
   get("today").onclick = () => openEdition();
   get("share").onclick = () => {
     const url = new URL(location.href);
     url.search = "";
     url.hash = "";
-    url.searchParams.set("mode", "descent");
+    url.searchParams.set("mode", "shaft");
     url.searchParams.set("edition", iso(route.day));
     url.searchParams.set("score", points);
     const card = round.answers.map(answer => marks[answer.tier] ?? "⬛").join("");
@@ -217,12 +281,65 @@ function results(focus = true) {
     title.focus({ preventScroll:true });
   }
 }
+const surveyRequests = new Map();
+function surveyFor(day, answers) {
+  if (!surveyRequests.has(day)) {
+    const browser = localStorage.getItem(`${storage}-anonymous`) || crypto.randomUUID();
+    localStorage.setItem(`${storage}-anonymous`, browser);
+    const body = { edition: iso(day), browser, picks: answers.map(answer => answer.id) };
+    const request = fetch(`${answerService}/answers`, {
+      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body),
+      signal:AbortSignal.timeout(6500)
+    }).then(response => {
+      if (!response.ok) throw new Error("Answer counts unavailable");
+      return response.json();
+    }).catch(() => null).finally(() => surveyRequests.delete(day));
+    surveyRequests.set(day, request);
+  }
+  return surveyRequests.get(day);
+}
+
+async function showAnswerSurvey() {
+  const board = get("answer-board");
+  const status = get("answer-source");
+  const day = route.day;
+  let survey;
+  status.textContent = words().pending;
+  try { survey = await surveyFor(day, round.answers); } catch { survey = null; }
+  if (!board.isConnected) return;
+  const ui = words();
+  const counts = survey && Array.isArray(survey.counts) ? survey.counts : null;
+  status.textContent = counts ? ui.surveyData : survey ? ui.noData : ui.surveyError;
+  for (let index = 0; index < questionsPerRound; index++) {
+    const question = questionAt(index, day);
+    const countsById = new Map((counts?.[index] ?? []).map(([id, count]) => [id, count]));
+    const choices = [...question.entries].sort((a, b) => b.tier - a.tier);
+    const picked = choices.filter(entry => countsById.has(entry.id))
+      .sort((a, b) => countsById.get(a.id) - countsById.get(b.id));
+    const details = element("details", "");
+    details.open = index === 0;
+    const prompt = question.prompt[lang === "ru" ? 1 : 0];
+    details.append(element("summary", `${index + 1}. ${prompt}`));
+    if (picked.length) {
+      const observed = element("ul", "");
+      for (const entry of picked) {
+        observed.append(element("li", `${entry[lang]} · ${countsById.get(entry.id)} / ${survey.rounds}`));
+      }
+      details.append(element("small", ui.community), observed);
+    }
+    const list = element("ul", "");
+    for (const entry of choices) list.append(element("li", `${entry[lang]} · ${ui.tiers[entry.tier]} · +${scores[entry.tier]}`));
+    details.append(element("small", ui.dictionary), list);
+    board.append(details);
+  }
+}
+
 function openEdition(day) {
   const url = new URL(location.href);
   url.search = "";
   url.hash = "";
   if (day !== undefined) {
-    url.searchParams.set("mode", "descent");
+    url.searchParams.set("mode", "shaft");
     url.searchParams.set("edition", iso(day));
   }
   history.pushState(null, "", url);
@@ -277,11 +394,14 @@ function clock() {
 }
 function launch() {
   const params = new URLSearchParams(location.search);
-  if (params.has("edition") && !params.has("mode")) {
-    location.replace(new URL(`classic/${location.search}`, location.href));
+  const mode = params.get("mode");
+  if (mode === "descent" || (params.has("edition") && !mode)) {
+    const archive = mode === "descent" ? "expedition" : "classic";
+    location.replace(new URL(`${archive}/${location.search}`, location.href));
     return;
   }
   route = readRoute();
+  mountWorld();
   get("home").onclick = event => { event.preventDefault(); openEdition(); };
   get("rules").onclick = () => modal(words().rules, ...words().rulesText.map(text => element("p", text)));
   get("stats").onclick = showStats;
@@ -298,7 +418,10 @@ function launch() {
     const classic = element("a", ui.classic);
     classic.href = "classic/";
     classic.className = "classic-link";
-    modal(ui.archive, list.childElementCount ? list : element("p", ui.noPast), classic);
+    const earlier = element("a", ui.early);
+    earlier.href = "expedition/";
+    earlier.className = "classic-link";
+    modal(ui.archive, list.childElementCount ? list : element("p", ui.noPast), earlier, element("br", ""), classic);
   };
   get("lang").onclick = () => {
     const draft = get("answer")?.value ?? "";

@@ -103,10 +103,7 @@ function keyFor(text) {
     .replace(/\p{Script=Latin}/gu, letter => letter.normalize("NFD").replace(/\p{M}/gu, ""))
     .replace(/['’]/g, "").replace(/&/g, " and ").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
-function questionFor(offset, group, bank) {
-  const week = Math.floor(offset / bank.length);
-  const index = (offset + week * group * group) % bank.length;
-  const [prompt, rows] = bank[index];
+function makeQuestion(prompt, rows, group) {
   const answers = new Map();
   const entries = rows.map(([tier, en, ru], id) => {
     const entry = { id, tier, en: en.split("|")[0], ru: ru.split("|")[0] };
@@ -114,4 +111,72 @@ function questionFor(offset, group, bank) {
     return entry;
   });
   return { prompt, entries, answers, category: groups[group][0] };
+}
+
+const newQuestions = [
+  [
+    [["Name one of the four fundamental interactions in physics.", "Назовите одно из четырёх фундаментальных взаимодействий в физике."], [
+      [0,"gravity|gravitation","гравитация|гравитационное взаимодействие"],[1,"electromagnetism|electromagnetic force|electromagnetic interaction","электромагнетизм|электромагнитное взаимодействие"],[2,"strong interaction|strong force|strong nuclear force","сильное взаимодействие|сильное ядерное взаимодействие"],[3,"weak interaction|weak force|weak nuclear force","слабое взаимодействие|слабое ядерное взаимодействие"]
+    ]],
+    [["Name a layer in the four-part model of Earth: the crust, a middle layer, and two core layers.", "Назовите слой Земли в модели из четырёх частей: кора, промежуточный слой и два слоя ядра."], [
+      [0,"crust|earths crust","кора|земная кора"],[1,"mantle","мантия"],[2,"outer core","внешнее ядро|наружное ядро"],[3,"inner core","внутреннее ядро"]
+    ]],
+    [["Name one of the four teeth types in an adult human mouth.", "Назовите один из четырёх типов зубов у взрослого человека."], [
+      [0,"canine|canines|canine tooth","клык|клыки"],[1,"incisor|incisors","резец|резцы"],[2,"molar|molars","моляр|моляры|коренной зуб"],[3,"premolar|premolars|bicuspid|bicuspids","премоляр|премоляры|малый коренной зуб"]
+    ]],
+    [["Name one of the first four chemical elements by atomic number.", "Назовите один из первых четырёх химических элементов по атомному номеру."], [
+      [0,"hydrogen|h","водород"],[1,"helium|he","гелий"],[2,"lithium|li","литий"],[3,"beryllium|be","бериллий"]
+    ]]
+  ],
+  [
+    [["Name one of the four constituent countries of the United Kingdom.", "Назовите одну из четырёх частей Соединённого Королевства."], [
+      [0,"England","Англия"],[1,"Scotland","Шотландия"],[2,"Wales","Уэльс"],[3,"Northern Ireland","Северная Ирландия"]
+    ]],
+    [["Name one of the five Great Lakes of North America.", "Назовите одно из пяти Великих озёр Северной Америки."], [
+      [0,"Superior|lake superior","Верхнее|озеро Верхнее"],[1,"Michigan|lake michigan","Мичиган|озеро Мичиган"],[1,"Ontario|lake ontario","Онтарио|озеро Онтарио"],[2,"Erie|lake erie","Эри|озеро Эри"],[3,"Huron|lake huron","Гурон|озеро Гурон"]
+    ]],
+    [["Name one of the five capitals of the sovereign Nordic countries, excluding Copenhagen.", "Назовите одну из пяти столиц стран Северной Европы (Nordic countries), исключая Копенгаген."], [
+      [0,"Stockholm","Стокгольм"],[1,"Oslo","Осло"],[2,"Helsinki","Хельсинки"],[3,"Reykjavik|reykjavík","Рейкьявик|Рейкявик"]
+    ]],
+    [["Name one of Switzerland’s four national languages.", "Назовите один из четырёх национальных языков Швейцарии."], [
+      [0,"German|deutsch","немецкий|немецкий язык"],[1,"French|français","французский|французский язык"],[2,"Italian|italiano","итальянский|итальянский язык"],[3,"Romansh|rumantsch|romanche","ретороманский|романшский|романшский язык"]
+    ]]
+  ],
+  [
+    [["Name one of the four main friends in the original Scooby-Doo gang besides Scooby.", "Назовите одного из четырёх друзей Скуби-Ду в оригинальной команде."], [
+      [0,"Shaggy|shaggy rogers|norville rogers","Шегги|Шэгги|Шегги Роджерс"],[1,"Velma|velma dinkley","Велма|Велма Динкли"],[2,"Daphne|daphne blake","Дафна|Дафна Блейк"],[3,"Fred|fred jones","Фред|Фред Джонс"]
+    ]],
+    [["Name one of the four members of ABBA.", "Назовите одного из четырёх участников ABBA."], [
+      [0,"Agnetha Fältskog|agnetha|agneta faltskog","Агнета Фельтског|Агнета"],[1,"Björn Ulvaeus|björn","Бьорн Ульвеус|Бьёрн Ульвеус|Бьёрн"],[2,"Benny Andersson|benny","Бенни Андерссон|Бенни Андерсон|Бенни"],[3,"Anni-Frid Lyngstad|anni frid|frida","Анни-Фрид Лингстад|Анни-Фрид Люнгстад|Фрида"]
+    ]],
+    [["Name one of the four people who directed a film in the eight Harry Potter theatrical films from 2001 to 2011.", "Назовите одного из четырёх режиссёров восьми фильмов о Гарри Поттере 2001–2011 годов."], [
+      [0,"Chris Columbus|columbus","Крис Коламбус|Коламбус"],[1,"Alfonso Cuarón|alfonso cuaron|cuaron","Альфонсо Куарон|Куарон"],[2,"David Yates|yates","Дэвид Йейтс|Йейтс|Дэвид Ейтс"],[3,"Mike Newell|newell","Майк Ньюэлл|Ньюэлл"]
+    ]],
+    [["Name one of the four seasons of Vivaldi’s set of violin concertos commonly known as The Four Seasons.", "Назовите одно из четырёх времён года, давших названия скрипичным концертам Вивальди из цикла «Времена года»."], [
+      [0,"spring|la primavera","весна"],[1,"winter|linverno","зима"],[2,"summer|lestate","лето"],[3,"autumn|fall|lautunno","осень"]
+    ]]
+  ],
+  [
+    [["Name one of the four competitive swimming strokes used in the individual medley.", "Назовите один из четырёх стилей, используемых в индивидуальном комплексном плавании."], [
+      [0,"freestyle|front crawl|crawl","вольный стиль|кроль|кроль на груди"],[1,"breaststroke","брасс"],[2,"backstroke","на спине|кроль на спине|плавание на спине"],[3,"butterfly","баттерфляй|дельфин"]
+    ]],
+    [["Name one of the four main operations in elementary arithmetic.", "Назовите одно из четырёх основных арифметических действий."], [
+      [0,"addition|add|plus","сложение|плюс"],[1,"multiplication|multiply|times","умножение"],[2,"subtraction|subtract|minus","вычитание|минус"],[3,"division|divide","деление"]
+    ]],
+    [["Name one of the four strokes in a four-stroke internal combustion engine cycle.", "Назовите один из четырёх тактов четырёхтактного двигателя внутреннего сгорания."], [
+      [0,"compression|compression stroke","сжатие|такт сжатия"],[1,"intake|induction|suction|intake stroke","впуск|всасывание|такт впуска"],[2,"exhaust|exhaust stroke","выпуск|выхлоп|такт выпуска"],[3,"power|combustion|expansion|power stroke","рабочий ход|расширение|сгорание"]
+    ]],
+    [["Name one of the first four months of the French Republican calendar, in French or transliteration.", "Назовите один из первых четырёх месяцев Французского республиканского календаря."], [
+      [0,"vendémiaire","вандемьер"],[1,"brumaire","брюмер"],[2,"frimaire","фример"],[3,"nivôse","нивоз"]
+    ]]
+  ]
+];
+const shaftGroups = groups.map(([, bank], index) => [...bank, ...newQuestions[index]]);
+function shaftQuestion(day, index) {
+  const group = index % groups.length;
+  const bank = shaftGroups[group];
+  const lap = Math.floor((day * 2) / bank.length);
+  const offset = day * 2 + Math.floor(index / groups.length) + lap * group * group;
+  const [prompt, rows] = bank[offset % bank.length];
+  return makeQuestion(prompt, rows, group);
 }

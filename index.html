@@ -21,14 +21,27 @@
 </div></header>
 <main class="shell">
   <div class="daily-bar"><p><span class="live" aria-hidden="true"></span><span id="edition"></span></p><button id="archive" data-text="archive"></button></div>
-  <section class="machine" id="machine"><div id="stage"></div><div class="machine-footer"><span id="footer-mode"></span><span id="countdown"></span></div></section>
+  <section class="machine" id="machine">
+    <div class="world" aria-hidden="true">
+      <div class="world-track" id="world-track"></div>
+      <div class="world-shade"></div>
+      <div class="miner" id="miner"><img src="art/shaft/miner.png" alt="" width="76" height="76"></div>
+    </div>
+    <div class="mission-hud">
+      <div class="readout"><span data-text="depth"></span><strong id="depth" aria-live="polite"></strong></div>
+      <div class="readout hud-progress"><span id="hud-step"></span><div class="progress" id="progress" aria-hidden="true"></div></div>
+      <div class="readout hud-score"><span data-text="scoreLabel"></span><strong id="hud-score"></strong></div>
+    </div>
+    <div class="depth-map" id="depth-map"></div>
+    <div id="stage"></div>
+    <div class="machine-footer"><span id="footer-mode"></span><span id="countdown"></span></div>
+  </section>
   <section class="levels" id="levels"></section>
 </main>
 <footer class="bottom shell"><span>DEEP CUT DAILY</span><span data-text="reset"></span></footer>
 <dialog id="modal" aria-labelledby="modal-title"><div class="dialog-head"><h2 id="modal-title"></h2><form method="dialog"><button id="close" aria-label="Close dialog">×</button></form></div><div id="modal-content"></div></dialog>
 <template id="intro">
   <div class="intro">
-    <div class="intro-art" aria-hidden="true"></div>
     <div class="intro-content">
       <p class="label" data-text="daily"></p>
       <h1 id="topic" data-text="hero"></h1>
@@ -40,13 +53,11 @@
 </template>
 <template id="question">
   <section class="round">
-    <div class="round-meta"><p class="label" id="level"></p><p id="round-score"></p></div>
-    <div class="progress" id="progress" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
     <p class="category label" id="category"></p>
     <h1 id="prompt"></h1>
     <form id="answer-form"><label class="sr-only" for="answer" data-text="answerLabel"></label><input id="answer" maxlength="100" autocomplete="off" required><button class="primary" data-text="submit"></button></form>
     <button class="quiet" id="skip" data-text="skip"></button>
-    <div id="feedback" hidden><p id="verdict" role="status"></p><p id="sample"></p><button class="primary" id="next"></button></div>
+    <div id="feedback" hidden><p id="verdict" role="status"></p><p id="sample"></p><p class="arrival" id="arrival"></p><button class="primary" id="next"></button></div>
   </section>
 </template>
 <template id="results">
@@ -59,6 +70,11 @@
     <ol id="recap"></ol>
     <div class="actions"><button class="primary" id="share" data-text="share"></button><button class="quiet" id="today" data-text="todayButton"></button></div>
     <p id="share-status" role="status"></p>
+    <section class="answer-survey">
+      <h2 data-text="answerBoard"></h2>
+      <p id="answer-source" role="status"></p>
+      <div id="answer-board"></div>
+    </section>
   </section>
 </template>
 </body>
