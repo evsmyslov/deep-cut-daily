@@ -1,15 +1,15 @@
 # Deep Cut Daily
 
-Three open-answer questions on one topic, with a new edition at 00:00 UTC. Answers become more demanding and worth more points as the round progresses. Taking a hint costs one point. The challenge link reopens the same edition and reveals the friend’s target score after the round.
+A bilingual daily quiz set on a journey to the center of Earth. Four prompts on different topics open at 00:00 UTC. Each prompt has several valid concepts. English and Russian aliases map to the same concept, earning 25, 55, 85, or 120 points according to an editorial rarity tier. The starting bank contains 28 prompts, which rotate through daily sets.
 
-The initial slate contains 14 editions. It loops after the first two weeks. To add a new edition before the loop, append it to `episodes.js`. Keep the dates of already published editions stable so their challenge links keep working. After the first loop begins, preserve the mappings for those dates before changing the schedule. Scores live in the browser and challenge URLs are for friendly play.
+Progress, language, and achievements are stored locally in the browser. Challenge links open the same date for the recipient and show the target score after the round. The classic edition remains at `classic/` for older challenges and scores.
 
 ## Run locally
 
-Open `index.html` in a browser. For an HTTP preview with working clipboard support on localhost, run `python -m http.server 8000` in the repository root and open `http://localhost:8000/`.
+Open `index.html` in a browser. For an HTTP preview with clipboard support on localhost, run `python -m http.server 8000` from this directory.
 
 ## GitHub Pages
 
-Publish the root of the `main` branch under Settings, then Pages, then Deploy from a branch. There is no build step. Relative paths let the site run at a GitHub project URL.
+Publish the root of `main` using **Settings → Pages → Deploy from a branch**. No build step is needed.
 
 [GitHub Pages publishing settings](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)

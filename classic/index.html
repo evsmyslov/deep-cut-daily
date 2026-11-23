@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#171922">
+<meta name="description" content="One topic. Three answers. A daily pop culture quiz.">
+<title>Deep Cut Daily</title>
+<link rel="icon" href="art/mark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Pixelify+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script defer src="episodes.js"></script>
+<script defer src="game.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="shell top-inner">
+    <a id="home" class="brand" href="./"><img src="art/mark.png" width="28" height="28" alt=""> DEEP CUT<span>DAILY</span></a>
+    <nav aria-label="Game menu"><button id="rules">How to play</button><button id="stats">Stats</button></nav>
+  </div>
+</header>
+<main class="shell">
+  <div class="daily-bar"><p><span class="live" aria-hidden="true"></span><span id="edition"></span></p><button id="archive">Past editions</button></div>
+  <section class="machine" aria-label="Daily quiz"><div id="stage"></div>
+    <div class="machine-footer"><span id="footer-mode">3 questions · Play at your own pace</span><span id="countdown"></span></div>
+  </section>
+</main>
+<footer class="bottom shell"><a href="../">Current expedition</a><span>New edition at 00:00 UTC</span></footer>
+<dialog id="modal" aria-labelledby="modal-title"><div class="dialog-head"><h2 id="modal-title"></h2><form method="dialog"><button aria-label="Close dialog">×</button></form></div><div id="modal-content"></div></dialog>
+<template id="intro">
+  <div class="intro">
+    <div class="intro-art" aria-hidden="true"></div>
+    <div class="intro-content">
+      <p class="label" id="category"></p>
+      <h1 id="topic"></h1>
+      <p id="pitch"></p>
+      <p id="challenge" class="challenge" hidden></p>
+      <button id="start" class="primary"></button>
+    </div>
+  </div>
+</template>
+<template id="question">
+  <section class="round">
+    <div class="round-meta"><p class="label" id="level"></p><p id="round-score"></p></div>
+    <div class="progress" id="progress" aria-hidden="true"><i></i><i></i><i></i></div>
+    <h1 id="prompt"></h1>
+    <p id="hint-line" role="status" hidden></p>
+    <form id="answer-form"><label class="sr-only" for="answer">Your answer</label><input id="answer" maxlength="100" placeholder="Type your answer…" autocomplete="off" required><button class="primary">Submit</button></form>
+    <div class="actions" id="question-actions"><button class="quiet" id="hint">Show hint <span>−1 pt</span></button><button class="quiet" id="skip">Skip</button></div>
+    <div id="feedback" hidden><p id="verdict" role="status"></p><p id="fact"></p><button class="primary" id="next">Next question</button></div>
+  </section>
+</template>
+<template id="results">
+  <section class="round results">
+    <p class="label" id="finished-topic"></p>
+    <h1>End of the reel.</h1>
+    <p class="score" id="total"></p>
+    <p id="comparison" hidden></p>
+    <ol id="recap"></ol>
+    <div class="actions"><button class="primary" id="share">Challenge a friend</button><button class="quiet" id="today">Today’s edition</button></div>
+    <p id="share-status" role="status"></p>
+  </section>
+</template>
+</body>
+</html>
