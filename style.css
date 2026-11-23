@@ -102,7 +102,7 @@ main{padding-top:24px}
 .world-layer{background-position:center;background-size:100% 100%;image-rendering:pixelated}
 .world-shade{background:linear-gradient(90deg,#0a1419a8 0%,transparent 16%,transparent 32%,#101b2290 48%,#111b22d9 61%,#111b22ed 100%),linear-gradient(180deg,#0a141b8a,transparent 24%,transparent 80%,#09141bdb)}
 .miner{position:absolute;left:26.7%;top:56%;transform:translate(-50%,-50%);width:76px;height:76px;transition:top .7s;z-index:1}
-.machine[data-stop="0"] .miner{top:65%}
+.machine[data-depth="0"] .miner{top:65%}
 .miner img{display:block;width:100%;height:100%;image-rendering:pixelated;position:relative;z-index:1}
 .miner::before{content:"";position:absolute;width:140px;height:100px;left:49px;top:-24px;background:linear-gradient(90deg,#f6cd7261,transparent);clip-path:polygon(0 50%,100% 5%,100% 95%);opacity:.75}
 .miner.moving img{animation:ride 940ms ease-out}
@@ -166,7 +166,7 @@ main.shell{width:100%;padding-top:14px}
 .mission-hud{width:min(1050px,88%);justify-self:center;padding:20px 0 0}
 .depth-map{left:auto;right:max(12px,4.5vw)}
 .miner{left:26.7%;top:53%;width:clamp(66px,8vw,126px);height:clamp(66px,8vw,126px)}
-.machine[data-stop="0"] .miner{top:64%}
+.machine[data-depth="0"] .miner{top:64%}
 .miner .pickaxe{position:absolute;top:47%;left:69%;width:45%;height:45%;z-index:3;transform:rotate(26deg);transform-origin:19% 78%}
 .miner.moving .pickaxe{animation:swing 330ms ease-in-out 3}
 .miner .chips{position:absolute;z-index:2;width:5px;height:5px;top:82%;left:76%;background:#e6b682;opacity:0;box-shadow:11px 9px #af8667,18px 4px #d2a374,-6px -4px #f2c886}
@@ -205,3 +205,25 @@ main.shell{width:100%;padding-top:14px}
  #answer-form button{padding-inline:8px}
 }
 @media(prefers-reduced-motion:reduce){.miner.moving .pickaxe,.miner.moving .chips{animation:none}}
+
+/* Keep the geology at a fixed scale while players expand the recap. */
+.machine:has(.results) {
+  height: max(610px, calc(100svh - 133px));
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+#stage:has(.results) {
+  min-height: 0;
+  align-self: stretch;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+}
+#stage:has(.results) #recap { max-height: none; overflow: visible; }
+.levels { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 730px) {
+  .machine:has(.results) { height: max(620px, calc(100svh - 120px)); }
+}
+@media (max-width: 630px) {
+  .levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tier:nth-child(5) { border-left: 0; }
+}

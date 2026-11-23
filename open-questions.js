@@ -6,15 +6,22 @@ function answerKey(text) {
     .replace(/['’]/g,"").replace(/&/g," and ").replace(/[^\p{L}\p{N}]+/gu," ").trim();
 }
 
-function add(id, en, ru, source, lookup = null) {
-  const rows = source.trim().split("\n").map(row => {
+const MINE_SCORES = [25,55,85,120,10];
+
+function answerRows(source) {
+  return source.trim().split("\n").map(row => {
     const [tier, en, ru] = row.trim().split(";");
     return [Number(tier), en, ru];
   });
-  catalog[id] = [en, ru, rows, lookup];
+}
+function add(id, en, ru, source, lookup = null) {
+  catalog[id] = [en,ru,answerRows(source),lookup];
+}
+function extend(id, source) {
+  catalog[id][2].push(...answerRows(source));
 }
 
-add("weapons", "Name a specific fictional weapon. Give its name or model.", "Назовите конкретное вымышленное оружие. Укажите его имя или модель.", `
+add("weapons", "Name a specific fictional weapon.", "Назовите конкретное вымышленное оружие.", `
 0;Elder Wand|Deathstick|Wand of Destiny;Бузинная палочка|Смертоносная палочка|Палочка Судьбы
 0;Excalibur;Экскалибур|Эскалибур
 0;Mjolnir|Mjölnir|Thors hammer;Мьёльнир|Молот Тора
@@ -413,18 +420,309 @@ add("islands","Name an island.","Назовите остров.",`
 3;Novaya Zemlya Severny Island|Severny Island;Северный остров Новой Земли
 `, [["Q23442"],["island","остров"],["archipelago","архипелаг","fictional","вымышлен","island country","островное государство"]]);
 
+const firstDeck = Object.keys(catalog);
+
+extend("weapons", `
+4;Magic wand|Wand|Wizard wand|Sorcerer's wand;Волшебная палочка|Магическая палочка|Палочка волшебника|Палочка
+4;Lightsaber|Laser sword|Light saber;Световой меч|Лазерный меч|Лайтсейбер
+4;Magic sword|Enchanted sword;Волшебный меч|Магический меч|Зачарованный меч
+4;Ray gun|Laser blaster|Energy blaster;Лучевая пушка|Лучемёт|Лазерный бластер|Бластер
+1;Ebony Blade (Marvel)|Ebony Blade Marvel|Marvel's Ebony Blade;Эбонитовый клинок Marvel|Эбонитовый клинок Чёрного рыцаря
+2;Phaser Type II|Type 2 Phaser|Type-II Phaser;Фазер второго типа|Фазер тип 2
+2;Noisy Cricket;Шумный сверчок
+2;Longclaw;Длинный коготь
+2;Ice|Ned Stark's Ice;Лёд Неда Старка|Меч Лёд
+2;Needle|Arya's Needle;Игла Арьи|Меч Игла
+2;Oathkeeper;Верный клятве|Клятвохранитель
+2;Widow's Wail;Плач вдовы|Вдовий плач
+2;Windshear;Порыв ветра|Сдвиг ветра
+3;The Sword of Omens|Sword of Omens;Меч Предзнаменований
+3;Sakabatō|Sakabato|Kenshin's reverse-blade sword;Сакабато Химуры Кэнсина|Меч Кэнсина с обратным лезвием
+3;Dragnipur;Драгнипур
+3;Callandor;Калландор
+3;Sword of Truth;Меч Истины
+3;Dyrnwyn;Дирнвин
+3;Caladbolg|Caladbolg of Fergus;Каладболг
+3;Fragarach;Фрагарах
+`);
+extend("myth", `
+0;Ares;Арес|Арей
+0;Hermes;Гермес|Эрмий
+0;Dionysus|Dionysos;Дионис|Дионисий
+1;Demeter;Деметра
+1;Persephone|Kore;Персефона|Кора
+1;Eros;Эрос|Эрот
+1;Hebe;Геба
+1;Nike;Ника|Нике
+1;Pan;Пан
+2;Iris;Ирида|Ирис
+2;Eos;Эос
+2;Helios;Гелиос
+2;Selene;Селена
+2;Hypnos;Гипнос
+2;Thanatos;Танатос|Фанатос
+2;Tyche;Тюхе|Тихе
+2;Heros Heracles|Heracles|Herakles|Hercules;Геракл|Геркулес
+2;Morpheus;Морфей
+2;Nyx;Никта|Никс|Нюкта
+2;Gaia|Gaea|Ge;Гея|Гайя
+2;Cronus|Kronos;Кронос|Крон
+2;Rhea;Рея
+2;Prometheus;Прометей
+2;Atlas;Атлант|Атлас
+2;Triton;Тритон
+3;Erebus;Эреб|Эребос
+3;Proteus;Протей
+3;Nereus;Нерей
+3;Amphitrite;Амфитрита
+3;Achelous|Acheloos;Ахелой
+3;Astraea|Astraia;Астрея
+3;Asteria;Астерия
+3;Eileithyia|Ilithyia;Илифия|Эйлейтия
+3;Mnemosyne;Мнемосина
+3;Hygieia|Hygeia;Гигиея|Гигия
+3;Enyo;Энио|Эньо
+3;Eris;Эрида|Эрис
+3;Phobos;Фобос
+3;Deimos;Деймос|Дэймос
+3;Plutus|Ploutos;Плутос
+3;Momos|Momus;Мом|Момус
+`);
+extend("lens", `
+1;smartphone camera|phone camera;Камера телефона|Камера смартфона
+2;dashcam|dash cam;Видеорегистратор
+2;webcam|web camera;Веб-камера
+2;security camera|CCTV camera;Камера видеонаблюдения
+2;film enlarger|enlarger;Фотоувеличитель
+3;optical comparator;Оптический компаратор
+3;autorefractor;Авторефрактометр
+3;slit lamp;Щелевая лампа
+3;light field camera;Камера светового поля
+3;Schmidt corrector plate;Коррекционная пластина Шмидта
+`);
+add("herbs","Name an herb used in cooking.","Назовите траву, которую используют в кулинарии.",`
+0;basil;базилик
+0;dill;укроп
+0;parsley;петрушка
+0;mint;мята
+1;thyme;тимьян|чабрец
+1;rosemary;розмарин
+1;oregano|wild marjoram;орегано|душица
+1;cilantro|coriander leaves;кинза|листья кориандра
+1;sage;шалфей
+2;tarragon;эстрагон|тархун
+2;sorrel;щавель
+2;marjoram|sweet marjoram;майоран
+2;chives;шнитт-лук|лук-резанец
+3;lovage;любисток
+3;chervil;кервель
+3;culantro|long coriander;кулантро|эрингиум пахучий
+3;shiso|perilla;сисо|шисо|перилла
+3;epazote;эпасот|эпазоте
+3;summer savory|savory;чабер|садовый чабер
+`);
+add("desserts","Name a dessert served cold or frozen.","Назовите десерт, который подают охлаждённым или замороженным.",`
+0;ice cream;мороженое
+0;sorbet;сорбет
+0;milkshake;молочный коктейль
+1;gelato;джелато
+1;tiramisu;тирамису
+1;panna cotta;панна-котта|паннакотта
+1;frozen yogurt|froyo;замороженный йогурт
+2;granita;гранита
+2;semifreddo;семифредо
+2;lemon posset;лимонный поссет
+2;chocolate mousse;шоколадный мусс
+2;trifle;трайфл
+3;kulfi;кулфи
+3;falooda|faluda;фалуда
+3;halo-halo;хало-хало|халохало
+3;bingsu|patbingsu;бинсу|патбинсу
+3;silvanas;сильванас
+3;spaghettieis;мороженое спагетти|шпагетти-айс
+3;kakigori;какигори
+`);
+add("painting","Name a painting held in a public museum collection.","Назовите картину из коллекции общедоступного музея.",`
+0;Mona Lisa|La Gioconda;Мона Лиза|Джоконда
+0;The Starry Night|Starry Night;Звёздная ночь
+1;The Birth of Venus;Рождение Венеры
+1;The Night Watch;Ночной дозор
+1;Guernica;Герника
+1;The Persistence of Memory;Постоянство памяти
+2;The Arnolfini Portrait;Портрет четы Арнольфини
+2;The Garden of Earthly Delights;Сад земных наслаждений
+2;Wanderer above the Sea of Fog;Странник над морем тумана
+2;The Raft of the Medusa;Плот Медузы
+3;The Death of Marat;Смерть Марата
+3;The Battle of San Romano;Битва при Сан-Романо
+3;The Ambassadors|Holbein's The Ambassadors;Послы Гольбейна|Послы
+3;The Hireling Shepherd;Наёмный пастух
+3;The Barge Haulers on the Volga|Barge Haulers on the Volga;Бурлаки на Волге
+3;The Oxbow;Старица|Излучина реки Коннектикут
+`);
+add("observatory","Name an observatory used to study space.","Назовите обсерваторию, в которой изучают или изучали космос.",`
+0;Greenwich Observatory|Royal Observatory Greenwich;Гринвичская обсерватория
+0;Arecibo Observatory|Arecibo;Аресибо|Обсерватория Аресибо
+1;Palomar Observatory;Паломарская обсерватория
+1;Mauna Kea Observatories;Обсерватории Мауна-Кеа
+1;Pulkovo Observatory;Пулковская обсерватория|Пулково
+2;European Southern Observatory Paranal|Paranal Observatory;Паранальская обсерватория|Обсерватория Параналь
+2;Kitt Peak National Observatory;Национальная обсерватория Китт-Пик|Китт-Пик
+2;La Silla Observatory;Обсерватория Ла-Силья|Ла-Силья
+2;Roque de los Muchachos Observatory;Обсерватория Роке-де-лос-Мучачос
+3;Byurakan Observatory;Бюраканская обсерватория
+3;Lick Observatory;Ликская обсерватория|Обсерватория Лика
+3;Siding Spring Observatory;Обсерватория Сайдинг-Спринг
+3;Teide Observatory;Обсерватория Тейде
+3;Crimean Astrophysical Observatory;Крымская астрофизическая обсерватория|КрАО
+`, [["Q62832"],["astronomical observatory","radio observatory","астрономическая обсерватория","радиообсерватория"],["fictional","вымышлен"]]);
+add("fictional-places","Name a named place from a fictional world.","Назовите место из вымышленного мира, у которого есть собственное имя.",`
+0;Hogwarts;Хогвартс
+0;Gotham City|Gotham;Готэм|Готэм-сити
+0;Mordor;Мордор
+1;Tatooine;Татуин
+1;Winterfell;Винтерфелл
+1;Narnia;Нарния
+1;Neverland;Нетландия|Неверленд
+2;Rivendell|Imladris;Ривенделл|Имладрис
+2;Hyrule;Хайрул
+2;Rapture;Восторг|Рапчур
+2;Vice City;Вайс-Сити
+2;Shire;Шир
+3;Ankh-Morpork;Анк-Морпорк
+3;Cittàgazze|Cittagazze;Читтагацце
+3;Gormenghast;Горменгаст
+3;Gondolin;Гондолин
+3;Hallownest;Халлоунест
+3;Revachol;Ревашоль
+3;Arrakeen;Арракин
+`, [[],["fictional city","fictional country","fictional planet","fictional location","вымышленный город","вымышленная страна","вымышленная планета","вымышленная локация"],["list of","список"]]);
+add("gemstones","Name a stone used as a gemstone.","Назовите камень, который используют как ювелирную вставку.",`
+0;diamond;алмаз|бриллиант
+0;ruby;рубин
+0;emerald;изумруд
+0;sapphire;сапфир
+1;amethyst;аметист
+1;topaz;топаз
+1;opal;опал
+1;garnet;гранат
+2;peridot|chrysolite;перидот|хризолит
+2;spinel;шпинель
+2;aquamarine;аквамарин
+2;moonstone|adularia;лунный камень|адуляр
+2;malachite;малахит
+2;lapis lazuli;лазурит
+3;tanzanite;танзанит
+3;benitoite;бенитоит
+3;painite;пейнит
+3;serendibite;серендибит
+3;tsavorite;цаворит|тсаворит
+3;alexandrite;александрит
+`);
+add("drinkware","Name an object people drink beverages from.","Назовите предмет, из которого пьют напитки.",`
+4;glass;стакан
+4;cup;чашка
+0;mug;кружка
+0;bottle;бутылка
+1;wine glass;винный бокал
+1;shot glass;рюмка|шот
+1;teacup;чайная чашка
+1;thermos flask|thermos;термос
+2;goblet;кубок
+2;champagne flute|flute glass;бокал-флейта|бокал для шампанского
+2;highball glass;хайбол|стакан хайбол
+2;martini glass;бокал для мартини|мартинка
+2;beer stein|stein;пивная кружка с крышкой
+3;porron|porrón;поррон
+3;tumbler;тумблер|стакан тумблер
+3;quaich;куэйх|квейх
+3;coupe glass|champagne coupe;креманка для шампанского|бокал-купе
+`);
+add("water-machines","Name a device used to move or lift water.","Назовите устройство, с помощью которого перемещают или поднимают воду.",`
+4;pump;насос
+0;water pump;водяной насос|водный насос
+0;bucket;ведро
+0;hose|garden hose;шланг|садовый шланг
+1;siphon;сифон
+1;centrifugal pump;центробежный насос
+1;hand pump;ручной насос|помпа
+1;water wheel;водяное колесо
+2;Archimedes' screw|archimedes screw|screw pump;Архимедов винт|Винт Архимеда
+2;peristaltic pump;перистальтический насос
+2;diaphragm pump;мембранный насос
+3;hydraulic ram|ram pump;гидравлический таран|гидротаран
+3;airlift pump;эрлифт|воздушный подъёмник
+3;noria;нория
+3;chain pump;цепной насос
+3;shaduf|shadoof;шадуф
+3;pulser pump;пульсационный насос
+`);
+add("card-games","Name a game that people play with a standard deck of cards.","Назовите игру, в которую играют стандартной колодой карт.",`
+0;poker;покер
+0;blackjack|twenty-one;блэкджек|двадцать одно|21
+0;solitaire|patience;пасьянс|солитер
+1;bridge|contract bridge;бридж
+1;hearts;червы
+1;durak;дурак
+1;go fish;го фиш|рыбалка
+2;spades;пики
+2;rummy;рамми
+2;canasta;канаста
+2;euchre;юкер
+2;preferans|preference;преферанс
+2;cribbage;криббедж
+3;piquet;пикет
+3;whist;вист
+3;bezique;безик
+3;oh hell;ох-хелл
+3;seep|sweep;сип
+3;President|Asshole;Президент
+`);
+add("shipwrecks","Name a ship known to have sunk.","Назовите корабль или судно, которое затонуло.",`
+0;Titanic|RMS Titanic;Титаник
+0;Lusitania|RMS Lusitania;Лузитания
+1;Bismarck;Бисмарк
+1;Yamato;Ямато
+1;Britannic|HMHS Britannic;Британник
+2;Vasa;Васа|Ваза
+2;Mary Rose;Мэри Роуз
+2;Endurance;Эндьюранс|Эндюранс
+2;Edmund Fitzgerald|SS Edmund Fitzgerald;Эдмунд Фицджеральд
+2;Wilhelm Gustloff;Вильгельм Густлофф
+3;Batavia;Батавия
+3;HMS Erebus;Эребус
+3;HMS Terror;Террор
+3;Andrea Doria;Андреа Дориа
+3;Kronan;Крунан
+3;SS Central America;Сентрал Америка
+3;MV Doña Paz|Dona Paz;Донья Пас
+`);
+
 const MINE_DAY = Date.parse("2026-11-23") / 86400000;
 const dailyOrder = ["weapons","lens","countries","elements","instruments","mountains","video-games","myth",
   "rivers","films","currency","dinosaurs","capitals","board-games","craters","languages",
   "novels","africa","spacecraft","architects","islands","metals","birds","programming","asia","composers","americas","europe","oceania"];
-const questionIds = Object.keys(catalog);
-function mineIds(seed, mode) {
+// Keep a released deck frozen so an old room code always draws the same questions.
+const mineDecks = {1:firstDeck, 2:Object.keys(catalog)};
+const MINE_DECK_VERSION = 2;
+const mineCalendars = [
+  {from:MINE_DAY, order:dailyOrder},
+  {from:Date.parse("2026-11-24") / 86400000, order:[
+    "herbs","weapons","observatory","elements","fictional-places","drinkware","mountains","myth",
+    "shipwrecks","desserts","countries","programming","painting","lens","water-machines","card-games",
+    "gemstones","africa","films","instruments","craters","video-games","currency","rivers",
+    "novels","americas","spacecraft","languages","birds","capitals","metals","dinosaurs",
+    "europe","architects","board-games","islands","asia","composers","oceania"
+  ]}
+];
+function mineIds(seed, mode, version = MINE_DECK_VERSION) {
   if (mode === "daily") {
-    const start = ((seed - MINE_DAY) * 8) % dailyOrder.length;
-    return Array.from({length:8}, (_,i) => dailyOrder[(start + i) % dailyOrder.length]);
+    const {from,order} = mineCalendars.findLast(period => seed >= period.from);
+    const start = ((seed - from) * 8) % order.length;
+    return Array.from({length:8}, (_,i) => order[(start + i) % order.length]);
   }
   let value = seed >>> 0;
-  const ids = [...questionIds];
+  const ids = [...mineDecks[version]];
   for (let i=ids.length-1; i>0; i--) {
     value = (Math.imul(value,1664525) + 1013904223) >>> 0;
     const j = value % (i+1);
