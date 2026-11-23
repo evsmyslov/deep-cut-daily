@@ -2,7 +2,7 @@
 
 Three open-answer questions on one topic, with a new edition at 00:00 UTC. Answers become more demanding and worth more points as the round progresses. Taking a hint costs one point. The challenge link reopens the same edition and reveals the friend’s target score after the round.
 
-The initial slate contains 14 editions. It loops after the first two weeks. To add a new edition before the loop, append it to `episodes.js`. Keep already published editions in order so their challenge links keep working. Scores live in the browser and challenge URLs are for friendly play.
+The initial slate contains 14 editions. It loops after the first two weeks. To add a new edition before the loop, append it to `episodes.js`. Keep the dates of already published editions stable so their challenge links keep working. After the first loop begins, preserve the mappings for those dates before changing the schedule. Scores live in the browser and challenge URLs are for friendly play.
 
 ## Run locally
 
