@@ -242,7 +242,7 @@ function depthAt(points) {
   const fraction = upper === undefined ? 0 : (points-lower)/(upper-lower);
   const start = strata[stop][0];
   const end = strata[stop+1]?.[0] ?? start;
-  return {stop, travel:stop+fraction, km:start+(end-start)*fraction};
+  return {stop, km:start+(end-start)*fraction};
 }
 const layerName = stop => strata[stop][lang === "ru" ? 2 : 1];
 
@@ -250,7 +250,7 @@ let mineScene;
 function setWorld(count = 0, points = 0, animate = false) {
   const machine = get("machine");
   const progress = get("progress");
-  const {stop, travel, km} = depthAt(points);
+  const {stop, km} = depthAt(points);
   machine.dataset.stop = stop;
   machine.dataset.depth = km;
   get("depth").textContent = `${km.toLocaleString(lang,{maximumFractionDigits:1})} ${words().km}`;
@@ -264,11 +264,11 @@ function setWorld(count = 0, points = 0, animate = false) {
     if (i === stop) dot.setAttribute("aria-current", "step");
     else dot.removeAttribute("aria-current");
   });
-  mineScene.moveTo(travel + Math.max(0,points-maximum)/140, animate);
+  mineScene.moveTo(points, animate);
 }
 
 function mountWorld() {
-  mineScene = new MineScene(get("mine-scene"));
+  mineScene = new MineScene(get("mine-scene"), depthThresholds);
   strata.forEach((_, index) => {
     get("depth-map").append(element("span", ""));
     if (index > 0) get("progress").append(element("i", ""));
