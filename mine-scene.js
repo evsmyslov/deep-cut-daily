@@ -155,7 +155,7 @@ class MineScene {
     return previous+(this.hash(index+1,seed)-previous)*fraction;
   }
 
-  shape(color,points) {
+  trace(points) {
     const ctx = this.context;
     ctx.beginPath();
     points.forEach(([x,y],index) => {
@@ -163,6 +163,11 @@ class MineScene {
       else ctx.moveTo(Math.round(x),Math.round(y));
     });
     ctx.closePath();
+  }
+
+  shape(color,points) {
+    const ctx = this.context;
+    this.trace(points);
     ctx.fillStyle = color;
     ctx.fill();
   }
@@ -187,8 +192,52 @@ class MineScene {
     return Math.max(0,this.thresholds.findLastIndex(limit => depth>=limit));
   }
 
+  transitionRadius(layer) {
+    const boundary = this.thresholds[layer];
+    const above = boundary-this.thresholds[layer-1];
+    const below = (this.thresholds[layer+1] ?? Infinity)-boundary;
+    return Math.min(76,above*.38,below*.38);
+  }
+
   paletteAt(depth) {
-    return MineScene.palettes[this.layerAt(depth)];
+    const layer = this.layerAt(depth);
+    const nearPrevious = layer>0 && depth<this.thresholds[layer]+this.transitionRadius(layer);
+    const next = nearPrevious ? layer : layer+1;
+    if (next>=this.thresholds.length) return MineScene.palettes[layer];
+    const radius = this.transitionRadius(next);
+    const start = this.thresholds[next]-radius;
+    if (depth<=start) return MineScene.palettes[layer];
+    const mix = this.ease((depth-start)/(2*radius));
+    return MineScene.palettes[next-1].map((color,index) => {
+      const nextColor = MineScene.palettes[next][index];
+      const channels = [1,3,5].map(channel => {
+        const a = Number.parseInt(color.slice(channel,channel+2),16);
+        const b = Number.parseInt(nextColor.slice(channel,channel+2),16);
+        return Math.round(a+(b-a)*mix);
+      });
+      return `rgb(${channels.join(",")})`;
+    });
+  }
+
+  wallPaint() {
+    const ctx = this.context;
+    const top = this.cameraY;
+    const span = this.viewHeight/this.scale;
+    const stops = [0,1];
+    for (let layer=1;layer<this.thresholds.length;layer++) {
+      const center = this.thresholds[layer];
+      const radius = this.transitionRadius(layer);
+      for (const blend of [-1,-.66,-.33,0,.33,.66,1]) {
+        const offset = (center+radius*blend-top)/span;
+        if (offset>0 && offset<1) stops.push(offset);
+      }
+    }
+    const gradients = Array.from({length:3},() => ctx.createLinearGradient(0,0,0,this.viewHeight));
+    for (const offset of stops.sort((a,b)=>a-b)) {
+      const palette = this.paletteAt(top+offset*span);
+      gradients.forEach((gradient,i) => gradient.addColorStop(offset,palette[i]));
+    }
+    return gradients;
   }
 
   screenY(depth) {
@@ -211,47 +260,58 @@ class MineScene {
     const ctx = this.context;
     const width = this.viewWidth;
     const height = this.viewHeight;
-    const palette = this.paletteAt(this.position);
+    const paint = this.wallPaint();
+    ctx.fillStyle = paint[0];
+    ctx.fillRect(0,0,width,height);
     const darkness = ctx.createLinearGradient(0,0,0,height);
-    darkness.addColorStop(0,palette[0]);
+    darkness.addColorStop(0,"#0b152000");
     darkness.addColorStop(1,"#0b1520");
     ctx.fillStyle = darkness;
     ctx.fillRect(0,0,width,height);
     const core = this.screenY(this.thresholds.at(-1));
-    if (core<height) {
-      const coreLight = .55+Math.sin(time/1700)*.12;
+    const coreFade = this.ease((height+45-core)/145);
+    if (coreFade>0) {
+      const coreLight = (.55+Math.sin(time/1700)*.12)*coreFade;
       this.glow("#dd834e",this.center,Math.max(0,core)+86,154,coreLight);
     }
-    this.rows(76,(depth,index) => {
-      this.wall(depth,index,-1,time);
-      this.wall(depth,index,1,time);
-    });
+    for (const side of [-1,1]) this.drawWall(side,time,paint);
   }
 
-  wall(depth,index,side,time) {
+  drawWall(side,time,paint) {
     const ctx = this.context;
-    const width = this.viewWidth;
-    const height = this.viewHeight;
-    const top = this.screenY(depth);
-    const bottom = this.screenY(depth+76);
-    if (bottom<0 || top>height) return;
-    const outside = side<0 ? 0 : width;
-    const palette = this.paletteAt(depth+38);
-    const [shadow,base,stone,edge,bright] = palette;
+    const start = Math.max(0,Math.floor(this.cameraY/4)*4);
+    const end = Math.ceil((this.cameraY+this.viewHeight/this.scale)/4)*4;
+    if (start>=end) return;
+    const outside = side<0 ? 0 : this.viewWidth;
     const lip = [];
-    for (let row=0;row<=76;row+=4) {
-      lip.push([this.wallEdge(depth+row,side),this.screenY(depth+row)]);
+    for (let depth=start;depth<=end;depth+=4) {
+      lip.push([this.wallEdge(depth,side),this.screenY(depth)]);
     }
-    this.shape(base,[[outside,top],...lip,[outside,bottom]]);
+    ctx.save();
+    this.trace([[outside,this.screenY(start)],...lip,[outside,this.screenY(end)]]);
+    ctx.clip();
+    ctx.fillStyle = paint[1];
+    ctx.fillRect(0,0,this.viewWidth,this.viewHeight);
+    this.shape(paint[2],[...lip,...lip.map(([x,y])=>[x+side*8,y]).reverse()]);
+    this.rows(76,(depth,index)=>this.wallDetails(depth,index,side,time,paint));
+    ctx.restore();
+  }
+
+  wallDetails(depth,index,side,time,paint) {
+    const ctx = this.context;
+    if (this.screenY(depth+76)<-40 || this.screenY(depth)>this.viewHeight+40) return;
+    const outside = side<0 ? 0 : this.viewWidth;
     const seam = depth+14 + this.hash(index,side+107)*32;
+    const palette = this.paletteAt(seam);
+    const [shadow,,stone,edge,bright] = palette;
     const y = this.screenY(seam);
     const ledge = this.wallEdge(seam,side);
     const reach = 45+this.hash(index,side+94)*58;
-    this.shape(shadow,[[outside,y-23],[ledge+side*reach,y-19],[ledge+side*35,y-1],[ledge,y+7],[ledge+side*8,y+14],[ledge+side*51,y+11],[outside,y+30]]);
-    ctx.globalAlpha = .6;
-    this.shape(stone,[[outside,y-23],[ledge+side*reach,y-19],[ledge+side*35,y-1],[ledge,y+7],[ledge+side*15,y-5],[ledge+side*38,y-9],[outside,y-32]]);
+    ctx.globalAlpha = .78;
+    this.shape(paint[0],[[outside,y-23],[ledge+side*reach,y-19],[ledge+side*35,y-1],[ledge,y+7],[ledge+side*8,y+14],[ledge+side*51,y+11],[outside,y+30]]);
+    ctx.globalAlpha = .5;
+    this.shape(paint[2],[[outside,y-23],[ledge+side*reach,y-19],[ledge+side*35,y-1],[ledge,y+7],[ledge+side*15,y-5],[ledge+side*38,y-9],[outside,y-32]]);
     ctx.globalAlpha = 1;
-    this.shape(stone,[...lip,...lip.map(([x,y])=>[x+side*8,y]).reverse()]);
     this.wallTexture(depth,index,side,shadow,stone,edge);
     ctx.globalAlpha = 1;
     if ((index+Number(side>0))%4===1 && depth>76) {
