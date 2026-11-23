@@ -390,6 +390,7 @@ function question(draft = "", focus = true) {
   get("finish-endless").hidden = route.mode !== "endless";
   get("finish-endless").onclick = complete;
   get("next").onclick = () => {
+    mineScene.finishReveal();
     round.feedback = false;
     if (route.mode !== "endless" && round.answers.length === questionsPerRound) { complete(); return; }
     round.deadline = null;
