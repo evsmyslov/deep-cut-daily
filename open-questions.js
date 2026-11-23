@@ -703,8 +703,54 @@ const dailyOrder = ["weapons","lens","countries","elements","instruments","mount
   "rivers","films","currency","dinosaurs","capitals","board-games","craters","languages",
   "novels","africa","spacecraft","architects","islands","metals","birds","programming","asia","composers","americas","europe","oceania"];
 // Keep a released deck frozen so an old room code always draws the same questions.
-const mineDecks = {1:firstDeck, 2:Object.keys(catalog)};
-const MINE_DECK_VERSION = 2;
+const secondDeck = Object.keys(catalog);
+add("long-films","Name a film longer than 2 hours 30 minutes.","Назовите фильм длительностью более 2 часов 30 минут.",`
+0;The Lord of the Rings: The Fellowship of the Ring|The Fellowship of the Ring|Fellowship of the Ring|lotr fellowship;Властелин колец: Братство кольца|Братство кольца
+0;The Lord of the Rings: The Two Towers|The Two Towers|Two Towers|lotr two towers;Властелин колец: Две крепости|Две крепости
+0;The Lord of the Rings: The Return of the King|The Return of the King|Return of the King|lotr return of the king;Властелин колец: Возвращение короля|Возвращение короля
+0;Titanic;Титаник
+0;Interstellar;Интерстеллар
+0;Avatar: The Way of Water|Avatar the way of water|Avatar 2;Аватар: Путь воды|Аватар 2
+1;The Godfather|Godfather;Крёстный отец
+1;Oppenheimer;Оппенгеймер
+1;Dune: Part Two|Dune Part Two|Dune 2;Дюна: Часть вторая|Дюна 2
+1;Avengers: Endgame|Endgame;Мстители: Финал|Мстители Финал
+1;The Dark Knight Rises;Тёмный рыцарь: Возрождение легенды
+1;Schindler's List;Список Шиндлера
+1;The Green Mile|Green Mile;Зелёная миля
+1;Saving Private Ryan;Спасти рядового Райана
+1;The Wolf of Wall Street|Wolf of Wall Street;Волк с Уолл-стрит
+1;Gladiator;Гладиатор
+1;The Batman;Бэтмен 2022|Бэтмен
+2;The Godfather Part II|Godfather Part 2|The Godfather 2;Крёстный отец 2
+2;Lawrence of Arabia;Лоуренс Аравийский
+2;Gone with the Wind;Унесённые ветром
+2;Doctor Zhivago|Dr Zhivago;Доктор Живаго
+2;Ben-Hur|Ben Hur;Бен-Гур
+2;Barry Lyndon;Барри Линдон
+2;Amadeus;Амадей
+2;The Irishman|Irishman;Ирландец
+2;Killers of the Flower Moon;Убийцы цветочной луны
+2;Once Upon a Time in America;Однажды в Америке
+2;Casino;Казино
+2;Heat;Схватка
+2;Magnolia;Магнолия
+2;The Deer Hunter;Охотник на оленей
+2;Seven Samurai;Семь самураев
+3;Stalker;Сталкер
+3;Fanny and Alexander|Fanny & Alexander;Фанни и Александр
+3;A Brighter Summer Day;Яркий летний день
+3;The Human Condition I: No Greater Love|No Greater Love;Удел человеческий: Нет большей любви
+3;Jeanne Dielman, 23 quai du Commerce, 1080 Bruxelles|Jeanne Dielman;Жанна Дильман
+3;The Best of Youth;Лучшие из молодых
+3;Satantango|Sátántangó;Сатанинское танго
+3;War and Peace|War and Peace 1967;Война и мир|Война и мир Бондарчука
+3;The Travelling Players|The Traveling Players;Комедианты
+3;Happy Hour|Happy Hour 2015;Счастливый час|Счастливый час Хамагути
+`);
+
+const mineDecks = {1:firstDeck, 2:secondDeck, 3:Object.keys(catalog)};
+const MINE_DECK_VERSION = 3;
 const mineCalendars = [
   {from:MINE_DAY, order:dailyOrder},
   {from:Date.parse("2026-11-24") / 86400000, order:[
@@ -713,7 +759,8 @@ const mineCalendars = [
     "gemstones","africa","films","instruments","craters","video-games","currency","rivers",
     "novels","americas","spacecraft","languages","birds","capitals","metals","dinosaurs",
     "europe","architects","board-games","islands","asia","composers","oceania"
-  ]}
+  ]},
+  {from:Date.parse("2026-11-25") / 86400000, order:["long-films",...secondDeck.filter(id=>id!=="films"),"films"]}
 ];
 function mineIds(seed, mode, version = MINE_DECK_VERSION) {
   if (mode === "daily") {

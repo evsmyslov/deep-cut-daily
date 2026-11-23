@@ -227,3 +227,44 @@ main.shell{width:100%;padding-top:14px}
   .levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tier:nth-child(5) { border-left: 0; }
 }
+
+/* Keep the title readable at a glance and the pixel face for instruments. */
+.intro h1,.live-lobby h1 {
+  font-family:var(--sans);
+  font-weight:800;
+  line-height:1.01;
+  letter-spacing:-.048em;
+  text-shadow:0 3px 0 #102028;
+}
+.intro h1{font-size:clamp(3rem,6.9vw,5.8rem)}
+.live-lobby h1{font-size:clamp(2rem,5.8vw,3.65rem);margin:10px 0 12px}
+.live-seats,.live-url{display:grid;gap:8px;margin:14px 0;grid-template-columns:1fr 1fr}
+.live-seats>div{background:#15232adb;border:1px solid #6a807087;padding:9px 12px;border-radius:5px;min-width:0}
+.live-seats span,.live-seats strong{display:block}
+.live-seats span{color:var(--muted);font-size:.79rem}
+.live-seats strong{font-size:.97rem;color:var(--green)}
+.live-url{grid-template-columns:minmax(0,1fr) auto}
+.live-url input{min-width:0;font:500 .8rem var(--mono)}
+#live-notice{color:var(--muted);font-size:.86rem;min-height:1.5em}
+#live-status:has(+ [hidden]){color:var(--accent);font-size:2rem}
+.answer-suggestions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 13px;color:#e9d5a2;font-size:.87rem}
+.answer-suggestions button{text-align:left;min-height:34px;border-color:#8d8063;background:#23282b}
+#recap li{display:block;min-width:0;padding:0;border:0}
+#recap details{margin-bottom:6px;border:1px solid #48605d;background:#142128cc;border-radius:5px}
+#recap details[open]{border-color:#a19472}
+#recap summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:8px;padding:8px 10px;align-items:flex-start}
+#recap summary::-webkit-details-marker{display:none}
+#recap summary:hover,#recap summary:focus-visible{background:#344646}
+#recap summary span{overflow-wrap:anywhere}
+#recap summary strong{color:var(--accent)}
+.recap-detail{padding:9px 10px;border-top:1px solid #48605d}
+.recap-detail p{margin:0 0 5px;font-weight:600}
+.recap-detail small,.answer-source{color:var(--muted)}
+.recap-detail ul{margin:4px 0 0;padding-left:17px}
+#recap .recap-detail li{padding:2px 0;display:list-item}
+.answer-source{font-size:.85rem}
+@media(max-width:730px){
+  .intro h1{font-size:clamp(2.7rem,10vw,4.3rem)}
+  .live-url button{padding-inline:7px;font-size:.8rem}
+  .live-lobby{padding-bottom:22px}
+}

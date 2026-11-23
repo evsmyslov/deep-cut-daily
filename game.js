@@ -89,6 +89,24 @@ const strings = {
     awards:[["Первый шаг","Завершить экспедицию."],["Искатель самоцветов","Найти три самоцвета ядра за экспедицию."],["Покоритель ядра","Набрать 960 очков за экспедицию."]]
   }
 };
+Object.assign(strings.en, {
+  live:"Friend duel", liveLabel:"Live duel", yourSeat:"You", friendSeat:"Friend", ready:"Ready",
+  isReady:"Ready", notReady:"Not ready", waitSeat:"Waiting to join", joiningRoom:"Connecting to the room…",
+  liveRules:"Share the link and both press Ready. The first answer cuts the other player’s remaining time to 10 seconds.",
+  getReady:"Get ready", answerLocked:"Answer locked. Waiting for your friend.", rush:"Your friend answered. You have up to 10 seconds.",
+  autoNext:"Next question starts automatically.", networkLost:"Connection interrupted. Reconnecting…",
+  roomExpired:"This invite has expired. Create a new duel.", roomFull:"This room already has two players.",
+  suggestion:"Did you mean?"
+});
+Object.assign(strings.ru, {
+  live:"Дуэль с другом", liveLabel:"Синхронная дуэль", yourSeat:"Вы", friendSeat:"Друг", ready:"Готов",
+  isReady:"Готов", notReady:"Не готов", waitSeat:"Ещё не подключился", joiningRoom:"Подключаемся к лобби…",
+  liveRules:"Поделитесь ссылкой и оба нажмите «Готов». После первого ответа у второго игрока останется до 10 секунд.",
+  getReady:"Приготовьтесь", answerLocked:"Ответ принят. Ждём друга.", rush:"Друг ответил. У вас до 10 секунд.",
+  autoNext:"Следующий вопрос начнётся автоматически.", networkLost:"Связь прервалась. Переподключаемся…",
+  roomExpired:"Срок действия ссылки истёк. Создайте новую дуэль.", roomFull:"В этой комнате уже два игрока.",
+  suggestion:"Имели в виду?"
+});
 const get = id => document.getElementById(id);
 const today = () => Math.max(START, Math.floor(Date.now() / DAY));
 const iso = day => new Date(day * DAY).toISOString().slice(0, 10);
@@ -124,7 +142,7 @@ function readRoute() {
   const rival = /^\d{1,3}$/.test(scoreText) && Number(scoreText) <= maximum ? Number(scoreText) : null;
   const mode = args.get("mode");
   const duel = args.get("room");
-  if (mode === "duel" && /^[a-f0-9]{16}$/.test(duel ?? "")) return {mode, duel, key:`duel:${duel}`};
+  if ((mode === "duel" || mode === "live") && /^[a-f0-9]{16}$/.test(duel ?? "")) return {mode,duel,key:`${mode}:${duel}`};
   if (mode === "endless") return {mode, key:"endless"};
   const day = valid ? date : today();
   return {mode:"daily", day, fixed:valid, rival:valid ? rival : null, key:`daily:${day}`};
@@ -224,6 +242,8 @@ function swap(id) {
 }
 function intro(focus = false) {
   clearInterval(questionTimer);
+  stopLive();
+  if (route.mode === "live") { enterLive(); return; }
   clearTimeout(rideTimer);
   get("miner").classList.remove("moving");
   roomStamp = null;
@@ -279,6 +299,7 @@ function question(draft = "", focus = true) {
   get("prompt").textContent = model[lang];
   get("answer").placeholder = ui.placeholder;
   get("answer").value = draft;
+  bindSuggestions(model);
   get("finish-endless").hidden = route.mode !== "endless";
   get("finish-endless").onclick = complete;
   get("next").onclick = () => {
@@ -310,6 +331,7 @@ function question(draft = "", focus = true) {
   };
   function lockQuestion() {
     get("answer").disabled = true;
+    get("suggestions").hidden = true;
     get("skip").disabled = true;
     get("timer").textContent = "…";
     get("check-status").textContent = words().checking;
@@ -333,6 +355,7 @@ function question(draft = "", focus = true) {
     const names = words();
     const found = answer.id !== null;
     get("answer-form").hidden = true;
+    get("suggestions").hidden = true;
     get("skip").hidden = true;
     get("check-status").textContent = "";
     get("feedback").hidden = false;
@@ -397,15 +420,24 @@ function results(focus = true) {
   setWorld(round.answers.length, points);
   get("total").textContent = endless ? `${points} ${ui.points} · ${round.answers.length}` : `${points} / ${maximum} ${ui.points}`;
   get("badge").textContent = earned([round]).flatMap((unlocked, index) => unlocked ? [ui.awards[index][0]] : []).at(-1);
-  get("comparison").hidden = route.mode !== "duel" && route.rival == null;
+  get("comparison").hidden = !["duel","live"].includes(route.mode) && route.rival == null;
   if (route.mode === "daily" && route.rival !== null) showComparison(route.rival,points);
-  round.answers.forEach(answer => {
-    const row = element("li", "");
-    row.append(element("span", answer[lang] ?? (answer.text || (answer.reason === "timeout" ? ui.timeUp : ui.skipped))),
-      element("strong", `+${pointsFor(answer)}`));
+  round.answers.forEach((answer,index)=>{
+    const model=route.mode==="live" ? mineQuestion(answer.prompt) : questionAt(index);
+    const row=element("li","");
+    const details=element("details","");
+    const summary=element("summary","");
+    const answerText=answer[lang] ?? (answer.text || (answer.reason==="timeout" ? ui.timeUp : ui.skipped));
+    summary.append(element("span",answerText), element("strong",`+${pointsFor(answer)}`));
+    const extras=element("div","");
+    extras.id=`recap-detail-${index}`;
+    extras.className="recap-detail";
+    showRecapChoices(extras,model);
+    details.append(summary,extras);
+    row.append(details);
     get("recap").append(row);
   });
-  get("share").hidden = endless;
+  get("share").hidden = endless || route.mode === "live";
   get("refresh-duel").hidden = route.mode !== "duel";
   get("today").onclick = () => {
     if (endless) { delete library[route.key]; persist(); intro(true); }
@@ -426,7 +458,7 @@ ${card} ${points}/${maximum}
 ${ui.dare}
 ${url.href}`);
   };
-  get("answer-board").parentElement.hidden = route.mode !== "daily";
+  get("answer-source").hidden = route.mode !== "daily";
   if (route.mode === "daily") showAnswerSurvey();
   if (route.mode === "duel") {
     get("refresh-duel").onclick = refreshMatch;
@@ -454,52 +486,66 @@ async function refreshMatch() {
   } catch { if (target.isConnected) target.textContent = words().matchError; }
 }
 let browserId;
+function newBrowserId() {
+  const bytes=crypto.getRandomValues(new Uint8Array(16));
+  bytes[6]=(bytes[6]&15)|64;
+  bytes[8]=(bytes[8]&63)|128;
+  const id=[...bytes].map(byte=>byte.toString(16).padStart(2,"0")).join("");
+  return [id.slice(0,8),id.slice(8,12),id.slice(12,16),id.slice(16,20),id.slice(20)].join("-");
+}
 function anonymousId() {
   if (browserId) return browserId;
-  try {
-    browserId = localStorage.getItem(`${storage}-anonymous`) || crypto.randomUUID();
-    localStorage.setItem(`${storage}-anonymous`,browserId);
-  } catch { browserId = crypto.randomUUID(); }
+  const key=`${storage}-anonymous`;
+  for (const store of ["localStorage","sessionStorage"]) {
+    try { browserId ||= window[store].getItem(key); } catch { /* Storage can be disabled in embedded browsers. */ }
+  }
+  browserId ||= history.state?.minePlayer || newBrowserId();
+  for (const store of ["localStorage","sessionStorage"]) {
+    try { window[store].setItem(key,browserId); } catch { /* Fall back to tab history. */ }
+  }
+  try { history.replaceState({...history.state,minePlayer:browserId},""); } catch { /* Keep an in-memory ID. */ }
   return browserId;
 }
-async function request(path,data,timeout = 8000) {
-  const response = await fetch(`${answerService}/${path}`, {
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(path === "verify" ? data : {...data,browser:anonymousId()}),
-    signal:AbortSignal.timeout(timeout)
-  });
-  if(!response.ok) throw new Error("Service response");
-  return response.json();
+async function request(path,data,timeout=8000) {
+  const abort=new AbortController();
+  const timer=setTimeout(()=>abort.abort(),timeout);
+  try {
+    const response=await fetch(`${answerService}/${path}`,{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(path==="verify" ? data : {...data,browser:anonymousId()}),signal:abort.signal
+    });
+    const payload=await response.json();
+    if(!response.ok) throw Object.assign(new Error("Service response"),{code:payload.code??"network"});
+    return payload;
+  } catch(error) {
+    if (typeof error?.code === "string") throw error;
+    throw Object.assign(new Error("Connection unavailable"),{code:"network"});
+  } finally {clearTimeout(timer);}
+}
+
+function showRecapChoices(root,model,picked=[],rounds=0) {
+  const ui=words();
+  const list=element("ul","");
+  if (picked.length) {
+    for (const row of picked) list.append(element("li",`${row[lang]} · ${row.count} / ${rounds}`));
+  } else {
+    const choices=[...model.entries].sort((a,b)=>scores[b.tier]-scores[a.tier]);
+    for (const entry of choices.slice(0,12)) list.append(element("li",`${entry[lang]} · ${ui.tiers[entry.tier]} · +${scores[entry.tier]}`));
+  }
+  root.replaceChildren(element("p",model[lang]),element("small",picked.length?ui.community:ui.dictionary),list);
 }
 async function showAnswerSurvey() {
-  const board = get("answer-board");
-  const status = get("answer-source");
-  const data = {edition:iso(route.day), picks:round.answers.map(answer=>answer.id)};
-  const models = Array.from({length:questionsPerRound},(_,i)=>questionAt(i));
+  const status=get("answer-source");
+  const data={edition:iso(route.day),picks:round.answers.map(answer=>answer.id)};
+  const models=round.answers.map((_,index)=>questionAt(index));
+  status.textContent=words().pending;
   let survey;
-  status.textContent = words().pending;
-  try { survey = await request("mine-answers",data); } catch { survey = null; }
-  if (!board.isConnected) return;
-  const ui = words();
-  const counts = survey && Array.isArray(survey.counts) ? survey.counts : null;
-  status.textContent = counts ? ui.surveyData : survey ? ui.noData : ui.surveyError;
-  models.forEach((question,index)=>{
-    const choices = [...question.entries].sort((a,b)=>scores[b.tier]-scores[a.tier]);
-    const picked = counts?.[index] ?? [];
-    const details = element("details","");
-    details.open = index === 0;
-    details.append(element("summary",`${index + 1}. ${question[lang]}`));
-    if(picked.length) {
-      const list=element("ul","");
-      for(const row of picked) list.append(element("li",`${row[lang]} · ${row.count} / ${survey.rounds}`));
-      details.append(element("small",ui.community),list);
-    } else {
-      const list=element("ul","");
-      for(const entry of choices.slice(0,12)) list.append(element("li",`${entry[lang]} · ${ui.tiers[entry.tier]} · +${scores[entry.tier]}`));
-      details.append(element("small",ui.dictionary),list);
-    }
-    board.append(details);
-  });
+  try { survey=await request("mine-answers",data); } catch { survey=null; }
+  if (!status.isConnected) return;
+  const ui=words();
+  const counts=survey?.counts;
+  status.textContent=counts ? ui.surveyData : survey ? ui.noData : ui.surveyError;
+  if (counts) models.forEach((model,index)=>showRecapChoices(get(`recap-detail-${index}`),model,counts[index],survey.rounds));
 }
 function openEdition(day, mode, duel) {
   const url = new URL(location.href);
@@ -512,7 +558,7 @@ function openEdition(day, mode, duel) {
     url.searchParams.set("mode",mode);
     if(duel) url.searchParams.set("room",duel);
   }
-  history.pushState(null,"",url);
+  history.pushState(browserId ? {minePlayer:browserId} : null,"",url);
   route = readRoute();
   intro(true);
 }
@@ -583,8 +629,8 @@ function launch() {
     button.disabled = true;
     const previous = route;
     try {
-      const result = await request("duel",{action:"create",deckVersion:MINE_DECK_VERSION});
-      if (previous === route) openEdition(undefined,"duel",result.room);
+      const result = await request("live",{action:"create"});
+      if (previous === route) openEdition(undefined,"live",result.room);
     } catch {
       if (previous === route) modal(words().duel,element("p",words().matchError));
     } finally { button.disabled = false; }
@@ -615,6 +661,7 @@ function launch() {
     const draft = get("answer")?.value ?? "";
     lang = lang === "en" ? "ru" : "en";
     persist();
+    if (liveView) { paintLive(liveView,true); return; }
     if (page === "question") question(draft, false);
     else if (page === "results") results(false);
     else intro();
