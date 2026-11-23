@@ -151,3 +151,57 @@ main{padding-top:24px}
   #recap{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){.world-track,.miner{transition:none}.miner.moving img{animation:none}}
+
+/* Edge-to-edge mine, with the controls aligned to a centered play column. */
+body{background:#172429}
+body::before{content:"";position:fixed;inset:0;z-index:-2;background:linear-gradient(180deg,#20333a,#18262b)}
+body .top-inner,.daily-bar,.bottom{width:min(1280px,calc(100% - 42px));margin-inline:auto}
+.top{background:#16232c}
+main.shell{width:100%;padding-top:14px}
+.daily-bar{margin-bottom:14px}
+.mode-buttons{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.mode-buttons button{color:#e4e6d7}
+.machine{border-inline:0;border-radius:0;box-shadow:none;min-height:max(610px,calc(100svh - 133px));--stop:0}
+.world-shade{background:linear-gradient(90deg,#0c1b2130,transparent 23%,#111b2240 39%,#131e23aa 53%,#17262b60 81%,#14232b40),linear-gradient(180deg,#07141a83,transparent 21%,transparent 78%,#122027d9)}
+.mission-hud{width:min(1050px,88%);justify-self:center;padding:20px 0 0}
+.depth-map{left:auto;right:max(12px,4.5vw)}
+.miner{left:26.7%;top:53%;width:clamp(66px,8vw,126px);height:clamp(66px,8vw,126px)}
+.machine[data-stop="0"] .miner{top:64%}
+.miner .pickaxe{position:absolute;top:47%;left:69%;width:45%;height:45%;z-index:3;transform:rotate(26deg);transform-origin:19% 78%}
+.miner.moving .pickaxe{animation:swing 330ms ease-in-out 3}
+.miner .chips{position:absolute;z-index:2;width:5px;height:5px;top:82%;left:76%;background:#e6b682;opacity:0;box-shadow:11px 9px #af8667,18px 4px #d2a374,-6px -4px #f2c886}
+.miner.moving .chips{animation:chips .33s ease-out 3}
+@keyframes swing{0%,100%{transform:rotate(26deg)}35%{transform:rotate(-64deg)}68%{transform:rotate(98deg)}}
+@keyframes chips{0%,49%{opacity:0;transform:translate(0)}60%{opacity:1}100%{opacity:0;transform:translate(16px,-22px)}}
+#stage{justify-self:center;width:min(1130px,96%);padding:0 4% 0 29%}
+.intro-content,.round{max-width:640px}
+.round h1{margin-block:10px 24px;max-width:600px;text-shadow:0 3px 0 #111c20}
+.round #prompt{padding:16px 18px;background:#0d1b21db;border:1px solid #9aabaa5e;border-left:3px solid var(--accent)}
+#answer-form{align-items:stretch;gap:8px}
+#answer-form input{font-size:1.04rem;border-color:#899e97;background:#111f26e8}
+.timer{display:grid;place-items:center;flex:0 0 49px;min-height:46px;background:#152a31;border:1px solid #9baf9f;border-radius:5px;color:#ebdbaa;font:700 1.4rem var(--pixel)}
+.timer.urgent{color:#ffac8d;border-color:#d28972}
+#check-status,#lobby-status{font-size:.85rem;color:#dfd4b5}
+.machine-footer{padding-inline:max(14px,calc((100vw - 1240px)/2));background:#122028df}
+.levels{width:min(1040px,calc(100% - 36px));margin-inline:auto}
+#recap{max-height:205px;overflow:auto}
+@media(max-width:730px){
+ body .top-inner,.daily-bar,.bottom{width:calc(100% - 22px)}
+ .daily-bar{align-items:start;gap:3px}
+ .daily-bar p{margin-top:8px}
+ .mode-buttons{gap:3px}
+ .mode-buttons button{padding:5px 7px}
+ .machine{min-height:max(620px,calc(100svh - 120px))}
+ .world{height:245px}
+ .world-shade{background:linear-gradient(180deg,#121e271f,transparent 22%,#19262d 100%)}
+ .mission-hud{width:100%;padding-inline:12px}
+ .depth-map{right:9px}
+ .miner{top:58%;width:65px;height:65px}
+ #stage{width:100%;padding:151px 0 0}
+ .round #prompt{padding:12px;margin-bottom:15px}
+ .timer{flex-basis:37px}
+ #answer-form{gap:5px}
+ #answer-form input{padding-inline:7px}
+ #answer-form button{padding-inline:8px}
+}
+@media(prefers-reduced-motion:reduce){.miner.moving .pickaxe,.miner.moving .chips{animation:none}}

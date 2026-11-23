@@ -5,27 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#192323">
 <meta name="description" content="A daily open-answer quiz. Find the facts that others overlook. Play in English or Russian.">
-<title>Deep Cut Daily</title>
+<title>Rare Below</title>
 <link rel="icon" href="art/mark.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Pixelify+Sans:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<script defer src="questions.js"></script>
+<script defer src="catalog-data.js"></script>
+<script defer src="open-questions.js"></script>
 <script defer src="game.js"></script>
 </head>
 <body>
 <header class="top"><div class="shell top-inner">
-  <a id="home" class="brand" href="./"><img src="art/mark.png" width="25" height="25" alt=""><span>DEEP CUT</span><small>DAILY</small></a>
+  <a id="home" class="brand" href="./"><img src="art/mark.png" width="25" height="25" alt=""><span>RARE BELOW</span></a>
   <nav id="nav"><button id="rules" data-text="rules"></button><button id="stats" data-text="stats"></button><button id="lang" aria-label="Switch language"></button></nav>
 </div></header>
 <main class="shell">
-  <div class="daily-bar"><p><span class="live" aria-hidden="true"></span><span id="edition"></span></p><button id="archive" data-text="archive"></button></div>
+  <div class="daily-bar"><p><span class="live" aria-hidden="true"></span><span id="edition"></span></p><div class="mode-buttons"><button id="endless" data-text="endless"></button><button id="duel" data-text="duel"></button><button id="archive" data-text="archive"></button></div></div>
   <section class="machine" id="machine">
     <div class="world" aria-hidden="true">
       <div class="world-track" id="world-track"></div>
       <div class="world-shade"></div>
-      <div class="miner" id="miner"><img src="art/shaft/miner.png" alt="" width="76" height="76"></div>
+      <div class="miner" id="miner"><img src="art/shaft/miner.png" alt="" width="76" height="76"><img class="pickaxe" src="art/shaft/pickaxe.png" alt="" width="34" height="34"><span class="chips"></span></div>
     </div>
     <div class="mission-hud">
       <div class="readout"><span data-text="depth"></span><strong id="depth" aria-live="polite"></strong></div>
@@ -38,7 +39,7 @@
   </section>
   <section class="levels" id="levels"></section>
 </main>
-<footer class="bottom shell"><span>DEEP CUT DAILY</span><span data-text="reset"></span></footer>
+<footer class="bottom shell"><span>RARE BELOW</span><span data-text="reset"></span></footer>
 <dialog id="modal" aria-labelledby="modal-title"><div class="dialog-head"><h2 id="modal-title"></h2><form method="dialog"><button id="close" aria-label="Close dialog">×</button></form></div><div id="modal-content"></div></dialog>
 <template id="intro">
   <div class="intro">
@@ -47,7 +48,7 @@
       <h1 id="topic" data-text="hero"></h1>
       <p id="pitch" data-text="pitch"></p>
       <p id="challenge" class="challenge" data-text="challenge" hidden></p>
-      <button id="start" class="primary"></button>
+      <div class="actions"><button id="start" class="primary"></button><button id="invite" class="quiet" data-text="invite" hidden></button></div><p id="lobby-status" role="status"></p>
     </div>
   </div>
 </template>
@@ -55,8 +56,8 @@
   <section class="round">
     <p class="category label" id="category"></p>
     <h1 id="prompt"></h1>
-    <form id="answer-form"><label class="sr-only" for="answer" data-text="answerLabel"></label><input id="answer" maxlength="100" autocomplete="off" required><button class="primary" data-text="submit"></button></form>
-    <button class="quiet" id="skip" data-text="skip"></button>
+    <form id="answer-form"><label class="sr-only" for="answer" data-text="answerLabel"></label><div class="timer" id="timer" aria-hidden="true"></div><input id="answer" maxlength="100" autocomplete="off" required><button class="primary" data-text="submit"></button></form>
+    <div class="actions question-actions"><button class="quiet" id="skip" data-text="skip"></button><button class="quiet" id="finish-endless" data-text="stopRun" hidden></button><span id="check-status" role="status"></span></div>
     <div id="feedback" hidden><p id="verdict" role="status"></p><p id="sample"></p><p class="arrival" id="arrival"></p><button class="primary" id="next"></button></div>
   </section>
 </template>
@@ -66,7 +67,7 @@
     <h1 data-text="finished"></h1>
     <p class="score" id="total"></p>
     <p id="badge" class="challenge"></p>
-    <p id="comparison" hidden></p>
+    <p id="comparison" role="status" hidden></p><button class="quiet" id="refresh-duel" data-text="refresh" hidden></button>
     <ol id="recap"></ol>
     <div class="actions"><button class="primary" id="share" data-text="share"></button><button class="quiet" id="today" data-text="todayButton"></button></div>
     <p id="share-status" role="status"></p>

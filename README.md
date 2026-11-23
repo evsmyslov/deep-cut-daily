@@ -1,17 +1,20 @@
-# Deep Cut Daily
+# Rare Below
 
-A bilingual daily quiz set on a journey from Earth's surface to its core. Each of the eight questions advances the miner one layer, including when a player skips. A new round opens at 00:00 UTC. The initial bank contains 44 prompts that rotate across four subject groups.
+An English/Russian quiz where specific answers earn points for rarity. The miner digs down after every response. Each question has a 30-second deadline that survives a reload.
 
-English and Russian aliases share the same canonical concept and editorial rarity tier (25, 55, 85, or 120 points). Progress, language, and achievements live in browser storage. Challenge URLs carry the edition and score. Older formats remain available at `expedition/` and `classic/`.
+- Daily has eight questions and opens at 00:00 UTC.
+- Endless shuffles the open prompts in successive cycles and can be ended at any point.
+- Friend duels use the same eight prompts for two people. The room lasts seven days. Each player takes their own turn, and scores appear after both finish.
+- After the daily round, community picks are ordered by observed frequency once there are three completed rounds. Scores use fixed rarity tiers.
 
-After a round, the answer survey shows the answer key by rarity and anonymous community picks once at least three expeditions have been submitted for that date. The aggregate service accepts canonical answer IDs and an edition-scoped browser identifier. The quiz retains the typed answer locally.
+The local catalog contains 29 broad questions and 1,400 topic-specific entries. Some categories verify additional names against Wikidata. Coverage varies with the catalog and Wikidata. Typed text for a lookup is sent to the answer service, which stores only the recognized entity and its public labels. Prior versions and their links are kept in `shaft/`, `expedition/`, and `classic/`.
 
-## Run locally
+## Deployment
 
-Open `index.html` in a browser or run `python -m http.server 8000` from the project directory. The community endpoint accepts submissions from the published GitHub Pages origin.
+The front end is static GitHub Pages, served from `main` at the repository root. Run `python -m http.server 8000` to open a local copy. Online modes use a separate Sites Worker with a D1 database. The production service accepts requests from the GitHub Pages origin.
 
-## GitHub Pages
+## Data sources
 
-Publish the root of `main` using **Settings → Pages → Deploy from a branch**. No build step is needed.
-
-[GitHub Pages publishing settings](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
+- [Country and regional data](https://github.com/mledoze/countries)
+- [Periodic table facts](https://github.com/Bowserinator/Periodic-Table-JSON)
+- [Wikidata entity search](https://www.mediawiki.org/wiki/Wikibase/API)
