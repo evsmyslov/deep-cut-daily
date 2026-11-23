@@ -19,6 +19,14 @@ function spellingDistance(left,right,limit) {
 
 const keyboardLatin="`qwertyuiop[]asdfghjkl;'zxcvbnm,.";
 const keyboardCyrillic="ёйцукенгшщзхъфывапролджэячсмитьбю";
+const cyrillicSounds={
+  а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ж:"zh",з:"z",и:"i",й:"y",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",
+  р:"r",с:"s",т:"t",у:"u",ф:"f",х:"kh",ц:"ts",ч:"ch",ш:"sh",щ:"shch",ъ:"",ы:"y",ь:"",э:"e",ю:"yu",я:"ya"
+};
+function phoneticKey(key) {
+  return [...key].map(letter=>cyrillicSounds[letter] ?? letter).join("")
+    .replace(/(ey|ee|ea)/g,"i").replace(/oa/g,"o").replace(/([a-z])\1+/g,"$1").replaceAll(" ","");
+}
 function alternateLayout(value) {
   const cyrillic=/\p{Script=Cyrillic}/u.test(value);
   if (cyrillic && /\p{Script=Latin}/u.test(value)) return "";
@@ -38,12 +46,16 @@ function suggestAnswers(model,value) {
   const limit=key.length<8 ? 1 : key.length<16 ? 2 : 3;
   const digits=key.match(/\d+/g)?.join(",");
   const compact=key.replaceAll(" ","");
+  const sound=phoneticKey(key);
+  const isCyrillic=/\p{Script=Cyrillic}/u;
+  const cyrillic=isCyrillic.test(key);
   const candidates=new Map();
   for(const [alias,entry] of model.aliases) {
     if (!alias || (digits && digits!==alias.match(/\d+/g)?.join(","))) continue;
     const tight=alias.replaceAll(" ","");
     const sameLetters=compact===tight;
-    const distance=sameLetters ? .15 : spellingDistance(key,alias,limit);
+    const sameSound=sound.length>=4 && cyrillic!==isCyrillic.test(alias) && phoneticKey(alias)===sound;
+    const distance=sameLetters ? .15 : sameSound ? .3 : spellingDistance(key,alias,limit);
     if (distance>limit) continue;
     const rank=distance+Number(alias[0]!==key[0])*.22+Math.abs(alias.length-key.length)*.04;
     if (rank<(candidates.get(entry)??Infinity)) candidates.set(entry,rank);
@@ -56,6 +68,7 @@ function bindSuggestions(model) {
   const field=get("answer");
   const container=get("suggestions");
   const render=()=>{
+    get("review-answer").hidden=true;
     const items=field.disabled ? [] : suggestAnswers(model,field.value);
     container.replaceChildren();
     container.hidden=!items.length;
@@ -75,4 +88,22 @@ function bindSuggestions(model) {
   };
   field.addEventListener("input",render);
   render();
+}
+function offerAnswerReview(model,text) {
+  const button=get("review-answer");
+  if (!button || !text || model.aliases.has(answerKey(text))) return;
+  button.hidden=false;
+  button.disabled=false;
+  button.onclick=async()=>{
+    const status=get("check-status");
+    const input=get("answer");
+    button.disabled=true;
+    let notice="reviewSent";
+    try { await request("answer-review",{id:model.id,text,language:lang}); }
+    catch(error) { notice=["reviewBusy","reviewInvalid"].includes(error.code) ? error.code : "reviewError"; }
+    if (!button.isConnected || button.hidden || input.value.trim()!==text) return;
+    if (notice==="reviewSent") button.hidden=true;
+    else button.disabled=false;
+    status.textContent=words()[notice];
+  };
 }

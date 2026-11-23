@@ -39,7 +39,8 @@ function relayDuelRequest(url,{body,signal}) {
 function duelError(code) {
   const label={
     expired:"roomExpired",full:"roomFull",invalid:"badCode",member:"memberExpired",timeout:"duelTimeout",
-    network:"duelNetwork",offline:"duelOffline",response:"duelResponse",retry:"duelResponse",origin:"duelResponse"
+    network:"duelNetwork",offline:"duelOffline",response:"duelResponse",retry:"duelResponse",origin:"duelResponse",
+    started:"companyStarted"
   }[code] ?? "matchError";
   return words()[label];
 }
@@ -60,18 +61,22 @@ function requestLive(data,signal) {
   return request(path,data,data.action==="submit" ? 8000 : 4500,undefined,signal);
 }
 
-function directDuelLink(room,member) {
+function directDuelLink(room,member,company=false) {
   const url=new URL("/play/",answerService);
+  if (company) url.searchParams.set("company","1");
   if (room && member) {
     url.searchParams.set("continue",room);
     url.hash=new URLSearchParams({seat:member}).toString();
   } else if (room) url.searchParams.set("join",room);
-  else url.searchParams.set("duel","1");
+  else if (!company) url.searchParams.set("duel","1");
   return url.href;
 }
 function setDirectDuelLink(link,view,show=true) {
   link.hidden=!show || location.origin===answerService;
-  if (!link.hidden) link.href=directDuelLink(view?.route.duel,view?.state?.member ?? view?.route.member);
+  if (!link.hidden) {
+    link.href=directDuelLink(view?.route.duel,view?.state?.member ?? view?.route.member,view?.route.company);
+    link.textContent=view?.route.company ? words().directCompany : words().directDuel;
+  }
 }
 
 function leaveLive() {
@@ -138,6 +143,13 @@ function enterLive(lobbyRoute,created=null) {
     key:"",polling:false,busy:false,error:null,failures:0,onStage:false,feedback:null
   };
   liveView=view;
+  if (created?.kind==="company") {
+    const url=new URL(gameRoot);
+    url.searchParams.set("mode","live");
+    url.searchParams.set("room",created.room);
+    url.searchParams.set("company","1");
+    history.pushState({...history.state,minePlayer:browserId},"",url);
+  }
   paintLive(view,true);
   view.ticker=setInterval(()=>tickLive(view),120);
   syncLive(view);
@@ -166,7 +178,7 @@ async function syncLive(view) {
   } catch(error) {
     if (liveView!==view) return;
     view.error=error.code;
-    view.permanentError=["expired","full","invalid","member"].includes(error.code);
+    view.permanentError=["expired","full","invalid","member","started"].includes(error.code);
     view.failures++;
     if (!view.state || (!view.onStage && view.failures>=2)) view.paused=true;
   } finally {
@@ -181,7 +193,8 @@ async function syncLive(view) {
 async function sendLive(view,action,values={}) {
   const before=Date.now();
   const member=view.state?.member ?? view.route.member;
-  const data={action,room:view.route.duel,seat:view.route.seat,member,...values};
+  const data={action,room:view.route.duel,seat:view.route.seat,member,
+    ...(action==="join" && view.route.nickname ? {nickname:view.route.nickname} : {}),...values};
   const state=await requestLive(data,view.lifetime.signal);
   if (liveView!==view) return;
   if (action==="submit" && state.feedback && view.state?.phase==="question" && view.state.index===values.index) {
@@ -199,6 +212,7 @@ async function sendLive(view,action,values={}) {
   if (action==="submit" && state.feedback) playCue("reject");
   view.offset=state.now-(before+Math.min(500,(after-before)/2));
   view.state=state;
+  view.route.company=state.kind==="company";
   view.error=null;
   view.failures=0;
   paintLive(view);
@@ -222,6 +236,7 @@ async function liveAction(view,action,values) {
       if (action==="submit" && view.state?.phase==="question" && !view.state.locked && !get("answer").disabled) {
         get("answer").focus({preventScroll:true});
         if (view.feedback) get("answer").select();
+        if (view.feedback?.message==="wrongRetry") offerAnswerReview(mineQuestion(view.state.prompt),get("answer").value.trim());
       }
     }
   }
@@ -229,6 +244,7 @@ async function liveAction(view,action,values) {
 function updateLiveNotice(view) {
   const notice=get("live-notice") ?? get("check-status");
   if (!notice) return;
+  if (view.route.company) updateCompanyLobby(view);
   const direct=get("live-direct") ?? get("match-direct");
   if (direct) setDirectDuelLink(direct,view,Boolean(get("live-direct")) || Boolean(view.error));
   const retry=get("live-retry");
@@ -236,8 +252,10 @@ function updateLiveNotice(view) {
     retry.hidden=!view.error || view.permanentError;
     retry.disabled=view.polling && !view.paused;
     const ready=get("live-ready");
-    ready.disabled=!view.state || view.busy || view.paused || view.permanentError;
-    ready.textContent=view.state?.ready ? words().unready : words().ready;
+    if (ready) {
+      ready.disabled=!view.state || view.busy || view.paused || view.permanentError;
+      ready.textContent=view.state?.ready ? words().unready : words().ready;
+    }
     if (!view.state) get("live-status").textContent=view.error ? "" : words().joiningRoom;
   }
   let message="";
@@ -253,6 +271,17 @@ function updateLiveNotice(view) {
   } else if (notice.dataset.copied==="1") return;
   if (notice.textContent!==message) notice.textContent=message;
 }
+function setLiveRetry(view) {
+  get("live-retry").onclick=()=>{
+    if (view.polling) return;
+    view.failures=0;
+    view.paused=false;
+    view.error=null;
+    updateLiveNotice(view);
+    clearTimeout(view.poll);
+    syncLive(view);
+  };
+}
 function duelAnswerText(answer) {
   const ui=words();
   const label=answer?.tier>=0 ? answer[lang] : answer?.reason==="timeout" ? ui.timeUp
@@ -263,7 +292,7 @@ function paintLive(view,force=false) {
   const state=view.state;
   if (state) get("hud-rival").textContent=state.rivalScore ?? 0;
   const phase=state?.phase ?? "lobby";
-  const key=[phase,state?.index,state?.locked,state?.ready,state?.opponentJoined,state?.opponentReady].join("/");
+  const key=[view.route.company,phase,state?.index,state?.locked,state?.ready,state?.opponentJoined,state?.opponentReady].join("/");
   if (!force && key===view.key) { updateLiveNotice(view); tickLive(view); return; }
   const draft=force && page==="question" ? get("answer")?.value ?? "" : "";
   view.key=key;
@@ -277,7 +306,8 @@ function paintLive(view,force=false) {
   if (phase==="done") {
     round={answers:state.answers.map(answer=>({...answer,id:answer.id??null})),rivalAnswers:state.rivalAnswers,done:true};
     results(false);
-    showComparison(state.rivalScore,state.ownScore);
+    if (view.route.company) paintCompanyBoard(get("company-results"),state.standings,"done");
+    else showComparison(state.rivalScore,state.ownScore);
     return;
   }
   if (phase==="lobby" || phase==="countdown") {
@@ -287,6 +317,12 @@ function paintLive(view,force=false) {
       get("prompt").textContent=ui.getReady;
       get("answer-form").hidden=true;
       get("skip").hidden=true;
+      tickLive(view);
+      return;
+    }
+    if (view.route.company) {
+      showCompanyLobby(view,phase);
+      updateLiveNotice(view);
       tickLive(view);
       return;
     }
@@ -308,15 +344,7 @@ function paintLive(view,force=false) {
       get("live-ready").disabled=true;
       liveAction(view,"ready",{ready:!state.ready});
     };
-    get("live-retry").onclick=()=>{
-      if (view.polling) return;
-      view.failures=0;
-      view.paused=false;
-      view.error=null;
-      updateLiveNotice(view);
-      clearTimeout(view.poll);
-      syncLive(view);
-    };
+    setLiveRetry(view);
     get("live-back").onclick=showDuelMenu;
     get("live-ready").hidden=!state || (phase==="countdown" && state.index>0);
     get("live-seats").hidden=!state || phase==="countdown";
@@ -328,7 +356,7 @@ function paintLive(view,force=false) {
     swap("question");
     setWorld(state.index+Number(phase==="reveal"),state.ownScore,
       phase==="reveal" && state.ownPick?.tier>=0 && !force);
-    get("category").textContent=`${ui.question} ${state.index+1} / ${questionsPerRound}`;
+    get("category").textContent=`${ui.question} ${state.index+1} / ${expeditionLength()}`;
     get("prompt").textContent=question[lang];
     get("answer").placeholder=ui.placeholder;
     get("answer").value=draft;
@@ -351,6 +379,7 @@ function paintLive(view,force=false) {
       get("arrival").textContent=`${ui.depth} · ${get("depth").textContent}`;
       get("rival-verdict").textContent=duelAnswerText(state.rivalPick);
       get("rival-verdict").hidden=!state.rivalPick;
+      if (view.route.company) paintCompanyBoard(get("company-board"),state.standings,"reveal");
     } else if (!locked) {
       bindSuggestions(question);
       get("answer").addEventListener("input",()=>{

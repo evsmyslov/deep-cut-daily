@@ -750,7 +750,7 @@ add("long-films","Name a film longer than 2 hours 30 minutes.","Назовите
 `);
 
 const mineDecks = {1:firstDeck, 2:secondDeck, 3:Object.keys(catalog)};
-const MINE_DECK_VERSION = 6;
+const MINE_DECK_VERSION = 7;
 const mineCalendars = [{from:MINE_DAY,order:dailyOrder}];
 function mineIds(seed, mode, version = MINE_DECK_VERSION) {
   if (mode === "daily") {
@@ -760,6 +760,7 @@ function mineIds(seed, mode, version = MINE_DECK_VERSION) {
   }
   if (version===5) return mixedBank(seed);
   if (version===6) return interleaveQuestionGroups(everydayGroups,seed);
+  if (version===7) return interleaveQuestionGroups(themedGroups,seed);
   return shuffleMine(mineDecks[version],seed);
 }
 function shuffleMine(deck,seed) {
@@ -1170,3 +1171,28 @@ function dailyIds(day,revision=1) {
   if (day===REPLAY_DAY && replayQuestions[revision]) return replayQuestions[revision];
   return mineIds(day,"daily");
 }
+
+for (const card of themeCards) add(...card);
+const minePacks = {
+  cinema:{en:"Cinema",ru:"Кино",ids:["films","animation","space-trip-films","animated-dogs","long-films","film-narrators","film-animals-speak","films-with-trains","animated-robots","named-soundtracks"]},
+  music:{en:"Music",ru:"Музыка",ids:["instruments","blown-instruments","plucked-strings","numbered-albums","composers","drum-family","keyboard-instruments","titles-sing-colors","sounds-on-record","named-soundtracks"]},
+  household:{en:"Everyday life",ru:"Повседневность",ids:["carry-light","zippers","hinged-things","things-on-wheels","drinkware","glass-objects","tool-teeth","buttons","key-locks","things-on-fridges","kitchen-grates","round-kitchen-objects"]},
+  food:{en:"Food",ru:"Еда",ids:["potato-dishes","jam-fruits","citrus","fruit-pits","herbs","breakfast-dishes","breads","desserts","fermented-foods","flat-baked-foods","plants-you-can-eat-leaves"]},
+  nature:{en:"Nature",ru:"Природа",ids:["trees","birds","houseplants","striped-animals","animal-shells","freshwater-fish","swimming-birds","underwater-mammals","visible-weather","birds-red","plants-climb"]}
+};
+const minePackLength=7;
+function minePack(id) {
+  return Object.hasOwn(minePacks,id) ? minePacks[id] : null;
+}
+function packIds(id,seed) {
+  return shuffleMine(minePack(id).ids,seed);
+}
+const themedGroups = [
+  [...everydayGroups[0],"things-on-fridges","kitchen-grates","round-kitchen-objects"],
+  [...everydayGroups[1],"flat-baked-foods"],
+  everydayGroups[2],
+  [...everydayGroups[3],"birds-red","plants-climb"],
+  [...everydayGroups[4],"film-narrators","film-animals-speak","films-with-trains","animated-robots","named-soundtracks","drum-family","keyboard-instruments","titles-sing-colors","sounds-on-record"]
+];
+mineDecks[7]=themedGroups.flat();
+mineCalendars.push({from:MINE_DAY+2,order:interleaveQuestionGroups(themedGroups,20261125)});

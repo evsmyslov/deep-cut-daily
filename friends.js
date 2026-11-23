@@ -89,6 +89,7 @@ function showFriendInvites(invites,target=activeInvites) {
   const badge=get("friend-unread");
   badge.textContent=invites.length;
   badge.hidden=invites.length===0;
+  get("menu-unread").hidden=badge.hidden;
   if (!target?.isConnected || !get("modal").open) return;
   const ui=words();
   const list=element("ul","");

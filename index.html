@@ -7,17 +7,19 @@
 <meta name="description" content="A daily open-answer quiz. Find the facts that others overlook. Play in English or Russian.">
 <title>Rare Below</title>
 <link rel="icon" href="art/mark.png">
-<link rel="stylesheet" href="style.css?v=minecart">
+<link rel="stylesheet" href="style.css?v=company">
 <script defer src="catalog-data.js"></script>
 <script defer src="question-bank.js?v=full-recap"></script>
 <script defer src="everyday-questions.js?v=everyday"></script>
-<script defer src="open-questions.js?v=everyday"></script>
-<script defer src="suggestions.js?v=full-recap"></script>
-<script defer src="live-client.js?v=full-recap"></script>
+<script defer src="theme-questions.js?v=company"></script>
+<script defer src="open-questions.js?v=company"></script>
+<script defer src="suggestions.js?v=company"></script>
+<script defer src="live-client.js?v=company"></script>
+<script defer src="company.js?v=company"></script>
 <script defer src="audio.js?v=full-recap"></script>
-<script defer src="friends.js?v=minecart"></script>
+<script defer src="friends.js?v=company"></script>
 <script defer src="mine-scene.js?v=dripstone"></script>
-<script defer src="game.js?v=crystal-shaft"></script>
+<script defer src="game.js?v=company"></script>
 </head>
 <body>
 <header class="top"><div class="shell top-inner">
@@ -25,7 +27,20 @@
   <nav id="nav"><button id="rules" data-text="rules"></button><button id="stats" data-text="stats"></button><button id="sound" data-text="sound" aria-haspopup="dialog"></button><button id="lang" aria-label="Switch language"></button></nav>
 </div></header>
 <main class="shell">
-  <div class="daily-bar"><p><span class="live" aria-hidden="true"></span><span id="edition"></span></p><div class="mode-buttons"><button id="endless" data-text="endless" aria-haspopup="dialog"></button><button id="duel" data-text="duel" aria-haspopup="dialog"></button><button id="friends" aria-haspopup="dialog"><span data-text="friends"></span><span id="friend-unread" hidden></span></button><button id="archive" data-text="archive"></button></div></div>
+  <div class="daily-bar">
+    <p><span class="live" aria-hidden="true"></span><span id="edition"></span></p>
+    <details id="game-menu" class="game-menu">
+      <summary id="game-menu-label"><span class="menu-lines" aria-hidden="true"></span><span class="sr-only" data-text="menu"></span><span id="menu-unread" hidden></span></summary>
+      <div class="mode-buttons">
+        <button id="packs" data-text="pack" aria-haspopup="dialog"></button>
+        <button id="company" data-text="company" aria-haspopup="dialog"></button>
+        <button id="endless" data-text="endless" aria-haspopup="dialog"></button>
+        <button id="duel" data-text="duel" aria-haspopup="dialog"></button>
+        <button id="friends" aria-haspopup="dialog"><span data-text="friends"></span><span id="friend-unread" hidden></span></button>
+        <button id="archive" data-text="archive" aria-haspopup="dialog"></button>
+      </div>
+    </details>
+  </div>
   <section class="machine" id="machine">
     <div class="world" aria-hidden="true">
       <canvas id="mine-scene"></canvas>
@@ -65,8 +80,8 @@
     <h1 id="prompt"></h1>
     <form id="answer-form"><label class="sr-only" for="answer" data-text="answerLabel"></label><div class="timer" id="timer" aria-hidden="true"></div><input id="answer" maxlength="100" autocomplete="off" required><button class="primary" data-text="submit"></button></form>
     <div class="answer-suggestions" id="suggestions" hidden></div>
-    <div class="actions question-actions"><button class="quiet" id="skip" data-text="skip"></button><button class="quiet" id="finish-endless" data-text="stopRun" hidden></button><span id="check-status" role="status"></span><a class="direct-duel" id="match-direct" data-text="directDuel" target="_blank" rel="noopener noreferrer" hidden></a></div>
-    <div id="feedback" hidden><p id="verdict" role="status"></p><p id="rival-verdict" class="rival-answer" hidden></p><p id="sample"></p><p class="arrival" id="arrival"></p><button class="primary" id="next"></button></div>
+    <div class="actions question-actions"><button class="quiet" id="skip" data-text="skip"></button><button class="quiet" id="finish-endless" data-text="stopRun" hidden></button><button class="quiet" id="review-answer" data-text="reviewAnswer" hidden></button><span id="check-status" role="status"></span><a class="direct-duel" id="match-direct" data-text="directDuel" target="_blank" rel="noopener noreferrer" hidden></a></div>
+    <div id="feedback" hidden><p id="verdict" role="status"></p><p id="rival-verdict" class="rival-answer" hidden></p><p id="sample"></p><p class="arrival" id="arrival"></p><div id="company-board" hidden></div><button class="primary" id="next"></button></div>
   </section>
 </template>
 <template id="results">
@@ -76,6 +91,7 @@
     <p class="score" id="total"></p>
     <p id="badge" class="challenge"></p>
     <p id="comparison" role="status" hidden></p><button class="quiet" id="refresh-duel" data-text="refresh" hidden></button>
+    <div id="company-results" hidden></div>
     <ol id="recap"></ol>
     <div class="actions"><button class="primary" id="share" data-text="share"></button><button class="quiet" id="today" data-text="todayButton"></button></div>
     <p id="share-status" role="status"></p>
@@ -114,6 +130,47 @@
       <button class="quiet" id="live-retry" data-text="retryLive" hidden></button>
       <button class="quiet" id="live-back" data-text="duelMenu"></button>
       <a class="direct-duel" id="live-direct" data-text="directDuel" target="_blank" rel="noopener noreferrer" hidden></a>
+    </div>
+    <p id="live-notice" role="status"></p>
+  </section>
+</template>
+<template id="company-menu">
+  <div class="company-menu">
+    <p data-text="companyIntro"></p>
+    <label><span data-text="companyName"></span><input id="company-name" maxlength="24" autocomplete="off"></label>
+    <form id="company-create" class="join-form">
+      <div class="company-options">
+        <label><span data-text="companyTheme"></span><select id="company-pack"></select></label>
+        <label><span data-text="companyRoundCount"></span><select id="company-rounds"><option>5</option><option selected>7</option><option>10</option></select></label>
+      </div>
+      <button class="primary" data-text="createRoom"></button>
+    </form>
+    <form class="join-form" id="company-join">
+      <label for="company-code" data-text="roomCode"></label>
+      <div class="join-controls"><input id="company-code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="6" required><button class="quiet" data-text="joinCode"></button></div>
+    </form>
+    <p id="company-notice" role="status"></p>
+  </div>
+</template>
+<template id="company-lobby">
+  <section class="live-lobby">
+    <p id="live-status" class="challenge" role="status"></p>
+    <p id="company-settings"></p>
+    <div id="company-lobby-roster"></div>
+    <div class="live-url">
+      <input id="live-url" readonly inputmode="none">
+      <button class="quiet" id="live-copy" data-text="invite"></button>
+    </div>
+    <p id="live-room-code"><span data-text="roomCode"></span> <code id="current-room-code"></code></p>
+    <form id="company-rename" class="join-form">
+      <label for="company-lobby-name" data-text="companyName"></label>
+      <div class="join-controls"><input id="company-lobby-name" maxlength="24" autocomplete="off"><button class="quiet" data-text="companySaveName"></button></div>
+    </form>
+    <div class="actions">
+      <button class="primary" id="company-start" data-text="companyStart" hidden></button>
+      <button class="quiet" id="live-retry" data-text="retryLive" hidden></button>
+      <button class="quiet" id="company-back" data-text="company"></button>
+      <a class="direct-duel" id="live-direct" data-text="directCompany" target="_blank" rel="noopener noreferrer" hidden></a>
     </div>
     <p id="live-notice" role="status"></p>
   </section>

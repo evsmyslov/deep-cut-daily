@@ -152,6 +152,30 @@ Object.assign(strings.ru, {
   acceptInvite:"Войти в дуэль", declineInvite:"Отклонить", removeFriend:"Удалить", friendsLoading:"Загружаем друзей…",
   contactCode:"Введите код друга из восьми символов.", contactMissing:"Друг не найден.", contactSelf:"Это ваш собственный код."
 });
+Object.assign(strings.en, {
+  pack:"Themed expeditions", pickPack:"Choose an expedition", packIntro:"Seven questions on this theme.",
+  packReplay:"New expedition", archiveNew:"Not played", archiveResume:"Continue", archiveDone:"Finished",
+  company:"Group room", companyIntro:"Play with 2–8 people. Share the code and compare finds after each round.",
+  companyName:"Nickname", companyTheme:"Theme", companyRoundCount:"Questions", companyAll:"All themes",
+  companySaveName:"Save name", companyStart:"Start expedition", companyWait:"Waiting for the host to start.",
+  companyNeedPlayers:"At least two players are needed to start.", companyPlayer:"Miner", companyYou:"you",
+  companyHost:"host", companyStandings:"Room standings", companyUnique:"Unique in this room",
+  companyStarted:"This expedition has already started.", directCompany:"Open room directly",
+  reviewAnswer:"Suggest this answer", reviewSent:"Sent for review.", reviewError:"Could not send the suggestion. Try again later.",
+  reviewInvalid:"Enter the answer as a short name or phrase.", reviewBusy:"The review queue is full for now."
+});
+Object.assign(strings.ru, {
+  pack:"Тематические экспедиции", pickPack:"Выберите экспедицию", packIntro:"Семь вопросов на эту тему.",
+  packReplay:"Новая экспедиция", archiveNew:"Не сыграно", archiveResume:"Продолжить", archiveDone:"Завершено",
+  company:"Комната для компании", companyIntro:"Играйте вдвоём или компанией до 8 человек. Поделитесь кодом и сравнивайте находки после каждого раунда.",
+  companyName:"Ник", companyTheme:"Тема", companyRoundCount:"Вопросов", companyAll:"Все темы",
+  companySaveName:"Сохранить имя", companyStart:"Начать экспедицию", companyWait:"Ждём, пока ведущий начнёт игру.",
+  companyNeedPlayers:"Для старта нужны хотя бы два игрока.", companyPlayer:"Шахтёр", companyYou:"вы",
+  companyHost:"ведущий", companyStandings:"Таблица комнаты", companyUnique:"Уникальный ответ в комнате",
+  companyStarted:"Экспедиция в этой комнате уже началась.", directCompany:"Открыть комнату напрямую",
+  reviewAnswer:"Предложить этот ответ", reviewSent:"Отправлено на проверку.", reviewError:"Не удалось отправить. Повторите позже.",
+  reviewInvalid:"Введите ответ коротким названием или фразой.", reviewBusy:"Очередь проверки пока заполнена."
+});
 const get = id => document.getElementById(id);
 const today = () => Math.max(START, Math.floor(Date.now() / DAY));
 const iso = day => new Date(day * DAY).toISOString().slice(0, 10);
@@ -186,6 +210,7 @@ function normalizeRoomCode(value) {
 const editionKey = (day, revision) => `daily:${day}${revision>1 ? `:${revision}` : ""}`;
 function readRoute() {
   const args=new URLSearchParams(location.search);
+  const company=args.get("company")==="1";
   const continued=normalizeRoomCode(args.get("continue"));
   if (location.origin===answerService && continued) {
     const member=new URLSearchParams(location.hash.slice(1)).get("seat") ?? history.state?.duelSeat;
@@ -193,15 +218,17 @@ function readRoute() {
       const clean=new URL(location.href);
       clean.hash="";
       try { history.replaceState({...history.state,duelSeat:member},"",clean); } catch { /* The fragment can still be used. */ }
-      return {mode:"live",duel:continued,member,key:`live:${continued}`};
+      return {mode:"live",duel:continued,member,company,key:`live:${continued}`};
     }
   }
   const pathInvite=location.pathname.match(/\/play\/join\/([^/]+)\/?$/)?.[1];
   const guestRoom=[pathInvite,args.get("join"),location.hash.match(/^#join-(\w+)$/)?.[1]].map(normalizeRoomCode).find(Boolean);
-  if (guestRoom) return {mode:"live",duel:guestRoom,seat:"guest",key:`live:${guestRoom}:guest`};
+  if (guestRoom) return {mode:"live",duel:guestRoom,company,seat:"guest",key:`live:${guestRoom}:guest`};
   const mode=args.get("mode");
   const duel=normalizeRoomCode(args.get("room"));
-  if ((mode==="duel" && duel?.length===16) || (mode==="live" && duel)) return {mode,duel,key:`${mode}:${duel}`};
+  if ((mode==="duel" && duel?.length===16) || (mode==="live" && duel)) return {mode,duel,company,key:`${mode}:${duel}`};
+  const pack=args.get("pack");
+  if (mode==="pack" && minePack(pack)) return {mode,pack,key:`pack:${pack}`};
   if (mode==="endless") {
     const requested=args.get("difficulty");
     const difficulty=endlessModes.includes(requested) ? requested : "easy";
@@ -224,7 +251,8 @@ function dailyRoute() {
 }
 let cachedDeck;
 function questionAt(index) {
-  if (round.answers[index]?.prompt) return mineQuestion(round.answers[index].prompt);
+  const pinned=round.answers[index]?.prompt ?? round.prompts?.[index];
+  if (pinned) return mineQuestion(pinned);
   if (route.mode==="daily") return mineQuestion(dailyIds(route.day,route.revision)[index]);
   const version=round.deckVersion ?? 1;
   const size=mineDecks[version].length;
@@ -234,6 +262,11 @@ function questionAt(index) {
     cachedDeck={seed,version,ids:mineIds(seed,route.mode,version)};
   }
   return mineQuestion(cachedDeck.ids[index%size]);
+}
+function expeditionLength() {
+  if (route.mode==="pack") return minePackLength;
+  if (route.mode==="live") return liveView?.state?.rounds ?? questionsPerRound;
+  return questionsPerRound;
 }
 function depthAt(points) {
   const stop = depthThresholds.findLastIndex(threshold => points >= threshold);
@@ -250,6 +283,8 @@ let mineScene;
 function setWorld(count = 0, points = 0, animate = false) {
   const machine = get("machine");
   const progress = get("progress");
+  const rounds=expeditionLength();
+  if (progress.children.length!==rounds) progress.replaceChildren(...Array.from({length:rounds},()=>element("i","")));
   const {stop, km} = depthAt(points);
   machine.dataset.stop = stop;
   machine.dataset.depth = km;
@@ -269,9 +304,8 @@ function setWorld(count = 0, points = 0, animate = false) {
 
 function mountWorld() {
   mineScene = new MineScene(get("mine-scene"), depthThresholds);
-  strata.forEach((_, index) => {
+  strata.forEach(() => {
     get("depth-map").append(element("span", ""));
-    if (index > 0) get("progress").append(element("i", ""));
   });
 }
 function element(name, text) {
@@ -305,11 +339,13 @@ function swap(id) {
   page = id;
   get("stage").replaceChildren(get(id).content.cloneNode(true));
   localize();
-  get("hud-duel-score").hidden=route.mode!=="live";
+  get("hud-duel-score").hidden=route.mode!=="live" || route.company;
   const ui = words();
   get("duel").disabled=route.mode==="live" && id!=="results";
   get("friends").disabled=get("duel").disabled;
-  get("edition").textContent = route.mode === "daily" ? `${route.day === today() ? ui.today : ui.past} / ${displayDate(route.day)}` : ui[route.mode];
+  get("company").disabled=get("duel").disabled;
+  get("edition").textContent = route.mode === "daily" ? `${route.day === today() ? ui.today : ui.past} / ${displayDate(route.day)}`
+    : route.mode==="pack" ? minePack(route.pack)[lang] : route.company ? ui.company : ui[route.mode];
   get("footer-mode").textContent = route.mode === "daily" && route.rival !== null ? ui.versus : `30 s · ${ui.active.split(" · ").at(-1)}`;
   clock();
 }
@@ -328,8 +364,8 @@ function intro(focus = false) {
   get("challenge").hidden = route.mode !== "daily" || route.rival === null;
   if (route.mode !== "daily") {
     get("stage").querySelector("[data-text=daily]").hidden = true;
-    get("topic").textContent = ui[route.difficulty ?? route.mode];
-    get("pitch").textContent = route.difficulty ? ui.endlessModes[endlessModes.indexOf(route.difficulty)] : ui.matchIntro;
+    get("topic").textContent = route.mode==="pack" ? minePack(route.pack)[lang] : ui[route.difficulty ?? route.mode];
+    get("pitch").textContent = route.mode==="pack" ? ui.packIntro : route.difficulty ? ui.endlessModes[endlessModes.indexOf(route.difficulty)] : ui.matchIntro;
     get("lobby-status").textContent = route.mode === "duel" ? ui.matchReady : "";
   }
   invite.hidden = route.mode !== "duel";
@@ -352,6 +388,7 @@ function intro(focus = false) {
       if (route !== current || !button.isConnected) return;
     }
     round = existing ?? { answers:[], feedback:false, done:false, deckVersion, seed:seed ?? crypto.getRandomValues(new Uint32Array(1))[0] };
+    if (current.mode==="pack" && !round.prompts) round.prompts=packIds(current.pack,round.seed).slice(0,minePackLength);
     if (current.mode==="endless" && !round.done && (round.deckVersion ?? 1)<MINE_DECK_VERSION) {
       round.answers=round.answers.map((answer,index)=>({...answer,prompt:questionAt(index).id}));
       round.deckVersion=MINE_DECK_VERSION;
@@ -364,19 +401,20 @@ function intro(focus = false) {
   };
   if (focus) get("start").focus();
   if (invitation) enterLive(invitation);
+  else if (location.origin===answerService && new URLSearchParams(location.search).get("company")==="1") showCompanyMenu();
   else if (location.origin===answerService && new URLSearchParams(location.search).get("duel")==="1") showDuelMenu();
 }
 
 function question(draft = "", focus = true) {
   clearInterval(questionTimer);
   swap("question");
-  const index = round.answers.length - Number(round.feedback);
+  const index = round.answers.length - Number(Boolean(round.feedback));
   const model = questionAt(index);
   const ui = words();
   const strict = route.mode==="endless" && route.difficulty!=="easy";
   const minimumPoints = route.difficulty==="rare" ? 55 : 0;
   setWorld(round.answers.length, score(round));
-  const denominator = route.mode === "endless" ? "" : ` / ${questionsPerRound}`;
+  const denominator = route.mode === "endless" ? "" : ` / ${expeditionLength()}`;
   get("category").textContent = route.difficulty ? `${ui[route.difficulty]} · ${ui.question} ${index+1}` : `${ui.question} ${index + 1}${denominator}`;
   get("prompt").textContent = model[lang];
   get("answer").placeholder = ui.placeholder;
@@ -396,7 +434,7 @@ function question(draft = "", focus = true) {
     mineScene.afterJourney(() => {
       if (page!=="question" || round!==activeRound || route!==activeRoute || !round.feedback) return;
       round.feedback = false;
-      if (route.mode !== "endless" && round.answers.length === questionsPerRound) { complete(); return; }
+      if (route.mode !== "endless" && round.answers.length === expeditionLength()) { complete(); return; }
       round.deadline = null;
       save();
       question();
@@ -434,6 +472,7 @@ function question(draft = "", focus = true) {
     input.readOnly=false;
     submit.disabled=false;
     status.textContent=words()[message];
+    if (message==="wrongRetry") offerAnswerReview(model,input.value.trim());
     playCue("reject");
     input.focus({preventScroll:true});
     input.select();
@@ -458,6 +497,7 @@ function question(draft = "", focus = true) {
     get("answer-form").hidden = true;
     get("suggestions").hidden = true;
     get("skip").hidden = true;
+    get("review-answer").hidden = true;
     get("check-status").textContent = "";
     get("feedback").hidden = false;
     get("verdict").textContent = found
@@ -467,7 +507,7 @@ function question(draft = "", focus = true) {
     const depth = depthAt(score(round));
     const motion = pointsFor(answer) > 0 ? names.arrived : names.stayed;
     get("arrival").textContent = `${motion} · ${layerName(depth.stop)} · ${get("depth").textContent}`;
-    const last = route.mode !== "endless" && index === questionsPerRound - 1;
+    const last = route.mode !== "endless" && index === expeditionLength() - 1;
     get("next").textContent = last ? names.result : names.next;
     if (moveFocus) get("next").focus({preventScroll:true});
   }
@@ -508,13 +548,14 @@ function results(focus = true) {
   const ui = words();
   const points = score(round);
   const endless = route.mode === "endless";
-  get("finished-topic").textContent = route.mode === "daily" ? displayDate(route.day) : ui[route.difficulty ?? route.mode];
+  get("finished-topic").textContent = route.mode === "daily" ? displayDate(route.day) : route.mode==="pack" ? minePack(route.pack)[lang]
+    : route.company ? ui.company : ui[route.difficulty ?? route.mode];
   setWorld(round.answers.length, points);
   const found=round.answers.filter(answer=>answer.tier>=0).length;
-  get("total").textContent = endless ? `${points} ${ui.points} · ${found} ${ui.answersFound}` : `${points} / ${maximum} ${ui.points}`;
+  get("total").textContent = endless ? `${points} ${ui.points} · ${found} ${ui.answersFound}` : `${points} / ${expeditionLength()*Math.max(...scores)} ${ui.points}`;
   get("badge").textContent = endless && route.difficulty!=="easy" && round.answers.at(-1)?.reason==="timeout"
     ? ui.streakEnded : earned([round]).flatMap((unlocked, index) => unlocked ? [ui.awards[index][0]] : []).at(-1);
-  get("comparison").hidden = !["duel","live"].includes(route.mode) && route.rival == null;
+  get("comparison").hidden = route.company || (!["duel","live"].includes(route.mode) && route.rival == null);
   if (route.mode === "daily" && route.rival !== null) showComparison(route.rival,points);
   const recapUpdates=[];
   round.answers.forEach((answer,index)=>{
@@ -532,13 +573,14 @@ function results(focus = true) {
     row.append(details);
     get("recap").append(row);
   });
-  get("share").hidden = endless || route.mode === "live";
+  get("share").hidden = endless || route.mode === "live" || route.mode==="pack";
   get("refresh-duel").hidden = route.mode !== "duel";
   get("today").onclick = () => {
-    if (endless) { delete library[route.key]; persist(); intro(true); }
+    if (endless || route.mode==="pack") { delete library[route.key]; persist(); intro(true); }
     else openEdition();
   };
   if (endless) get("today").textContent = ui.fresh;
+  if (route.mode==="pack") get("today").textContent=ui.packReplay;
   get("share").onclick = () => {
     if (route.mode === "duel") { copyChallenge(location.href); return; }
     const url = new URL(gameRoot);
@@ -695,7 +737,7 @@ function openEdition(day,mode,duel,revision) {
     if (edition>1) url.searchParams.set("set",edition);
   } else if (mode) {
     url.searchParams.set("mode",mode);
-    if (duel) url.searchParams.set(mode==="endless" ? "difficulty" : "room",duel);
+    if (duel) url.searchParams.set(mode==="endless" ? "difficulty" : mode==="pack" ? "pack" : "room",duel);
   }
   history.pushState(browserId ? {minePlayer:browserId} : null,"",url);
   route=readRoute();
@@ -720,6 +762,22 @@ function showEndlessMenu() {
     list.append(button);
   });
   modal(words().endless,list);
+}
+function showPackMenu() {
+  const ui=words();
+  const list=element("div","");
+  list.className="mode-picker";
+  for (const [id,pack] of Object.entries(minePacks)) {
+    const button=element("button",pack[lang]);
+    button.className="quiet";
+    button.append(element("small",`${minePackLength} · ${library[`pack:${id}`]?.done ? ui.replay : library[`pack:${id}`] ? ui.resume : ui.play}`));
+    button.onclick=()=>{
+      get("modal").close();
+      openEdition(undefined,"pack",id);
+    };
+    list.append(button);
+  }
+  modal(ui.pickPack,list);
 }
 async function copyChallenge(text, status = "share-status") {
   try {
@@ -792,6 +850,21 @@ function launch() {
     credits.append(geo," · ",wiki);
     modal(ui.rules,...[...ui.rulesText,ui.openRules,ui.moreRules,ui.retryRule,ui.dataRarity].map(text=>element("p",text)),credits);
   };
+  const menu=get("game-menu");
+  menu.addEventListener("click",event=>{
+    if (event.target.closest("button")) menu.open=false;
+  });
+  document.addEventListener("click",event=>{
+    if (menu.open && !menu.contains(event.target)) menu.open=false;
+  });
+  menu.addEventListener("keydown",event=>{
+    if (event.key!=="Escape" || !menu.open) return;
+    event.stopPropagation();
+    menu.open=false;
+    get("game-menu-label").focus();
+  });
+  get("packs").onclick = showPackMenu;
+  get("company").onclick = showCompanyMenu;
   get("endless").onclick = showEndlessMenu;
   get("sound").onclick = showAudioMenu;
   get("friends").onclick = showFriends;
@@ -807,18 +880,27 @@ function launch() {
     const ui = words();
     const list = element("div", "");
     list.className = "archive-list";
-    for (let day = today() - 1; day >= Math.max(START, today() - 14); day--) {
-      const button = element("button", displayDate(day));
-      button.className = "archive-item";
-      button.onclick = () => { get("modal").close(); openEdition(day); };
+    function addEdition(day,revision,label) {
+      const saved=library[editionKey(day,revision)];
+      const button=element("button","");
+      button.className="archive-item";
+      const status=element("span",saved?.done ? `${ui.archiveDone} · ${score(saved)} / ${maximum}` : saved ? ui.archiveResume : ui.archiveNew);
+      status.className="archive-status";
+      button.append(element("span",label),status);
+      button.onclick=()=>{
+        get("modal").close();
+        openEdition(day,undefined,undefined,revision);
+        if (saved) get("start").click();
+      };
       list.append(button);
+    }
+    for (let day = today(); day >= Math.max(START, today() - 14); day--) {
+      const label=day===today() ? `${displayDate(day)} · ${ui.today}` : displayDate(day);
+      addEdition(day,latestEditionRevision(day),label);
     }
     if (today()-REPLAY_DAY<=14) {
       for (const [revision,label] of [[2,ui.secondEdition],[1,ui.originalEdition]]) {
-        const button=element("button",`${displayDate(REPLAY_DAY)} · ${label}`);
-        button.className="archive-item";
-        button.onclick=()=>{get("modal").close();openEdition(REPLAY_DAY,undefined,undefined,revision);};
-        list.append(button);
+        addEdition(REPLAY_DAY,revision,`${displayDate(REPLAY_DAY)} · ${label}`);
       }
     }
     const classic = element("a", ui.classic);
