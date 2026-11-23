@@ -14,7 +14,11 @@ Some categories verify additional names against Wikidata. Coverage varies by top
 
 New editorial questions live in `theme-questions.js`. Each question has a stable ID, both prompt languages, and bilingual answer rows with aliases and a rarity tier. Use `node scripts/check-content.mjs` to check new entries and pack coverage. Append answers to keep their existing numeric IDs stable in saved rounds.
 
+Use familiar categories with a readily available first answer and room for a less obvious choice. A letter clue must fix the same spelling standard in both languages so every answer is available to both players. After editorial review, add the question to the active calendar and decks.
+
 The Sites answer service stores submitted proposals in its `mine_answer_review` table. A reviewer can read that table through the Sites database tools, match the proposal by question ID, and add a confirmed alias or answer to the catalog. Deploy the same question source to the site and the answer service.
+
+For a rarity review, use the daily recap counts once enough players have finished. Compare counts for the same question and edition. An unpopular answer deserves more points only after checking its aliases and how well it fits. Confirm changes in a new question ID for future editions so old results retain their scores. Each question has one +120 answer.
 
 ## Deployment
 

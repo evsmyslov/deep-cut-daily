@@ -319,3 +319,308 @@ const themeCards = [
 3;canary creeper|Tropaeolum peregrinum;настурция иноземная|канарская настурция
 `]
 ];
+
+const rotationCards = [
+["things-that-fold","Name something that is designed to fold up.","Назовите вещь, которую можно сложить.",`
+4;Umbrella;зонт|зонтик
+4;Folding chair|camping chair;складной стул|раскладной стул
+0;Paper fan|hand fan|folding fan;веер|складной веер
+0;Folding table;складной стол|раскладной стол
+0;Deckchair|folding deck chair;шезлонг|складной шезлонг
+0;Folding bicycle|folding bike;складной велосипед
+0;Stroller|pushchair|baby buggy;детская коляска|складная коляска
+0;Sofa bed|fold-out couch;диван-кровать|раскладной диван
+1;Pocketknife|folding knife;складной нож|перочинный нож
+1;Stepladder|folding ladder;стремянка|складная лестница
+1;Ironing board;гладильная доска
+1;Folding phone|foldable phone|flip phone;телефон-раскладушка|складной телефон
+1;Folding cot|camp bed;раскладушка|складная кровать
+1;Folding scooter;складной самокат
+2;Folding ruler|carpenter's rule;складная линейка|складной метр
+2;Folding music stand;складной пюпитр|пюпитр
+2;Folding screen|room divider;складная ширма|ширма
+3;Folding kayak|origami kayak;складной каяк|складная байдарка
+`],
+["things-with-pockets","Name something with a pocket for carrying small items.","Назовите вещь, у которой бывает карман для мелочей.",`
+4;Jeans;джинсы
+4;Jacket|coat;куртка|пальто
+0;Backpack|rucksack;рюкзак
+0;Handbag|purse;сумочка|дамская сумка
+0;Shirt;рубашка
+0;Hoodie|sweatshirt;худи|толстовка
+0;Trousers|pants;брюки|штаны
+0;Shorts;шорты
+1;Suitcase;чемодан
+1;Apron;фартук|передник
+1;Life jacket|life vest;спасательный жилет
+1;Work overalls|coveralls|dungarees;рабочий комбинезон|комбинезон
+1;Lab coat;лабораторный халат|белый халат
+2;Tool belt;пояс для инструментов|пояс плотника
+2;Car door|car door pocket;дверь автомобиля|дверь машины
+2;Golf bag;сумка для гольфа
+2;Laptop sleeve|laptop bag;чехол для ноутбука|сумка для ноутбука
+3;Saddlebag|bicycle pannier;велосумка на багажник|седельная сумка
+`],
+["foods-with-cheese","Name a dish that is usually made with cheese.","Назовите блюдо, которое обычно готовят с сыром.",`
+4;Pizza;пицца
+4;Cheeseburger;чизбургер
+0;Macaroni and cheese|mac and cheese;макароны с сыром|мак энд чиз
+0;Khachapuri;хачапури
+0;Lasagna|lasagne;лазанья
+0;Grilled cheese sandwich|grilled cheese|cheese toastie;горячий бутерброд с сыром|сырный тост
+0;Cheesecake;чизкейк
+0;Greek salad;греческий салат
+1;Quesadilla;кесадилья
+1;Caprese salad|caprese;капрезе|салат капрезе
+1;Cheese fondue;сырное фондю|фондю
+1;Parmesan risotto|risotto alla parmigiana;ризотто с пармезаном
+1;Eggplant parmigiana|aubergine parmigiana|eggplant parmesan;баклажаны пармиджана|баклажаны с пармезаном
+2;Käsespätzle|kaesespaetzle|cheese spätzle;кезешпецле|шпецле с сыром
+2;Tartiflette;тартифлет|тартифлетт
+2;Raclette;раклет
+2;Pão de queijo|Brazilian cheese bread;пао де кейжо|бразильские сырные булочки
+3;Aligot;алиго
+`],
+["foods-with-rice","Name a dish in which rice is a main ingredient.","Назовите блюдо, в котором рис — один из главных ингредиентов.",`
+4;Pilaf|plov|pilau|pulao;плов
+4;Sushi;суши
+0;Fried rice;жареный рис
+0;Risotto;ризотто
+0;Paella;паэлья
+0;Rice pudding;рисовый пудинг
+0;Rice porridge|congee|jook;рисовая каша|конджи
+0;Stuffed peppers;фаршированный перец|фаршированные перцы
+1;Biryani|biriyani;бирьяни|бирияни
+1;Onigiri|rice ball;онигири|рисовый шарик
+1;Dolma|dolmades;долма
+1;Bibimbap;пибимпап|бибимбап
+1;Jambalaya;джамбалайя|джамбалайа
+2;Nasi goreng;наси горенг
+2;Arancini;аранчини
+2;Omurice;омурайсу|омурис
+2;Mango sticky rice;клейкий рис с манго
+3;Kedgeree;кеджери
+`],
+["nocturnal-animals","Name an animal that is mostly active at night.","Назовите животное, которое чаще всего активно ночью.",`
+4;Owl;сова
+4;Bat;летучая мышь
+0;Hedgehog;ёж|ёжик
+0;Raccoon;енот
+0;Red fox|fox;лисица|лиса
+0;Badger;барсук
+0;Opossum;опоссум
+0;Moth;ночная бабочка|мотылёк
+1;Aardvark;трубкозуб
+1;Jerboa;тушканчик
+1;Slow loris|loris;толстый лори|медленный лори
+1;Tarsier;долгопят
+1;Sugar glider;сахарная сумчатая летяга|сахарный поссум
+1;Kakapo;какапо|совиный попугай
+2;Fennec fox|fennec;фенек
+2;African civet|civet;африканская цивета|цивета
+2;Aye-aye|Madagascar aye aye;ай-ай|мадагаскарская руконожка|руконожка
+3;Kinkajou;кинкажу
+`],
+["sports-with-a-ball","Name a sport played with a ball.","Назовите вид спорта, в котором играют мячом.",`
+4;Football|soccer|association football;футбол
+4;Basketball;баскетбол
+0;Volleyball;волейбол
+0;Tennis|lawn tennis;теннис|большой теннис
+0;Table tennis|ping pong;настольный теннис|пинг-понг
+0;Baseball;бейсбол
+0;Handball|team handball;гандбол
+0;Rugby;регби
+1;Golf;гольф
+1;Cricket;крикет
+1;Softball;софтбол
+1;Water polo;водное поло
+1;Lacrosse;лакросс
+1;Polo|horse polo;поло|конное поло
+2;Floorball;флорбол
+2;Netball;нетбол
+2;Sepak takraw;сепак такро|сепактакрау
+2;Gaelic football;гэльский футбол
+3;Korfball;корфбол
+`],
+["films-with-time-travel","Name a film involving time travel or a time loop.","Назовите фильм о путешествии во времени или временной петле.",`
+4;Back to the Future|BTTF;Назад в будущее
+4;The Terminator|Terminator;Терминатор
+0;Interstellar;Интерстеллар
+0;Harry Potter and the Prisoner of Azkaban|Prisoner of Azkaban;Гарри Поттер и узник Азкабана|Узник Азкабана
+0;Avengers: Endgame|Avengers Endgame|Endgame;Мстители: Финал
+0;Groundhog Day;День сурка
+0;Edge of Tomorrow|Live Die Repeat;Грань будущего
+1;The Time Machine|The Time Machine 2002;Машина времени
+1;About Time;Бойфренд из будущего
+1;Looper;Петля времени
+1;Twelve Monkeys|12 Monkeys;12 обезьян|Двенадцать обезьян
+1;The Butterfly Effect|Butterfly Effect;Эффект бабочки
+1;Bill & Ted's Excellent Adventure|Bill and Teds Excellent Adventure;Невероятные приключения Билла и Теда
+2;Timecrimes|Los cronocrímenes;Временная петля
+2;Predestination;Патруль времени
+2;Primer|Primer 2004;Детонатор
+2;Time After Time|Time After Time 1979;Путешествие в машине времени
+3;Beyond the Infinite Two Minutes;За пределами бесконечных двух минут
+`],
+["films-with-dinosaurs","Name a film that features a dinosaur.","Назовите фильм, в котором появляется динозавр.",`
+4;Jurassic Park;Парк юрского периода
+4;Jurassic World;Мир юрского периода
+0;The Good Dinosaur|Good Dinosaur;Хороший динозавр
+0;Ice Age: Dawn of the Dinosaurs|Ice Age 3;Ледниковый период 3: Эра динозавров|Ледниковый период 3
+0;The Land Before Time|Land Before Time;Земля до начала времён
+0;Dinosaur|Dinosaur 2000|Disney's Dinosaur;Динозавр
+0;King Kong|King Kong 2005;Кинг-Конг
+1;Night at the Museum;Ночь в музее
+1;The Lost World: Jurassic Park|Jurassic Park 2;Парк юрского периода: Затерянный мир|Парк юрского периода 2
+1;We're Back! A Dinosaur's Story|Were Back;Мы вернулись! История динозавра
+1;Walking with Dinosaurs|Walking with Dinosaurs 2013;Прогулки с динозаврами
+1;Journey to the Center of the Earth|Journey to the Center of the Earth 2008;Путешествие к центру Земли
+2;Caveman|Caveman 1981;Пещерный человек
+2;The Lost World|The Lost World 1925;Затерянный мир|Затерянный мир 1925
+2;Baby: Secret of the Lost Legend|Baby Secret of the Lost Legend;Динозавр: Тайна затерянной легенды
+2;The Valley of Gwangi|Valley of Gwangi;Долина Гванги
+2;When Dinosaurs Ruled the Earth;Когда динозавры правили Землёй
+3;Gertie the Dinosaur;Динозавр Герти|Герти-динозавр
+`],
+["films-with-pirates","Name a film featuring a pirate.","Назовите фильм, в котором есть пират.",`
+4;Pirates of the Caribbean: The Curse of the Black Pearl|Pirates of the Caribbean|The Curse of the Black Pearl;Пираты Карибского моря: Проклятие Чёрной жемчужины|Пираты Карибского моря
+4;Peter Pan|Peter Pan 1953;Питер Пэн
+0;Hook|Hook 1991;Капитан Крюк
+0;Treasure Planet;Планета сокровищ
+0;The Princess Bride|Princess Bride;Принцесса-невеста
+0;Treasure Island|Treasure Island 1988;Остров сокровищ
+0;Sinbad: Legend of the Seven Seas|Sinbad;Синдбад: Легенда семи морей
+1;Captain Phillips;Капитан Филлипс
+1;The Pirates! In an Adventure with Scientists!|The Pirates Band of Misfits;Пираты! Банда неудачников
+1;Cutthroat Island;Остров головорезов
+1;The Sea Beast|Sea Beast;Морской монстр
+1;The SpongeBob SquarePants Movie|SpongeBob Movie;Губка Боб Квадратные Штаны
+2;Captain Blood;Одиссея капитана Блада|Капитан Блад
+2;The Crimson Pirate|Crimson Pirate;Багровый пират
+2;Yellowbeard;Жёлтая Борода
+2;The Pirates 2014;Пираты 2014
+2;Porco Rosso;Порко Россо
+3;Anne of the Indies;Анна — королева пиратов
+`],
+["films-at-sea","Name a film in which much of the story takes place at sea.","Назовите фильм, в котором значительная часть событий происходит в море.",`
+4;Titanic;Титаник
+4;Life of Pi;Жизнь Пи
+0;Jaws;Челюсти
+0;Finding Nemo;В поисках Немо
+0;Moana|Vaiana;Моана
+0;Das Boot|The Boat;Подводная лодка
+0;The Perfect Storm|Perfect Storm;Идеальный шторм
+1;Master and Commander: The Far Side of the World|Master and Commander;Хозяин морей: На краю Земли|Хозяин морей
+1;The Hunt for Red October|Hunt for Red October;Охота за «Красным Октябрём»|Охота за Красным Октябрем
+1;In the Heart of the Sea|Heart of the Sea;В сердце моря
+1;All Is Lost;Не угаснет надежда
+1;Triangle of Sadness;Треугольник печали
+2;Lifeboat|Lifeboat 1944;Спасательная шлюпка
+2;Crimson Tide;Багровый прилив
+2;Kon-Tiki|Kon Tiki;Кон-Тики
+2;The Finest Hours|Finest Hours;И грянул шторм
+2;Dead Calm;Мёртвый штиль
+3;A Night to Remember|A Night to Remember 1958;Гибель «Титаника»|Незабываемая ночь
+`],
+["songs-with-names","Name a song with a first name in its title.","Назовите песню, в названии которой есть имя человека.",`
+4;Billie Jean|Billie Jean Michael Jackson;Билли Джин|Билли Джин Майкл Джексон
+4;Jolene|Jolene Dolly Parton;Джолин|Джолин Долли Партон
+0;Hey Jude|Hey Jude Beatles;Хей Джуд|Эй Джуд
+0;Sweet Caroline|Sweet Caroline Neil Diamond;Свит Кэролайн
+0;Roxanne|Roxanne The Police;Роксанна
+0;Tanechka|Tanechka Carnival Night;Танечка
+0;Alisa|Sekret Alisa;Алиса|Алиса Секрет
+0;Katyusha|Katiusha;Катюша
+1;Come On Eileen|Come On Eileen Dexys Midnight Runners;Кам он Айлин
+1;Dear Prudence|Dear Prudence Beatles;Дорогая Пруденс
+1;Eleanor Rigby|Eleanor Rigby Beatles;Элеанор Ригби|Элинор Ригби
+1;Alison|Alison Elvis Costello;Элисон Костелло
+1;Aleksandra|Alexandra Moscow Does Not Believe in Tears;Александра|Александра Москва слезам не верит
+1;Alyosha;Алёша
+2;Veronica|Veronica Elvis Costello;Вероника Элвис Костелло
+2;Alejandro|Alejandro Lady Gaga;Алехандро
+2;The Ballad of John and Yoko|Ballad of John and Yoko;Баллада о Джоне и Йоко
+3;A Song for Jeffrey|A Song for Jeffrey Jethro Tull;Песня для Джеффри
+`],
+["songs-with-animals","Name a song with an animal in its title.","Назовите песню, в названии которой есть животное.",`
+4;Eye of the Tiger;Глаз тигра|Ай оф зе тайгер
+4;Baby Shark;Бэйби шарк|Малыш акулёнок
+0;Who Let the Dogs Out|Who Let the Dogs Out Baha Men;Кто выпустил собак
+0;Blackbird|Blackbird Beatles;Чёрный дрозд|Блэкбёрд
+0;Hound Dog|Hound Dog Elvis;Хаунд дог
+0;The Lion Sleeps Tonight|Lion Sleeps Tonight;Лев спит сегодня ночью
+0;A Grasshopper Sat in the Grass;В траве сидел кузнечик|Кузнечик
+0;Two Cheerful Geese;Два весёлых гуся
+1;War Pigs|War Pigs Black Sabbath;Военные свиньи|Вор пигс
+1;Wild Horses|Wild Horses Rolling Stones;Дикие лошади
+1;Crocodile Rock|Crocodile Rock Elton John;Крокодайл рок|Крокодиловый рок
+1;Three Little Birds|Three Little Birds Bob Marley;Три маленькие птички
+1;Feed the Birds|Feed the Birds Mary Poppins;Покормите птиц
+1;White Rabbit|White Rabbit Jefferson Airplane;Белый кролик
+2;Rock Lobster|Rock Lobster B-52s;Рок лобстер
+2;Black Cat|Black Cat Janet Jackson;Чёрная кошка Джанет Джексон
+2;A Horse with No Name|Horse with No Name;Лошадь без имени
+3;Albatross|Albatross Fleetwood Mac;Альбатрос Fleetwood Mac
+`],
+["bands-with-numbers","Name a band whose name contains a digit.","Назовите музыкальную группу, в названии которой есть цифра.",`
+4;U2;Ю ту|Ю2
+4;Maroon 5;Марун 5|Марун файв
+0;Blink-182|Blink 182;Блинк-182
+0;Sum 41;Сам 41|Сум 41
+0;5 Seconds of Summer|5SOS;5 секунд лета
+0;2 Unlimited;Ту Анлимитед|2 Анлимитед
+0;30 Seconds to Mars|Thirty Seconds to Mars;30 секунд до Марса
+0;5'nizza|5nizza;Пятница|5ница
+1;7B|7B band;7Б
+1;UB40;Ю би 40
+1;3 Doors Down;3 Дорс Даун
+1;The 1975;1975
+1;The B-52s|B-52s|B52s;Би 52
+1;2 Brothers on the 4th Floor;2 Бразерс он зе 4 флор
+2;10cc;10 сс
+2;999|999 band;Группа 999
+2;8 Bit Weapon;Восьмибитное оружие|8 бит оружие
+3;65daysofstatic|65 Days of Static;65 дней статики
+`],
+["music-duos","Name a music act best known as a duo.","Назовите музыкальную группу, известную как дуэт.",`
+4;Daft Punk;Дафт Панк
+4;Simon & Garfunkel|Simon and Garfunkel;Саймон и Гарфанкел
+0;Roxette;Роксет|Роксетт
+0;t.A.T.u.|tatu;Тату
+0;The White Stripes|White Stripes;Уайт Страйпс|Вайт Страйпс
+0;Eurythmics;Юритмикс|Эвритмикс
+0;Pet Shop Boys;Пет Шоп Бойз
+0;The Black Keys|Black Keys;Блэк Киз
+1;Hall & Oates|Daryl Hall and John Oates;Холл и Оутс
+1;Twenty One Pilots;Твенти Уан Пайлотс
+1;The Chemical Brothers|Chemical Brothers;Кемикал Бразерс
+1;The Proclaimers|Proclaimers;Проклеймерс
+1;MGMT;Эм Джи Эм Ти
+1;5'nizza|5nizza;Пятница|5ница
+2;The Kills|Kills;Зе Киллз
+2;Air|Air French duo;Эйр|Эйр французский дуэт
+2;Erasure;Ирейжер|Ирейжур
+3;Everything But the Girl|EBTG;Эврисинг Бат Зе Гёрл
+`],
+["car-brands-s","Name a car brand whose Latin-script name starts with S (including Š).","Назовите автомобильную марку на латинскую S или Š.",`
+4;Subaru;Субару
+4;Suzuki;Судзуки|Сузуки
+4;Škoda|Skoda;Шкода
+0;SEAT;Сеат
+0;Smart;Смарт
+0;Saab;Сааб
+0;SsangYong|Ssang Yong;Ссанъён|Ссангйонг|Сангёнг
+0;Shelby;Шелби
+1;Studebaker;Студебекер
+1;Saturn;Сатурн
+1;Scion;Сайон|Сцион
+1;Seres;Серес
+1;Simca;Симка
+2;Saleen;Салин|Сейлин
+2;Spyker;Спайкер
+2;Sunbeam;Санбим
+2;Saipa;Сайпа
+2;Soueast;Соуист
+3;Sachsenring;Заксенринг
+`]
+];

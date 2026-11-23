@@ -6,9 +6,9 @@ class MineScene {
   static finds = [
     {minimum:10, inset:0,    stone:"#657d79", light:"#c1d2bb", core:"#eef3d5", size:7,  shards:5},
     {minimum:25, inset:0,    stone:"#a47855", light:"#e7ba83", core:"#ffdfa7", size:10, shards:9},
-    {minimum:55, inset:.27,  stone:"#348778", light:"#87dfc4", core:"#ddffdb", size:15, shards:16},
-    {minimum:85, inset:.35,  stone:"#7861a6", light:"#c6a0f7", core:"#f3e3ff", size:19, shards:24},
-    {minimum:120,inset:.43,  stone:"#b7753d", light:"#ffd078", core:"#fff4bc", size:23, shards:33}
+    {minimum:55, inset:.27,  stone:"#348778", light:"#70f0ce", core:"#e6fff3", size:15, shards:22, waves:1, rays:0},
+    {minimum:85, inset:.36,  stone:"#7861a6", light:"#c292ff", core:"#f8edff", size:19, shards:34, waves:2, rays:6},
+    {minimum:120,inset:.46,  stone:"#b7753d", light:"#ffc253", core:"#fff5cf", size:24, shards:54, waves:3, rays:12}
   ];
   static impact = .71;
   static palettes = [
@@ -73,7 +73,7 @@ class MineScene {
     const distance = target - this.position;
     if (animate && distance>0 && !this.motion.matches) {
       const find = MineScene.finds.findLast(tier => gained >= tier.minimum);
-      const duration = Math.min(3500, 1130+Math.sqrt(distance)*75+(find?.inset ? 510 : 0));
+      const duration = Math.min(3740,1130+Math.sqrt(distance)*75+(find?.inset ? 580 : 0));
       this.startJourney(now,duration,find);
     } else {
       this.journey = null;
@@ -643,7 +643,7 @@ class MineScene {
     ctx.restore();
     if (breaking>=1) return;
     const light = (1-breaking)*this.ease((phase-.17)/.38);
-    this.glow(find.light,x,y,22+width*1.3,light*.44);
+    this.glow(find.light,x,y,22+width*1.65,light*(find.inset ? .65 : .44));
     ctx.save();
     ctx.translate(x,y);
     ctx.scale(1-.3*breaking,1-.59*breaking);
@@ -718,57 +718,63 @@ class MineScene {
     const {find,x,y,phase} = frame;
     if (phase<MineScene.impact) return;
     const ctx = this.context;
-    const age = this.ease((phase-MineScene.impact)/(1-MineScene.impact));
-    const pulse = this.ease(age/.14)*(1-age);
-    const fade = 1-this.ease((phase-.9)/.1);
-    const width = find.size*4;
-    this.glow(find.light,x-8,y,28+width,pulse*(find.inset ? .58 : .34));
-    if (find.minimum>=85) {
-      for (let ring=0;ring<(find.minimum===120 ? 2 : 1);ring++) {
-        const wave = Math.max(0,age-ring*.14);
-        if (wave===0) continue;
-        const radius = 8+wave*(width+23-ring*18);
-        ctx.globalAlpha = pulse*(ring ? .32 : .63);
-        ctx.beginPath();
-        for (let step=0;step<=8;step++) {
-          const angle = step*Math.PI/4;
-          const dx = x-8+Math.cos(angle)*radius;
-          const dy = y+Math.sin(angle)*radius*.67;
-          if (step) ctx.lineTo(dx,dy);
-          else ctx.moveTo(dx,dy);
-        }
-        ctx.strokeStyle = ring ? find.light : find.core;
-        ctx.lineWidth = ring ? 1 : 2;
-        ctx.stroke();
-      }
-    }
-    if (find.minimum===120) {
-      ctx.globalAlpha = pulse*.30;
-      for (let ray=0;ray<8;ray++) {
-        const angle = ray*Math.PI/4+.22*age;
-        const short = 12+age*20;
-        const long = 18+age*(100+ray%2*25);
-        this.shape(find.core,[[x-10+Math.cos(angle)*short,y+Math.sin(angle)*short],[x-10+Math.cos(angle-.06)*long,y+Math.sin(angle-.06)*long*.72],[x-10+Math.cos(angle+.06)*long,y+Math.sin(angle+.06)*long*.72]]);
-      }
-    }
+    const age = (phase-MineScene.impact)/(1-MineScene.impact);
+    const pulse = this.ease(age/.065)*(1-age)**2;
+    const width = find.size*(find.inset ? 6 : 3);
+    ctx.save();
+    ctx.translate(x-10,y);
+    ctx.globalCompositeOperation = "screen";
+    this.glow(find.light,0,0,28+width,pulse*(find.inset ? .87 : .38));
+    this.glow(find.core,0,0,10+find.size*(1+age),pulse*(find.inset ? .94 : .5));
+    if (find.inset) this.rewardWaves(find,age,width);
+    ctx.globalCompositeOperation = "source-over";
     for (let i=0;i<find.shards;i++) {
-      const flight = Math.max(0,age-this.hash(i,214)*.2);
+      const delay = this.hash(i,214)*.25;
+      const flight = Math.max(0,(age-delay)/(1-delay));
       const angle = this.hash(i,211)*Math.PI*2;
       const speed = .36+this.hash(i,99)*.64;
-      const dx = x-10+Math.cos(angle)*speed*flight*width*1.8;
-      const dy = y+Math.sin(angle)*speed*flight*width+flight*flight*23;
-      const glow = this.ease(flight/.12)*(1-flight);
+      const dx = Math.cos(angle)*speed*flight*width*1.35;
+      const dy = Math.sin(angle)*speed*flight*width+flight*flight*38;
       const color = i%3 ? find.light : find.core;
-      ctx.globalAlpha = glow*fade;
+      ctx.globalAlpha = this.ease(flight/.09)*(1-this.ease((flight-.4)/.6));
       if (find.inset && i%4===0) {
-        this.block(color,dx-1,dy-4,2,8);
-        this.block(color,dx-4,dy-1,8,2);
+        const arm = 3+Math.round(find.minimum/35);
+        this.block(color,dx,dy-arm,1,arm*2+1);
+        this.block(color,dx-arm,dy,arm*2+1,1);
         this.block(find.core,dx-1,dy-1,2,2);
       } else {
-        this.shape(color,[[dx,dy-3],[dx+2,dy],[dx,dy+3],[dx-2,dy]]);
+        this.block(color,dx,dy,i%3===0 ? 3 : 2,2);
       }
     }
-    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  rewardWaves(find,age,width) {
+    const ctx = this.context;
+    for (let ring=0;ring<find.waves;ring++) {
+      const delay = ring*.10;
+      const wave = (age-delay)/(1-delay);
+      if (wave<=0) continue;
+      const radius = 12+this.ease(wave)*(width+ring*18);
+      ctx.globalAlpha = this.ease(wave/.13)*(1-wave)**1.35*(ring ? .65 : .96);
+      this.trace(Array.from({length:8},(_,step)=>{
+        const angle = step*Math.PI/4;
+        return [Math.cos(angle)*radius,Math.sin(angle)*radius*.78];
+      }));
+      ctx.strokeStyle = ring ? find.light : find.core;
+      ctx.lineWidth = ring ? 2 : 3;
+      ctx.stroke();
+    }
+    for (let ray=0;ray<find.rays;ray++) {
+      const angle = ray*Math.PI*2/find.rays;
+      const base = 6+age*24;
+      const tip = 22+this.ease(age/.64)*(width+ray%2*23);
+      ctx.globalAlpha = this.ease(age/.15)*(1-age)**1.6*(ray%2 ? .59 : .83);
+      this.shape(ray%2 ? find.light : find.core,
+        [[Math.cos(angle)*base,Math.sin(angle)*base],
+         [Math.cos(angle-.058)*tip,Math.sin(angle-.058)*tip*.8],
+         [Math.cos(angle+.058)*tip,Math.sin(angle+.058)*tip*.8]]);
+    }
   }
 
   drawLift(time) {

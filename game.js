@@ -161,6 +161,7 @@ Object.assign(strings.en, {
   companyNeedPlayers:"At least two players are needed to start.", companyPlayer:"Miner", companyYou:"you",
   companyHost:"host", companyStandings:"Room standings", companyUnique:"Unique in this room",
   companyStarted:"This expedition has already started.", directCompany:"Open room directly",
+  chartTitle:"Points by round", chartHint:"Select a point to see the answer.", chartPrev:"Earlier rounds", chartNext:"Later rounds",
   reviewAnswer:"Suggest this answer", reviewSent:"Sent for review.", reviewError:"Could not send the suggestion. Try again later.",
   reviewInvalid:"Enter the answer as a short name or phrase.", reviewBusy:"The review queue is full for now."
 });
@@ -173,6 +174,7 @@ Object.assign(strings.ru, {
   companyNeedPlayers:"Для старта нужны хотя бы два игрока.", companyPlayer:"Шахтёр", companyYou:"вы",
   companyHost:"ведущий", companyStandings:"Таблица комнаты", companyUnique:"Уникальный ответ в комнате",
   companyStarted:"Экспедиция в этой комнате уже началась.", directCompany:"Открыть комнату напрямую",
+  chartTitle:"Очки по раундам", chartHint:"Выберите точку, чтобы открыть ответ.", chartPrev:"Предыдущие раунды", chartNext:"Следующие раунды",
   reviewAnswer:"Предложить этот ответ", reviewSent:"Отправлено на проверку.", reviewError:"Не удалось отправить. Повторите позже.",
   reviewInvalid:"Введите ответ коротким названием или фразой.", reviewBusy:"Очередь проверки пока заполнена."
 });
@@ -307,6 +309,22 @@ function mountWorld() {
   strata.forEach(() => {
     get("depth-map").append(element("span", ""));
   });
+}
+
+function renderAnswerVerdict(answer, fallback, animate = false) {
+  const verdict = get("verdict");
+  if (!answer || answer.tier<0) {
+    delete verdict.dataset.points;
+    verdict.classList.remove("is-celebrating");
+    verdict.textContent = fallback;
+    return;
+  }
+  const points = pointsFor(answer);
+  const label = element("span",answer[lang]);
+  label.append(element("small",words().tiers[answer.tier]));
+  verdict.dataset.points = points;
+  verdict.classList.toggle("is-celebrating",animate && points>=55);
+  verdict.replaceChildren(label,element("strong",`+${points}`));
 }
 function element(name, text) {
   const el = document.createElement(name);
@@ -488,9 +506,9 @@ function question(draft = "", focus = true) {
     if (reason==="timeout" && strict) { complete(); return; }
     setWorld(round.answers.length, score(round), Boolean(entry));
     playCue(entry ? "find" : "skip",entry?.tier);
-    reveal(true);
+    reveal(true,true);
   }
-  function reveal(moveFocus) {
+  function reveal(moveFocus, animate = false) {
     const answer = round.answers[index];
     const names = words();
     const found = answer.id !== null;
@@ -500,9 +518,8 @@ function question(draft = "", focus = true) {
     get("review-answer").hidden = true;
     get("check-status").textContent = "";
     get("feedback").hidden = false;
-    get("verdict").textContent = found
-      ? `${answer[lang]} · ${names.tiers[answer.tier]} · +${pointsFor(answer)}`
-      : answer.reason === "timeout" ? names.timeUp : answer.reason === "checked" ? names.unverifiable : answer.text ? names.wrong : names.skipped;
+    renderAnswerVerdict(answer,answer.reason === "timeout" ? names.timeUp
+      : answer.reason === "checked" ? names.unverifiable : answer.text ? names.wrong : names.skipped,animate);
     get("sample").textContent = found ? "" : `${names.sample} · ${model.entries[0][lang]}`;
     const depth = depthAt(score(round));
     const motion = pointsFor(answer) > 0 ? names.arrived : names.stayed;
@@ -561,6 +578,8 @@ function results(focus = true) {
   round.answers.forEach((answer,index)=>{
     const model=route.mode==="live" ? mineQuestion(answer.prompt) : questionAt(index);
     const row=element("li","");
+    row.id=`recap-round-${index}`;
+    row.hidden=true;
     const details=element("details","");
     const summary=element("summary","");
     const answerText=answer[lang] ?? (answer.text || (answer.reason==="timeout" ? ui.timeUp : ui.skipped));
@@ -573,6 +592,7 @@ function results(focus = true) {
     row.append(details);
     get("recap").append(row);
   });
+  renderAnswerChart();
   get("share").hidden = endless || route.mode === "live" || route.mode==="pack";
   get("refresh-duel").hidden = route.mode !== "duel";
   get("today").onclick = () => {
@@ -605,6 +625,119 @@ ${url.href}`);
     title.tabIndex=-1;
     title.focus({preventScroll:true});
   }
+}
+
+function renderAnswerChart() {
+  const answers = round.answers;
+  if (!answers.length) return;
+  const chart = get("answer-chart");
+  const plot = get("chart-points");
+  const canvas = get("chart-line");
+  const previous = get("chart-prev");
+  const next = get("chart-next");
+  const rows = [...get("recap").children];
+  const perPage = 10;
+  const max = Math.max(...scores);
+  const height = points => (1-points/max)*100;
+  const ui = words();
+  let start = Math.floor((answers.length-1)/perPage)*perPage;
+  let selected = -1;
+  chart.hidden = false;
+  get("chart-pages").hidden = answers.length<=perPage;
+  previous.setAttribute("aria-label",ui.chartPrev);
+  next.setAttribute("aria-label",ui.chartNext);
+  for (const points of [120,85,55,25,0]) {
+    const tick = element("span",points);
+    const position = `${height(points)}%`;
+    tick.style.setProperty("--height",position);
+    get("chart-scale").append(tick);
+    if (points>0 && points<max) {
+      const rule = element("span","");
+      rule.className = "chart-rule";
+      rule.style.setProperty("--height",position);
+      rule.setAttribute("aria-hidden","true");
+      canvas.before(rule);
+    }
+  }
+
+  function showSelected(index) {
+    const old = selected;
+    if (old!==-1) {
+      rows[old].hidden = true;
+      rows[old].firstElementChild.open = false;
+      plot.children[old-start]?.setAttribute("aria-expanded","false");
+    }
+    selected = old===index ? -1 : index;
+    get("chart-hint").hidden = selected!==-1;
+    if (selected===-1) return;
+    rows[selected].hidden = false;
+    rows[selected].firstElementChild.open = true;
+    plot.children[selected-start].setAttribute("aria-expanded","true");
+  }
+
+  function showPage() {
+    const picks = answers.slice(start,start+perPage);
+    previous.disabled = start===0;
+    next.disabled = start+picks.length===answers.length;
+    get("chart-range").textContent = `${start+1}–${start+picks.length} / ${answers.length}`;
+    plot.style.setProperty("--columns",picks.length);
+    plot.replaceChildren(...picks.map((answer,index)=>{
+      const i = start+index;
+      const points = pointsFor(answer);
+      const point = element("button","");
+      point.type = "button";
+      point.style.setProperty("--height",`${height(points)}%`);
+      point.dataset.points = points;
+      const label = answer[lang] ?? (answer.text || (answer.reason==="timeout" ? ui.timeUp : ui.skipped));
+      point.setAttribute("aria-label",`${ui.question} ${i+1} · ${label} · +${points}`);
+      point.setAttribute("aria-expanded","false");
+      point.setAttribute("aria-controls",rows[i].id);
+      const number = element("span",i+1);
+      number.setAttribute("aria-hidden","true");
+      point.append(number);
+      point.onclick = () => showSelected(i);
+      return point;
+    }));
+    drawAnswerChart(canvas,picks.map(pointsFor),max);
+  }
+
+  function turnPage(step) {
+    showSelected(-1);
+    start += step;
+    showPage();
+    if (previous.disabled) next.focus();
+    else if (next.disabled) previous.focus();
+  }
+  previous.onclick = () => turnPage(-perPage);
+  next.onclick = () => turnPage(perPage);
+  showPage();
+}
+
+function drawAnswerChart(canvas,values,max) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  const {width,height} = canvas;
+  ctx.clearRect(0,0,width,height);
+  const line = values.map((points,i)=>[(i+.5)/values.length*width,(1-points/max)*height]);
+  const [firstX] = line[0];
+  const [lastX] = line.at(-1);
+  const trace = () => line.forEach(([x,y])=>ctx.lineTo(x,y));
+  const shade = ctx.createLinearGradient(0,0,0,height);
+  shade.addColorStop(0,"#f1c47954");
+  shade.addColorStop(1,"#c8884112");
+  ctx.beginPath();
+  ctx.moveTo(firstX,height);
+  trace();
+  ctx.lineTo(lastX,height);
+  ctx.closePath();
+  ctx.fillStyle = shade;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(...line[0]);
+  trace();
+  ctx.strokeStyle = "#eec37d";
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
 }
 function showComparison(rival, player) {
   const ui = words();

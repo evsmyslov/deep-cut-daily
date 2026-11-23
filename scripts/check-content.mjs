@@ -4,16 +4,16 @@ import {runInNewContext} from "node:vm";
 
 const scripts = ["catalog-data.js","question-bank.js","everyday-questions.js","theme-questions.js","open-questions.js"];
 const source = scripts.map(file => readFileSync(new URL(`../${file}`,import.meta.url),"utf8")).join("\n");
-const {cards,decks,packs,models} = runInNewContext(source + `
-  ({cards:themeCards, decks:[mineDecks[6],mineDecks[7]], packs:minePacks,
-    models:Object.fromEntries([...new Set(mineDecks[7].concat(...Object.values(minePacks).map(pack=>pack.ids)))]
+const {cards,decks,packs,models,retired} = runInNewContext(source + `
+  ({cards:[...themeCards,...rotationCards], decks:[mineDecks[6],mineDecks[MINE_DECK_VERSION]], packs:minePacks,
+    retired:Object.keys(rotationReplacements), models:Object.fromEntries([...new Set([...themeCards.map(([id])=>id),
+      ...mineDecks[MINE_DECK_VERSION],...Object.values(minePacks).flatMap(pack=>pack.ids)])]
       .map(id=>[id,mineQuestion(id)]))})
 `);
 const ids = cards.map(([id])=>id);
 assert.equal(new Set(ids).size,ids.length,"New question IDs must be unique");
 for (const id of ids) {
   assert.ok(!decks[0].includes(id),`${id} collides with an earlier question`);
-  assert.ok(decks[1].includes(id),`${id} is missing from the current deck`);
   const model=models[id];
   assert.ok(model.en && model.ru,`${id} needs both prompts`);
   assert.ok(model.entries.length>=15,`${id} needs more answers`);
@@ -24,7 +24,7 @@ for (const id of ids) {
   }
 }
 runInNewContext(source + `
-  for (const [id] of themeCards) {
+  for (const [id] of [...themeCards,...rotationCards]) {
     const model=mineQuestion(id);
     for (const [i,[tier,en,ru]] of catalog[id][2].entries()) {
       for (const name of [...en.split("|"),...ru.split("|")]) {
@@ -32,11 +32,20 @@ runInNewContext(source + `
       }
     }
   }
+  for (let offset=0;offset<90;offset++) {
+    const ids=dailyIds(MINE_DAY+2+offset);
+    if (new Set(ids).size!==8 || ids.some(id=>!mineDecks[MINE_DECK_VERSION].includes(id))) throw new Error("Invalid daily pack");
+  }
 `);
 for (const [id,pack] of Object.entries(packs)) {
   assert.ok(pack.en && pack.ru,`${id} needs both titles`);
   assert.ok(pack.ids.length>=10,`${id} needs enough questions for a ten-round room`);
   assert.equal(new Set(pack.ids).size,pack.ids.length,`${id} contains repeated questions`);
 }
+assert.equal(new Set(decks[1]).size,decks[1].length,"The current deck contains repeated questions");
+for (const id of retired) {
+  assert.ok(!decks[1].includes(id),`${id} remains in the active deck`);
+  assert.ok(!Object.values(packs).some(pack=>pack.ids.includes(id)),`${id} remains in a themed pack`);
+}
 const addedAnswers=ids.reduce((sum,id)=>sum+models[id].entries.length,0);
-console.log(`${decks[1].length} active questions, ${ids.length} newly authored questions, ${addedAnswers} new answers, ${Object.keys(packs).length} themed expeditions`);
+console.log(`${decks[1].length} active questions, ${ids.length} validated editorial cards with ${addedAnswers} answers, ${retired.length} retired prompts, ${Object.keys(packs).length} themed expeditions`);

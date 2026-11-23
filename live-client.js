@@ -123,7 +123,7 @@ function showDuelMenu() {
     submit.disabled=true;
     notice.textContent=words().joiningRoom;
     try {
-      const created=await requestLive({action:"create",shortCode:true});
+      const created=await requestLive({action:"create",shortCode:true,deckVersion:MINE_DECK_VERSION});
       if (create.isConnected && get("duel-modal").open) {
         enterLive({mode:"live",duel:created.room,seat:"host",key:`live:${created.room}`},created);
       }
@@ -373,9 +373,8 @@ function paintLive(view,force=false) {
       get("feedback").hidden=false;
       get("next").hidden=true;
       const a=state.ownPick;
-      get("verdict").textContent=a?.tier>=0 ? `${a[lang]} · ${ui.tiers[a.tier]} · +${pointsFor(a)}`
-        : a?.reason==="timeout" ? ui.timeUp : a?.reason==="skip" ? ui.skipped
-          : a?.reason==="checked" ? ui.unverifiable : ui.wrong;
+      renderAnswerVerdict(a,a?.reason==="timeout" ? ui.timeUp : a?.reason==="skip" ? ui.skipped
+        : a?.reason==="checked" ? ui.unverifiable : ui.wrong,!force);
       get("arrival").textContent=`${ui.depth} · ${get("depth").textContent}`;
       get("rival-verdict").textContent=duelAnswerText(state.rivalPick);
       get("rival-verdict").hidden=!state.rivalPick;

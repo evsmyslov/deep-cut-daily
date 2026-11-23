@@ -178,7 +178,7 @@ function paintFriends(panel,status,data) {
     button.disabled=true;
     status.textContent="";
     try {
-      const result=await friendsRequest({action,contact});
+      const result=await friendsRequest({action,contact,deckVersion:action==="invite" ? MINE_DECK_VERSION : undefined});
       if (!panel.isConnected || !get("modal").open) return;
       if (action==="invite") {
         get("modal").close();

@@ -750,7 +750,7 @@ add("long-films","Name a film longer than 2 hours 30 minutes.","Назовите
 `);
 
 const mineDecks = {1:firstDeck, 2:secondDeck, 3:Object.keys(catalog)};
-const MINE_DECK_VERSION = 7;
+const MINE_DECK_VERSION = 8;
 const mineCalendars = [{from:MINE_DAY,order:dailyOrder}];
 function mineIds(seed, mode, version = MINE_DECK_VERSION) {
   if (mode === "daily") {
@@ -761,6 +761,7 @@ function mineIds(seed, mode, version = MINE_DECK_VERSION) {
   if (version===5) return mixedBank(seed);
   if (version===6) return interleaveQuestionGroups(everydayGroups,seed);
   if (version===7) return interleaveQuestionGroups(themedGroups,seed);
+  if (version===8) return interleaveQuestionGroups(rotationGroups,seed);
   return shuffleMine(mineDecks[version],seed);
 }
 function shuffleMine(deck,seed) {
@@ -1173,7 +1174,7 @@ function dailyIds(day,revision=1) {
 }
 
 for (const card of themeCards) add(...card);
-const minePacks = {
+const originalMinePacks = {
   cinema:{en:"Cinema",ru:"Кино",ids:["films","animation","space-trip-films","animated-dogs","long-films","film-narrators","film-animals-speak","films-with-trains","animated-robots","named-soundtracks"]},
   music:{en:"Music",ru:"Музыка",ids:["instruments","blown-instruments","plucked-strings","numbered-albums","composers","drum-family","keyboard-instruments","titles-sing-colors","sounds-on-record","named-soundtracks"]},
   household:{en:"Everyday life",ru:"Повседневность",ids:["carry-light","zippers","hinged-things","things-on-wheels","drinkware","glass-objects","tool-teeth","buttons","key-locks","things-on-fridges","kitchen-grates","round-kitchen-objects"]},
@@ -1184,8 +1185,8 @@ const minePackLength=7;
 function minePack(id) {
   return Object.hasOwn(minePacks,id) ? minePacks[id] : null;
 }
-function packIds(id,seed) {
-  return shuffleMine(minePack(id).ids,seed);
+function packIds(id,seed,version=MINE_DECK_VERSION) {
+  return shuffleMine((version===7 ? originalMinePacks[id] : minePack(id)).ids,seed);
 }
 const themedGroups = [
   [...everydayGroups[0],"things-on-fridges","kitchen-grates","round-kitchen-objects"],
@@ -1195,4 +1196,31 @@ const themedGroups = [
   [...everydayGroups[4],"film-narrators","film-animals-speak","films-with-trains","animated-robots","named-soundtracks","drum-family","keyboard-instruments","titles-sing-colors","sounds-on-record"]
 ];
 mineDecks[7]=themedGroups.flat();
-mineCalendars.push({from:MINE_DAY+2,order:interleaveQuestionGroups(themedGroups,20261125)});
+
+for (const card of rotationCards) add(...card);
+const rotationReplacements = {
+  "erasable-marks":"things-that-fold",
+  "non-electric-clocks":"things-with-pockets",
+  "plants-you-can-eat-leaves":"foods-with-cheese",
+  "fermented-foods":"foods-with-rice",
+  "underwater-mammals":"nocturnal-animals",
+  "racket-sports":"sports-with-a-ball",
+  "film-narrators":"films-with-time-travel",
+  "animated-robots":"films-with-dinosaurs",
+  "named-soundtracks":"films-with-pirates",
+  "sounds-on-record":"songs-with-names",
+  "long-films":"films-at-sea",
+  "numbered-albums":"bands-with-numbers",
+  "composers":"songs-with-animals"
+};
+const replaceRetired = (ids,replacements=rotationReplacements) => ids.map(id=>replacements[id] ?? id);
+const rotationGroups = themedGroups.map(ids=>replaceRetired(ids));
+const activeIds = new Set(rotationGroups.flat());
+rotationGroups.at(-1).push(...rotationCards.map(([id])=>id).filter(id=>!activeIds.has(id)));
+const musicReplacements = {...rotationReplacements,"named-soundtracks":"music-duos"};
+const minePacks = Object.fromEntries(Object.entries(originalMinePacks).map(([id,pack])=>[
+  id,{...pack,ids:replaceRetired(pack.ids,id==="music" ? musicReplacements : rotationReplacements)}
+]));
+minePacks.household.ids.push("things-that-fold","things-with-pockets");
+mineDecks[8]=rotationGroups.flat();
+mineCalendars.push({from:MINE_DAY+2,order:interleaveQuestionGroups(rotationGroups,20261125)});

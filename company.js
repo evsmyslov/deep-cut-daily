@@ -20,7 +20,8 @@ function showCompanyMenu() {
     controls.forEach(control=>{control.disabled=true;});
     notice.textContent=ui.joiningRoom;
     try {
-      const created=await requestLive({action:"create",kind:"company",pack:theme.value || null,rounds:Number(rounds.value),nickname:name.value});
+      const created=await requestLive({action:"create",kind:"company",pack:theme.value || null,rounds:Number(rounds.value),
+        nickname:name.value,deckVersion:MINE_DECK_VERSION});
       if (create.isConnected && get("duel-modal").open) {
         enterLive({mode:"live",duel:created.room,company:true,seat:"host",key:`live:${created.room}`},created);
       }
