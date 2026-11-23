@@ -161,8 +161,9 @@ Object.assign(strings.en, {
   companyNeedPlayers:"At least two players are needed to start.", companyPlayer:"Miner", companyYou:"you",
   companyHost:"host", companyStandings:"Room standings", companyUnique:"Unique in this room",
   companyStarted:"This expedition has already started.", directCompany:"Open room directly",
-  chartTitle:"Points by round", chartHint:"Select a point to see the answer.", chartPrev:"Earlier rounds", chartNext:"Later rounds",
-  reviewAnswer:"Suggest this answer", reviewSent:"Sent for review.", reviewError:"Could not send the suggestion. Try again later.",
+  chartTitle:"Points by round", chartHint:"Select a point to open its round below.", chartPrev:"Earlier rounds", chartNext:"Later rounds",
+  recapTitle:"Round review",
+  reviewAnswer:"Suggest this answer", reviewSent:"Saved to the game owner's review queue.", reviewError:"Could not send the suggestion. Try again later.",
   reviewInvalid:"Enter the answer as a short name or phrase.", reviewBusy:"The review queue is full for now."
 });
 Object.assign(strings.ru, {
@@ -174,8 +175,9 @@ Object.assign(strings.ru, {
   companyNeedPlayers:"Для старта нужны хотя бы два игрока.", companyPlayer:"Шахтёр", companyYou:"вы",
   companyHost:"ведущий", companyStandings:"Таблица комнаты", companyUnique:"Уникальный ответ в комнате",
   companyStarted:"Экспедиция в этой комнате уже началась.", directCompany:"Открыть комнату напрямую",
-  chartTitle:"Очки по раундам", chartHint:"Выберите точку, чтобы открыть ответ.", chartPrev:"Предыдущие раунды", chartNext:"Следующие раунды",
-  reviewAnswer:"Предложить этот ответ", reviewSent:"Отправлено на проверку.", reviewError:"Не удалось отправить. Повторите позже.",
+  chartTitle:"Очки по раундам", chartHint:"Выберите точку, чтобы раскрыть её раунд в списке.", chartPrev:"Предыдущие раунды", chartNext:"Следующие раунды",
+  recapTitle:"Разбор раундов",
+  reviewAnswer:"Предложить этот ответ", reviewSent:"Ответ сохранён в очереди владельца игры.", reviewError:"Не удалось отправить. Повторите позже.",
   reviewInvalid:"Введите ответ коротким названием или фразой.", reviewBusy:"Очередь проверки пока заполнена."
 });
 const get = id => document.getElementById(id);
@@ -311,8 +313,17 @@ function mountWorld() {
   });
 }
 
-function renderAnswerVerdict(answer, fallback, animate = false) {
+function answerNote(model, answer) {
+  if (answer?.id == null) return "";
+  const english = model.answerById.get(answer.id)?.en ?? answer.en;
+  return mineAnswerNotes[model.id]?.[english]?.[lang==="ru" ? 1 : 0] ?? "";
+}
+
+function renderAnswerVerdict(model, answer, fallback, animate = false) {
   const verdict = get("verdict");
+  const note = get("answer-note");
+  note.textContent = answerNote(model, answer);
+  note.hidden = !note.textContent;
   if (!answer || answer.tier<0) {
     delete verdict.dataset.points;
     verdict.classList.remove("is-celebrating");
@@ -518,7 +529,7 @@ function question(draft = "", focus = true) {
     get("review-answer").hidden = true;
     get("check-status").textContent = "";
     get("feedback").hidden = false;
-    renderAnswerVerdict(answer,answer.reason === "timeout" ? names.timeUp
+    renderAnswerVerdict(model,answer,answer.reason === "timeout" ? names.timeUp
       : answer.reason === "checked" ? names.unverifiable : answer.text ? names.wrong : names.skipped,animate);
     get("sample").textContent = found ? "" : `${names.sample} · ${model.entries[0][lang]}`;
     const depth = depthAt(score(round));
@@ -575,15 +586,18 @@ function results(focus = true) {
   get("comparison").hidden = route.company || (!["duel","live"].includes(route.mode) && route.rival == null);
   if (route.mode === "daily" && route.rival !== null) showComparison(route.rival,points);
   const recapUpdates=[];
+  get("round-review").hidden=!round.answers.length;
   round.answers.forEach((answer,index)=>{
     const model=route.mode==="live" ? mineQuestion(answer.prompt) : questionAt(index);
     const row=element("li","");
-    row.id=`recap-round-${index}`;
-    row.hidden=true;
     const details=element("details","");
     const summary=element("summary","");
     const answerText=answer[lang] ?? (answer.text || (answer.reason==="timeout" ? ui.timeUp : ui.skipped));
-    summary.append(element("span",answerText), element("strong",`+${pointsFor(answer)}`));
+    const label=element("span","");
+    const prompt=element("small",`${index+1}. ${model[lang]}`);
+    prompt.className="recap-question";
+    label.append(prompt,element("span",answerText));
+    summary.append(label, element("strong",`+${pointsFor(answer)}`));
     const extras=element("div","");
     extras.id=`recap-detail-${index}`;
     extras.className="recap-detail";
@@ -635,13 +649,12 @@ function renderAnswerChart() {
   const canvas = get("chart-line");
   const previous = get("chart-prev");
   const next = get("chart-next");
-  const rows = [...get("recap").children];
+  const details = [...get("recap").querySelectorAll("details")];
   const perPage = 10;
   const max = Math.max(...scores);
   const height = points => (1-points/max)*100;
   const ui = words();
-  let start = Math.floor((answers.length-1)/perPage)*perPage;
-  let selected = -1;
+  let end = answers.length;
   chart.hidden = false;
   get("chart-pages").hidden = answers.length<=perPage;
   previous.setAttribute("aria-label",ui.chartPrev);
@@ -660,26 +673,18 @@ function renderAnswerChart() {
     }
   }
 
-  function showSelected(index) {
-    const old = selected;
-    if (old!==-1) {
-      rows[old].hidden = true;
-      rows[old].firstElementChild.open = false;
-      plot.children[old-start]?.setAttribute("aria-expanded","false");
-    }
-    selected = old===index ? -1 : index;
-    get("chart-hint").hidden = selected!==-1;
-    if (selected===-1) return;
-    rows[selected].hidden = false;
-    rows[selected].firstElementChild.open = true;
-    plot.children[selected-start].setAttribute("aria-expanded","true");
-  }
+  details.forEach((card,index)=>card.addEventListener("toggle",()=>{
+    const start = Math.max(0,end-perPage);
+    plot.children[index-start]?.setAttribute("aria-expanded",String(card.open));
+  }));
 
   function showPage() {
-    const picks = answers.slice(start,start+perPage);
+    const start = Math.max(0,end-perPage);
+    const picks = answers.slice(start,end);
     previous.disabled = start===0;
-    next.disabled = start+picks.length===answers.length;
-    get("chart-range").textContent = `${start+1}–${start+picks.length} / ${answers.length}`;
+    next.disabled = end===answers.length;
+    const range = picks.length===1 ? String(end) : `${start+1}–${end}`;
+    get("chart-range").textContent = `${range} / ${answers.length}`;
     plot.style.setProperty("--columns",picks.length);
     plot.replaceChildren(...picks.map((answer,index)=>{
       const i = start+index;
@@ -689,21 +694,24 @@ function renderAnswerChart() {
       point.style.setProperty("--height",`${height(points)}%`);
       point.dataset.points = points;
       const label = answer[lang] ?? (answer.text || (answer.reason==="timeout" ? ui.timeUp : ui.skipped));
+      const card = details[i];
       point.setAttribute("aria-label",`${ui.question} ${i+1} · ${label} · +${points}`);
-      point.setAttribute("aria-expanded","false");
-      point.setAttribute("aria-controls",rows[i].id);
+      point.setAttribute("aria-expanded",String(card.open));
+      point.setAttribute("aria-controls",`recap-detail-${i}`);
       const number = element("span",i+1);
       number.setAttribute("aria-hidden","true");
       point.append(number);
-      point.onclick = () => showSelected(i);
+      point.onclick = () => {
+        card.open = !card.open;
+        if (card.open) card.scrollIntoView({block:"nearest"});
+      };
       return point;
     }));
     drawAnswerChart(canvas,picks.map(pointsFor),max);
   }
 
   function turnPage(step) {
-    showSelected(-1);
-    start += step;
+    end += step;
     showPage();
     if (previous.disabled) next.focus();
     else if (next.disabled) previous.focus();
@@ -825,10 +833,22 @@ function bindRecap(details,root,model,answer,rival) {
     if (choices.length>15) list.tabIndex=0;
     choices.forEach(entry=>{
       const frequency=rounds ? ` · ${played.get(entry.id) ?? 0} / ${rounds}` : "";
-      list.append(element("li",`${entry[lang]} · ${ui.tiers[entry.tier]} · +${pointsFor(entry)}${frequency}`));
+      const item=element("li",`${entry[lang]} · ${ui.tiers[entry.tier]} · +${pointsFor(entry)}${frequency}`);
+      const note=entry.id!==answer.id && answerNote(model,entry);
+      if (note) {
+        const explanation=element("small",note);
+        explanation.className="answer-note";
+        item.append(explanation);
+      }
+      list.append(item);
     });
-    const title=element("p",model[lang]);
-    const items=[title];
+    const items=[];
+    const note=answerNote(model,answer);
+    if (note) {
+      const explanation=element("p",note);
+      explanation.className="answer-note";
+      items.push(explanation);
+    }
     if (rival) items.push(element("p",duelAnswerText(rival)));
     items.push(element("small",`${rounds ? ui.community : ui.dictionary} · ${choices.length}`),list);
     root.replaceChildren(...items);

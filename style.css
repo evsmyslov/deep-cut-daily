@@ -252,6 +252,7 @@ main.shell{width:100%;padding-top:14px}
 #recap summary:hover,#recap summary:focus-visible{background:#344646}
 #recap summary span{overflow-wrap:anywhere}
 #recap summary strong{color:var(--accent)}
+.recap-question{display:block;margin-bottom:3px;color:var(--muted);font-size:.76rem;line-height:1.25}
 .recap-detail{padding:9px 10px;border-top:1px solid #48605d}
 .recap-detail p{margin:0 0 5px;font-weight:600}
 .recap-detail small,.answer-source{color:var(--muted)}
@@ -371,6 +372,7 @@ main.shell{width:100%;padding-top:14px}
 #chart-points button:is(:hover,[aria-expanded="true"])::before{box-shadow:0 0 0 2px #fff3cd,0 0 13px var(--marker)}
 #chart-points span{position:absolute;top:calc(100% + 5px);left:50%;transform:translateX(-50%);font-size:.72rem}
 #chart-hint{min-height:1.2em;margin:0;color:var(--muted);font-size:.77rem}
-.results #recap{display:block;margin-top:6px}
-.results #recap:empty{display:none}
-.results #recap>li{margin:0}
+#round-review h2{margin:8px 0 0;font-size:.93rem}
+#round-review #recap{margin-top:6px}
+.answer-note,.recap-detail .answer-note{margin:6px 0 9px;color:#c2d8cc;font-size:.88rem;line-height:1.35;font-weight:600}
+#recap li small.answer-note{display:block;margin:2px 0 4px;font-size:.82rem}

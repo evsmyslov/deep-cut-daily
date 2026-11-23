@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {runInNewContext} from "node:vm";
 
-const scripts = ["catalog-data.js","question-bank.js","everyday-questions.js","theme-questions.js","open-questions.js"];
+const scripts = ["catalog-data.js","question-bank.js","everyday-questions.js","theme-questions.js","open-questions.js","answer-notes.js"];
 const source = scripts.map(file => readFileSync(new URL(`../${file}`,import.meta.url),"utf8")).join("\n");
 const {cards,decks,packs,models,retired} = runInNewContext(source + `
   ({cards:[...themeCards,...rotationCards], decks:[mineDecks[6],mineDecks[MINE_DECK_VERSION]], packs:minePacks,
@@ -47,5 +47,21 @@ for (const id of retired) {
   assert.ok(!decks[1].includes(id),`${id} remains in the active deck`);
   assert.ok(!Object.values(packs).some(pack=>pack.ids.includes(id)),`${id} remains in a themed pack`);
 }
+const noteCount=runInNewContext(source + `
+  for (const [id,notes] of Object.entries(mineAnswerNotes)) {
+    const labels=new Set(mineQuestion(id).entries.map(entry=>entry.en));
+    for (const [name,note] of Object.entries(notes)) {
+      if (!labels.has(name)) throw new Error(id+" has a note for an unknown answer: "+name);
+      if (note.length!==2 || note.some(text=>typeof text!=="string" || !text.trim())) {
+        throw new Error(id+" needs a note in both languages: "+name);
+      }
+    }
+  }
+  for (const id of mineDecks[MINE_DECK_VERSION]) {
+    const best=mineQuestion(id).entries.find(entry=>entry.tier===3);
+    if (!mineAnswerNotes[id]?.[best?.en]) throw new Error(id+" is missing a +120 answer note");
+  }
+  Object.values(mineAnswerNotes).reduce((sum,notes)=>sum+Object.keys(notes).length,0);
+`);
 const addedAnswers=ids.reduce((sum,id)=>sum+models[id].entries.length,0);
-console.log(`${decks[1].length} active questions, ${ids.length} validated editorial cards with ${addedAnswers} answers, ${retired.length} retired prompts, ${Object.keys(packs).length} themed expeditions`);
+console.log(`${decks[1].length} active questions, ${ids.length} validated editorial cards with ${addedAnswers} answers, ${noteCount} bilingual answer notes, ${retired.length} retired prompts, ${Object.keys(packs).length} themed expeditions`);

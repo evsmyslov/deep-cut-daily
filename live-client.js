@@ -373,7 +373,7 @@ function paintLive(view,force=false) {
       get("feedback").hidden=false;
       get("next").hidden=true;
       const a=state.ownPick;
-      renderAnswerVerdict(a,a?.reason==="timeout" ? ui.timeUp : a?.reason==="skip" ? ui.skipped
+      renderAnswerVerdict(question,a,a?.reason==="timeout" ? ui.timeUp : a?.reason==="skip" ? ui.skipped
         : a?.reason==="checked" ? ui.unverifiable : ui.wrong,!force);
       get("arrival").textContent=`${ui.depth} · ${get("depth").textContent}`;
       get("rival-verdict").textContent=duelAnswerText(state.rivalPick);

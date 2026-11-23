@@ -14,11 +14,14 @@ Some categories verify additional names against Wikidata. Coverage varies by top
 
 New editorial questions live in `theme-questions.js`. Each question has a stable ID, both prompt languages, and bilingual answer rows with aliases and a rarity tier. Use `node scripts/check-content.mjs` to check new entries and pack coverage. Append answers to keep their existing numeric IDs stable in saved rounds.
 
-Use familiar categories with a readily available first answer and room for a less obvious choice. A letter clue must fix the same spelling standard in both languages so every answer is available to both players. After editorial review, add the question to the active calendar and decks.
+### Writing questions and answers
 
-The Sites answer service stores submitted proposals in its `mine_answer_review` table. A reviewer can read that table through the Sites database tools, match the proposal by question ID, and add a confirmed alias or answer to the catalog. Deploy the same question source to the site and the answer service.
+1. Start with a familiar category and one clear condition. Try the question in both languages. Each should offer an obvious answer within a few seconds and leave multiple directions for rarer answers. As a practical target, prepare at least 15 distinct answers before releasing a question.
+2. Decide what fits before assigning points. The answer should satisfy the wording directly or use an established meaning of a word that works in both languages. A zipper has teeth in both English and Russian. A letter clue must name a shared spelling standard. Put translations, common spellings and nicknames under the same answer.
+3. Include answers that are surprising for a reason. For striped animals, a young zebra shark has stripes, even though adults are spotted. In `answer-notes.js`, add a short original note in both languages under the question ID and its canonical English answer label. Explain which part of the clue it satisfies. The game shows these notes when it reveals the answer and in the round review.
+4. Set initial rarity tiers after checking the answer set. Each question has one +120 answer. After editorial review, add the question to the active calendar and decks. Use counts from completed daily expeditions to review tiers as sufficient data becomes available. Confirm any score changes manually in a new question ID for future editions so old results retain their scores.
 
-For a rarity review, use the daily recap counts once enough players have finished. Compare counts for the same question and edition. An unpopular answer deserves more points only after checking its aliases and how well it fits. Confirm changes in a new question ID for future editions so old results retain their scores. Each question has one +120 answer.
+The Sites answer service stores proposals in its private `DB.mine_answer_review` table. The project owner or a reviewer with database access can open it through Sites database tools. A row contains the question ID, text, language and submission time. Reviewers match the proposal by question ID and add confirmed aliases or answers to the catalog. Deploy the same question source to the site and the answer service.
 
 ## Deployment
 
