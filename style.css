@@ -281,6 +281,9 @@ main.shell{width:100%;padding-top:14px}
 }
 #live-room-code{color:var(--muted);font-size:.86rem;margin:0 0 13px}
 #live-room-code code{color:var(--accent);font-size:.9rem;user-select:all}
+.direct-duel{display:inline-flex;align-items:center;min-height:34px;color:var(--green);font-size:.94rem;text-underline-offset:3px}
+.direct-duel:hover{color:var(--accent)}
+.duel-menu>.direct-duel{margin-top:8px}
 .mode-picker{display:grid;gap:8px;margin-top:13px}
 .mode-picker button{text-align:left;font-size:1.125rem;font-weight:700}
 .mode-picker small{display:block;font-size:.9rem;color:var(--muted);margin-top:3px;font-weight:400}

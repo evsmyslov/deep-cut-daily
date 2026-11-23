@@ -7,9 +7,48 @@ try {
   for (const key of Object.keys(audioOptions)) if (typeof saved?.[key]==="boolean") audioOptions[key]=saved[key];
 } catch { /* Audio can run without saved settings. */ }
 
-let gameAudio, musicChannel, effectsChannel, musicTimer;
-let chordPosition=0;
-const scoreChords=[[55,82.41,130.81],[49,73.42,110],[43.65,65.41,110],[48.99,73.42,123.47]];
+let gameAudio, musicChannel, effectsChannel, musicBuffer, musicSource;
+const chipRate=22050;
+const beat=60/88;
+const bassLine=[45,41,48,43,45,41,50,43,45,41,48,43,45,41,50,43];
+const melody=[
+  [69,72,76,74,72,69,null,67], [65,null,69,72,69,67,65,null],
+  [67,72,76,null,74,72,67,69], [71,null,74,79,76,74,71,null],
+  [69,72,76,81,79,76,74,72], [69,null,65,69,72,74,72,null],
+  [74,77,81,null,77,76,74,72], [71,null,67,71,74,72,71,null],
+  [69,null,76,74,72,null,69,67], [65,69,72,69,null,67,65,null],
+  [67,72,76,79,76,null,74,72], [71,74,79,null,76,74,71,null],
+  [72,76,81,null,79,76,72,69], [65,null,69,72,76,72,69,null],
+  [74,77,81,84,81,77,76,74], [71,74,79,76,74,72,71,67]
+];
+const pitchOf=midi=>440*Math.pow(2,(midi-69)/12);
+
+function chipLoop(context) {
+  const frames=Math.round(melody.length*4*beat*chipRate);
+  const buffer=context.createBuffer(1,frames,chipRate);
+  const samples=buffer.getChannelData(0);
+  function voice(midi,offset,duration,level,wave) {
+    if (midi===null) return;
+    const start=Math.round(offset*beat*chipRate);
+    const count=Math.round(duration*beat*chipRate);
+    const cycle=pitchOf(midi)/chipRate;
+    for (let i=0;i<count;i++) {
+      const phase=i*cycle%1;
+      const edge=Math.min(1,i/90,(count-i)/1100);
+      const signal=wave==="triangle" ? 1-4*Math.abs(phase-.5) : phase<.25 ? .75 : -.25;
+      samples[(start+i)%frames]+=signal*level*edge;
+    }
+  }
+  melody.forEach((notes,bar)=>{
+    const start=bar*4;
+    notes.forEach((midi,i)=>voice(midi,start+i/2,.43,.24,"pulse"));
+    const root=bassLine[bar];
+    const third=[41,48,43].includes(root) ? 4 : 3;
+    [0,7,12,7].forEach((step,i)=>voice(root+step,start+i,.99,.42,"triangle"));
+    [0,third,7,third,0,third,7,12].forEach((step,i)=>voice(root+12+step,start+i/2,.48,.12,"pulse"));
+  });
+  return buffer;
+}
 
 function activateAudio() {
   const Audio=window.AudioContext ?? window.webkitAudioContext;
@@ -20,7 +59,7 @@ function activateAudio() {
       musicChannel=gameAudio.createGain();
       effectsChannel=gameAudio.createGain();
       musicChannel.gain.value=0;
-      effectsChannel.gain.value=.12;
+      effectsChannel.gain.value=.22;
       musicChannel.connect(gameAudio.destination);
       effectsChannel.connect(gameAudio.destination);
     }
@@ -29,7 +68,7 @@ function activateAudio() {
   } catch { /* A device without Web Audio still plays the game. */ }
 }
 
-function note(output,frequency,delay,length,volume,type="sine",end=frequency,attack=.025) {
+function note(output,frequency,delay,length,volume,type="square",end=frequency,attack=.008) {
   const start=gameAudio.currentTime+delay;
   const tone=gameAudio.createOscillator();
   const envelope=gameAudio.createGain();
@@ -44,37 +83,39 @@ function note(output,frequency,delay,length,volume,type="sine",end=frequency,att
   tone.start(start);
   tone.stop(start+length);
 }
-function musicMeasure() {
-  const chord=scoreChords[chordPosition++%scoreChords.length];
-  chord.forEach((frequency,index)=>note(musicChannel,frequency,index*.36,6.2,.16,"sine",frequency,1.2));
-  note(musicChannel,chord[2]*2,2.6,2.4,.09,"sine",chord[2]*2,.28);
-}
 function refreshMusic() {
   if (!gameAudio) return;
   const enabled=audioOptions.music && !document.hidden;
-  musicChannel.gain.setTargetAtTime(enabled ? .10 : 0,gameAudio.currentTime,.25);
-  if (!enabled) {
-    clearInterval(musicTimer);
-    musicTimer=null;
-  } else if (!musicTimer) {
-    musicMeasure();
-    musicTimer=setInterval(musicMeasure,6000);
+  musicChannel.gain.setTargetAtTime(enabled ? .135 : 0,gameAudio.currentTime,.15);
+  if (audioOptions.music && !musicSource) {
+    musicBuffer ??= chipLoop(gameAudio);
+    musicSource=gameAudio.createBufferSource();
+    musicSource.buffer=musicBuffer;
+    musicSource.loop=true;
+    musicSource.connect(musicChannel);
+    musicSource.start();
+  } else if (!audioOptions.music && musicSource) {
+    musicSource.stop(gameAudio.currentTime+.12);
+    musicSource=null;
   }
 }
 function playCue(kind,tier) {
   if (!gameAudio || !audioOptions.effects || document.hidden || gameAudio.state!=="running") return;
   if (kind==="find") {
-    note(effectsChannel,106,0,.16,.21,"triangle",52,.008);
-    note(effectsChannel,70,.10,.19,.16,"triangle",35,.008);
+    note(effectsChannel,190,0,.07,.19,"square",100);
+    note(effectsChannel,136,.08,.09,.14,"square",76);
     const root=[392,494,587,698,330][tier] ?? 330;
-    note(effectsChannel,root,.08,.27,.21);
-    note(effectsChannel,root*1.5,.18,.33,.16);
+    [1,1.25,1.5].forEach((ratio,index)=>note(effectsChannel,root*ratio,.13+index*.06,.09,.21-index*.03));
   } else if (kind==="finish") {
-    [261.63,329.63,392,523.25].forEach((pitch,index)=>note(effectsChannel,pitch,index*.12,.65,.21));
-  } else if (kind==="reject" || kind==="skip") {
-    note(effectsChannel,kind==="reject"?180:115,0,.12,.16,"sine",86,.02);
+    [261.63,329.63,392,523.25].forEach((pitch,index)=>note(effectsChannel,pitch,index*.09,index===3 ? .32 : .13,.19));
+  } else if (kind==="reject") {
+    note(effectsChannel,247,0,.082,.18,"square",220);
+    note(effectsChannel,147,.09,.12,.16,"square",111);
+  } else if (kind==="skip") {
+    note(effectsChannel,190,0,.12,.16,"triangle",66);
   } else if (kind==="round") {
-    note(effectsChannel,349,0,.16,.14);
+    note(effectsChannel,349,0,.054,.12);
+    note(effectsChannel,523,.065,.079,.12);
   }
 }
 function showAudioMenu() {

@@ -103,9 +103,10 @@ Object.assign(strings.en, {
   createRoom:"Create a room", retryLive:"Retry connection", duelMenu:"Duel menu",
   wrongRetry:"That answer doesn’t fit. Try again.", lookupRetry:"Answer check unavailable. Try again or enter another answer.",
   retryRule:"If an answer doesn’t fit, you can try again until time runs out.",
-  unready:"Cancel ready", connectingAgain:"Trying another connection…",
+  unready:"Cancel ready",
   duelTimeout:"The room server took too long to respond.", duelOffline:"Your browser is offline.",
   duelNetwork:"This browser couldn’t reach the room server.", duelResponse:"The room server returned an unexpected response.",
+  directDuel:"Open duel directly", memberExpired:"This room session is no longer valid. Open a fresh invitation.",
   easy:"Easy", hard:"Hard", rare:"Rare only",
   endlessModes:["Skip any question and keep digging.","Skipping is disabled. The run ends when time runs out.","Keep the streak alive with answers worth at least 55 points."],
   rareRetry:"It fits, but this mode needs a Crystal or rarer. Try again.", streakEnded:"Time ran out. Your streak has ended.", answersFound:"answers found",
@@ -128,9 +129,10 @@ Object.assign(strings.ru, {
   createRoom:"Создать комнату", retryLive:"Повторить подключение", duelMenu:"Меню дуэли",
   wrongRetry:"Ответ не подходит. Попробуйте ещё раз.", lookupRetry:"Проверка недоступна. Повторите попытку или введите другой ответ.",
   retryRule:"Если ответ не подходит, можно попробовать снова, пока есть время.",
-  unready:"Отменить готовность", connectingAgain:"Пробуем подключиться другим способом…",
+  unready:"Отменить готовность",
   duelTimeout:"Сервер комнаты не ответил вовремя.", duelOffline:"Браузер сейчас без подключения к интернету.",
   duelNetwork:"Браузер не смог связаться с сервером комнаты.", duelResponse:"Сервер комнаты вернул неожиданный ответ.",
+  directDuel:"Открыть дуэль напрямую", memberExpired:"Сеанс этой комнаты больше недействителен. Откройте новое приглашение.",
   easy:"Обычный", hard:"На вылет", rare:"Только редкие",
   endlessModes:["Пропускайте любые вопросы и копайте дальше.","Без пропусков. Когда время истечёт, забег завершится.","Поддерживайте серию ответами от 55 очков."],
   rareRetry:"Ответ подходит, но здесь нужен «Кристалл» или выше. Попробуйте ещё раз.", streakEnded:"Время вышло. Серия завершена.", answersFound:"ответов засчитано",
@@ -176,6 +178,16 @@ function normalizeRoomCode(value) {
 const editionKey = (day, revision) => `daily:${day}${revision===2 ? ":2" : ""}`;
 function readRoute() {
   const args=new URLSearchParams(location.search);
+  const continued=normalizeRoomCode(args.get("continue"));
+  if (location.origin===answerService && continued) {
+    const member=new URLSearchParams(location.hash.slice(1)).get("seat") ?? history.state?.duelSeat;
+    if (isBrowserId(member)) {
+      const clean=new URL(location.href);
+      clean.hash="";
+      try { history.replaceState({...history.state,duelSeat:member},"",clean); } catch { /* The fragment can still be used. */ }
+      return {mode:"live",duel:continued,member,key:`live:${continued}`};
+    }
+  }
   const pathInvite=location.pathname.match(/\/play\/join\/([^/]+)\/?$/)?.[1];
   const guestRoom=[pathInvite,args.get("join"),location.hash.match(/^#join-(\w+)$/)?.[1]].map(normalizeRoomCode).find(Boolean);
   if (guestRoom) return {mode:"live",duel:guestRoom,seat:"guest",key:`live:${guestRoom}:guest`};
@@ -344,6 +356,7 @@ function intro(focus = false) {
   };
   if (focus) get("start").focus();
   if (invitation) enterLive(invitation);
+  else if (location.origin===answerService && new URLSearchParams(location.search).get("duel")==="1") showDuelMenu();
 }
 
 function question(draft = "", focus = true) {
@@ -581,15 +594,20 @@ function anonymousId() {
   try { history.replaceState({...history.state,minePlayer:browserId},""); } catch { /* Keep an in-memory ID. */ }
   return browserId;
 }
-async function request(path,data,timeout=8000,transport=(url,options)=>fetch(url,options)) {
+async function request(path,data,timeout=8000,transport=undefined,lifetime) {
   const abort=new AbortController();
+  const stop=()=>abort.abort();
+  if (lifetime?.aborted) stop();
+  else lifetime?.addEventListener("abort",stop,{once:true});
   const timer=setTimeout(()=>abort.abort(),timeout);
   try {
     const base=location.origin===answerService ? "" : answerService;
-    const response=await transport(`${base}/${path}`,{
+    const options={
       method:"POST",headers:{"Content-Type":"text/plain;charset=UTF-8"},
       body:JSON.stringify(path==="verify" ? data : {...data,browser:anonymousId()}),signal:abort.signal
-    });
+    };
+    const url=`${base}/${path}`;
+    const response=await (transport ? transport(url,options) : fetch(url,options));
     const payload=await response.json().catch(()=>null);
     if(!response.ok || !payload) {
       const code=payload?.code ?? (response.status>=500 ? "retry" : "response");
@@ -600,7 +618,10 @@ async function request(path,data,timeout=8000,transport=(url,options)=>fetch(url
     if (typeof error?.code === "string") throw error;
     const code=navigator.onLine===false ? "offline" : abort.signal.aborted ? "timeout" : "network";
     throw Object.assign(new Error("Connection unavailable"),{code});
-  } finally {clearTimeout(timer);}
+  } finally {
+    clearTimeout(timer);
+    lifetime?.removeEventListener("abort",stop);
+  }
 }
 
 function showRecapChoices(root,model,picked=[],rounds=0) {
@@ -724,6 +745,8 @@ function launch() {
   startFriendPolling();
   prepareAudio();
   get("duel").onclick = showDuelMenu;
+  addEventListener("online",wakeDuel);
+  document.addEventListener("visibilitychange",wakeDuel);
   get("duel-close").onclick = closeDuel;
   get("duel-modal").addEventListener("cancel", event => { event.preventDefault(); closeDuel(); });
   get("stats").onclick = showStats;

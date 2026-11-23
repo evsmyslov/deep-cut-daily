@@ -111,7 +111,7 @@ function paintFriends(panel,status,data) {
       if (!panel.isConnected || !get("modal").open) return;
       if (action==="invite") {
         get("modal").close();
-        enterLive({mode:"live",duel:result.room,seat:"host",key:`live:${result.room}`},result,friendsConnection);
+        enterLive({mode:"live",duel:result.room,seat:"host",key:`live:${result.room}`},result);
       } else {
         const updated=await friendsRequest({action:"list"});
         if (panel.isConnected && get("modal").open) paintFriends(panel,status,updated);

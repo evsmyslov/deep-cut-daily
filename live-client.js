@@ -38,26 +38,45 @@ function relayDuelRequest(url,{body,signal}) {
 
 function duelError(code) {
   const label={
-    expired:"roomExpired",full:"roomFull",invalid:"badCode",timeout:"duelTimeout",
+    expired:"roomExpired",full:"roomFull",invalid:"badCode",member:"memberExpired",timeout:"duelTimeout",
     network:"duelNetwork",offline:"duelOffline",response:"duelResponse",retry:"duelResponse",origin:"duelResponse"
   }[code] ?? "matchError";
   return words()[label];
 }
 
-async function requestLobby(path,connection,data,timeout=8000,onAlternate=()=>{}) {
+async function requestLobby(path,connection,data,timeout=8000) {
   if (connection.relay) return request(path,data,timeout,relayDuelRequest);
   try { return await request(path,data,timeout); }
   catch (error) {
     if (location.origin!==new URL(publicGame).origin || !["network","timeout"].includes(error.code)) throw error;
-    onAlternate();
     const state=await request(path,data,timeout,relayDuelRequest);
     connection.relay=true;
     return state;
   }
 }
 
+function requestLive(data,signal) {
+  const path=location.origin===answerService ? "play/api/live" : "live";
+  return request(path,data,data.action==="submit" ? 8000 : 4500,undefined,signal);
+}
+
+function directDuelLink(room,member) {
+  const url=new URL("/play/",answerService);
+  if (room && member) {
+    url.searchParams.set("continue",room);
+    url.hash=new URLSearchParams({seat:member}).toString();
+  } else if (room) url.searchParams.set("join",room);
+  else url.searchParams.set("duel","1");
+  return url.href;
+}
+function setDirectDuelLink(link,view,show=true) {
+  link.hidden=!show || location.origin===answerService;
+  if (!link.hidden) link.href=directDuelLink(view?.route.duel,view?.state?.member ?? view?.route.member);
+}
+
 function leaveLive() {
-  clearInterval(liveView?.poll);
+  liveView?.lifetime.abort();
+  clearTimeout(liveView?.poll);
   clearInterval(liveView?.ticker);
   liveView=null;
 }
@@ -83,6 +102,7 @@ function showDuelMenu() {
   const input=get("room-code-input");
   const submit=join.querySelector("button");
   const notice=get("duel-menu-notice");
+  setDirectDuelLink(get("duel-direct"));
   create.focus();
   input.oninput=()=>{notice.textContent="";};
   join.onsubmit=event=>{
@@ -93,17 +113,14 @@ function showDuelMenu() {
     enterLive({mode:"live",duel:code,seat:"guest",key:`live:${code}:guest`});
   };
   create.onclick=async()=>{
-    const connection={relay:false};
     create.disabled=true;
     input.disabled=true;
     submit.disabled=true;
     notice.textContent=words().joiningRoom;
     try {
-      const created=await requestLobby("live",connection,{action:"create",shortCode:true},8000,()=>{
-        notice.textContent=words().connectingAgain;
-      });
+      const created=await requestLive({action:"create",shortCode:true});
       if (create.isConnected && get("duel-modal").open) {
-        enterLive({mode:"live",duel:created.room,seat:"host",key:`live:${created.room}`},created,connection);
+        enterLive({mode:"live",duel:created.room,seat:"host",key:`live:${created.room}`},created);
       }
     } catch (error) {
       if (create.isConnected) notice.textContent=duelError(error.code);
@@ -114,42 +131,58 @@ function showDuelMenu() {
     }
   };
 }
-function enterLive(lobbyRoute,created=null,connection={relay:false}) {
+function enterLive(lobbyRoute,created=null) {
   leaveLive();
   const view={
-    route:lobbyRoute,state:created,connection,offset:created ? created.now-Date.now() : 0,
+    route:lobbyRoute,state:created,lifetime:new AbortController(),offset:created ? created.now-Date.now() : 0,
     key:"",polling:false,busy:false,error:null,failures:0,onStage:false,feedback:null
   };
   liveView=view;
   paintLive(view,true);
-  view.poll=setInterval(()=>syncLive(view),850);
   view.ticker=setInterval(()=>tickLive(view),120);
   syncLive(view);
 }
 
+function wakeDuel() {
+  const view=liveView;
+  if (!view || document.hidden || view.permanentError || view.state?.phase==="done" || view.polling) return;
+  clearTimeout(view.poll);
+  view.paused=false;
+  view.failures=0;
+  syncLive(view);
+}
+function scheduleLive(view,delay) {
+  clearTimeout(view.poll);
+  if (liveView===view && !view.paused && !view.permanentError && view.state?.phase!=="done") {
+    view.poll=setTimeout(()=>syncLive(view),delay);
+  }
+}
 async function syncLive(view) {
-  if (liveView!==view || view.polling || view.permanentError || view.paused || document.prerendering) return;
+  if (liveView!==view || view.polling || view.permanentError || view.paused) return;
+  if (view.busy || document.prerendering) { scheduleLive(view,500); return; }
   view.polling=true;
   try {
-    await sendLive(view,view.state?"state":"join");
+    await sendLive(view,view.state || view.route.member ? "state" : "join");
   } catch(error) {
     if (liveView!==view) return;
     view.error=error.code;
-    view.permanentError=["expired","full","invalid"].includes(error.code);
+    view.permanentError=["expired","full","invalid","member"].includes(error.code);
     view.failures++;
-    if (!view.onStage && (!view.state || view.failures>=2)) view.paused=true;
-    updateLiveNotice(view);
+    if (!view.state || (!view.onStage && view.failures>=2)) view.paused=true;
   } finally {
     view.polling=false;
-    if (liveView===view) updateLiveNotice(view);
+    if (liveView===view) {
+      updateLiveNotice(view);
+      const delay=view.failures ? Math.min(3400,900*view.failures) : document.hidden ? 2400 : view.onStage ? 700 : 950;
+      scheduleLive(view,delay);
+    }
   }
 }
 async function sendLive(view,action,values={}) {
   const before=Date.now();
-  const data={action,room:view.route.duel,seat:view.route.seat,...values};
-  const state=await requestLobby("live",view.connection,data,8000,()=>{
-    if (liveView===view && !view.state) get("live-status").textContent=words().connectingAgain;
-  });
+  const member=view.state?.member ?? view.route.member;
+  const data={action,room:view.route.duel,seat:view.route.seat,member,...values};
+  const state=await requestLive(data,view.lifetime.signal);
   if (liveView!==view) return;
   if (action==="submit" && state.feedback && view.state?.phase==="question" && view.state.index===values.index) {
     view.feedback={index:values.index,message:state.feedback};
@@ -170,7 +203,7 @@ async function sendLive(view,action,values={}) {
   view.failures=0;
   paintLive(view);
   if (state.phase==="done") {
-    clearInterval(view.poll);
+    clearTimeout(view.poll);
     clearInterval(view.ticker);
   }
 }
@@ -196,6 +229,8 @@ async function liveAction(view,action,values) {
 function updateLiveNotice(view) {
   const notice=get("live-notice") ?? get("check-status");
   if (!notice) return;
+  const direct=get("live-direct") ?? get("match-direct");
+  if (direct) setDirectDuelLink(direct,view,Boolean(get("live-direct")) || Boolean(view.error));
   const retry=get("live-retry");
   if (retry) {
     retry.hidden=!view.error || view.permanentError;
@@ -253,14 +288,13 @@ function paintLive(view,force=false) {
     get("live-status").textContent=!state ? ui.joiningRoom : phase==="countdown" ? "" : ui.liveRules;
     get("own-ready").textContent=state?.ready ? ui.isReady : ui.notReady;
     get("friend-ready").textContent=!state?.opponentJoined ? ui.waitSeat : state.opponentReady ? ui.isReady : ui.notReady;
-    const invite=new URL(publicGame);
-    invite.searchParams.set("join",view.route.duel);
-    get("live-url").value=invite.href;
+    const invite=directDuelLink(view.route.duel);
+    get("live-url").value=invite;
     get("current-room-code").textContent=view.route.duel;
     get("live-url").onclick=event=>event.currentTarget.select();
     get("live-copy").onclick=()=>{
       get("live-notice").dataset.copied="1";
-      copyChallenge(invite.href,"live-notice");
+      copyChallenge(invite,"live-notice");
     };
     get("live-ready").onclick=()=>{
       activateAudio();
@@ -272,10 +306,8 @@ function paintLive(view,force=false) {
       view.failures=0;
       view.paused=false;
       view.error=null;
-      view.connection.relay=false;
-      duelFrame?.frame.remove();
-      duelFrame=null;
       updateLiveNotice(view);
+      clearTimeout(view.poll);
       syncLive(view);
     };
     get("live-back").onclick=showDuelMenu;
