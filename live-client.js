@@ -1,13 +1,66 @@
 let liveView=null;
 
-function stopLive() {
-  if (!liveView) return;
-  clearInterval(liveView.poll);
-  clearInterval(liveView.ticker);
+function leaveLive() {
+  clearInterval(liveView?.poll);
+  clearInterval(liveView?.ticker);
   liveView=null;
 }
-function enterLive() {
-  const view={route,state:null,key:"",offset:0,polling:false,busy:false,error:null};
+function closeDuel() {
+  leaveLive();
+  hideDuelPanel();
+}
+function hideDuelPanel() {
+  get("duel-modal").close();
+  get("duel-body").replaceChildren();
+}
+function showDuelPanel(template) {
+  const dialog=get("duel-modal");
+  get("duel-body").replaceChildren(get(template).content.cloneNode(true));
+  localize();
+  if (!dialog.open) dialog.showModal();
+}
+function showDuelMenu() {
+  leaveLive();
+  showDuelPanel("duel-menu");
+  const create=get("duel-create");
+  const join=get("duel-join");
+  const input=get("room-code-input");
+  const submit=join.querySelector("button");
+  const notice=get("duel-menu-notice");
+  create.focus();
+  input.oninput=()=>{notice.textContent="";};
+  join.onsubmit=event=>{
+    event.preventDefault();
+    if (create.disabled) return;
+    const code=input.value.toLowerCase().replace(/[\s-]/g,"");
+    if (!isRoomCode(code)) { notice.textContent=words().badCode; input.focus(); return; }
+    enterLive({mode:"live",duel:code,seat:"guest",key:`live:${code}:guest`});
+  };
+  create.onclick=async()=>{
+    create.disabled=true;
+    input.disabled=true;
+    submit.disabled=true;
+    notice.textContent=words().joiningRoom;
+    try {
+      const created=await request("live",{action:"create"});
+      if (create.isConnected && get("duel-modal").open) {
+        enterLive({mode:"live",duel:created.room,seat:"host",key:`live:${created.room}`},created);
+      }
+    } catch {
+      if (create.isConnected) notice.textContent=words().matchError;
+    } finally {
+      create.disabled=false;
+      input.disabled=false;
+      submit.disabled=false;
+    }
+  };
+}
+function enterLive(lobbyRoute,created=null) {
+  leaveLive();
+  const view={
+    route:lobbyRoute,state:created,offset:created ? created.now-Date.now() : 0,
+    key:"",polling:false,busy:false,error:null,failures:0,onStage:false,feedback:null
+  };
   liveView=view;
   paintLive(view,true);
   view.poll=setInterval(()=>syncLive(view),850);
@@ -16,26 +69,33 @@ function enterLive() {
 }
 
 async function syncLive(view) {
-  if (liveView!==view || view.polling || view.permanentError || document.prerendering) return;
+  if (liveView!==view || view.polling || view.permanentError || view.paused || document.prerendering) return;
   view.polling=true;
   try {
     await sendLive(view,view.state?"state":"join");
   } catch(error) {
     if (liveView!==view) return;
     view.error=error.code;
-    if (["expired","full","invalid"].includes(error.code)) view.permanentError=true;
+    view.permanentError=["expired","full","invalid"].includes(error.code);
+    view.failures++;
+    if (!view.onStage && view.failures>=2) view.paused=true;
     updateLiveNotice(view);
   } finally { view.polling=false; }
 }
 async function sendLive(view,action,values={}) {
   const before=Date.now();
-  const state=await request("live",{action,room:view.route.duel,seat:view.route.seat,...values});
-  if (liveView!==view || (view.state && (state.revision<view.state.revision ||
-    (state.revision===view.state.revision && state.now<view.state.now)))) return;
+  const state=await request("live",{action,room:view.route.duel,seat:view.route.seat,...values},action==="submit"?8000:4500);
+  if (liveView!==view) return;
+  if (action==="submit" && state.feedback && view.state?.phase==="question" && view.state.index===values.index) {
+    view.feedback={index:values.index,message:state.feedback};
+  }
+  if (view.state && (state.revision<view.state.revision ||
+    (state.revision===view.state.revision && state.now<view.state.now))) return;
   const after=Date.now();
   view.offset=state.now-(before+Math.min(500,(after-before)/2));
   view.state=state;
   view.error=null;
+  view.failures=0;
   paintLive(view);
   if (state.phase==="done") {
     clearInterval(view.poll);
@@ -52,27 +112,38 @@ async function liveAction(view,action,values) {
   } finally {
     view.busy=false;
     if (liveView===view) {
-      if (get("live-ready")) get("live-ready").disabled=!view.state || view.state.ready;
-      if (get("answer") && view.state?.phase==="question" && !view.state.locked) {
-        get("answer").disabled=false;
-        get("answer-form").querySelector("button").disabled=false;
-      }
       updateLiveNotice(view);
       tickLive(view);
+      if (action==="submit" && view.state?.phase==="question" && !view.state.locked && !get("answer").disabled) {
+        get("answer").focus({preventScroll:true});
+        if (view.feedback) get("answer").select();
+      }
     }
   }
 }
 function updateLiveNotice(view) {
   const notice=get("live-notice") ?? get("check-status");
   if (!notice) return;
+  const retry=get("live-retry");
+  if (retry) {
+    retry.hidden=!view.paused || view.permanentError;
+    get("live-ready").disabled=!view.state || view.state.ready || view.busy || view.paused || view.permanentError;
+    if (!view.state) get("live-status").textContent=view.error ? "" : words().joiningRoom;
+  }
+  let message="";
   if (view.error) {
-    const label={expired:"roomExpired",full:"roomFull",invalid:"roomExpired"}[view.error] ?? "networkLost";
-    notice.textContent=words()[label];
+    const label={expired:"roomExpired",full:"roomFull",invalid:"roomExpired"}[view.error]
+      ?? (view.paused ? "matchError" : "networkLost");
+    message=words()[label];
   } else if (view.state?.phase==="question") {
-    notice.textContent=view.state.locked ? words().answerLocked : view.state.rushed ? words().rush : "";
+    message=view.state.locked ? words().answerLocked
+      : view.busy ? words().checking
+      : view.feedback?.index===view.state.index ? words()[view.feedback.message]
+      : view.state.rushed ? words().rush : "";
   } else if (view.state?.phase==="reveal") {
-    notice.textContent=words().autoNext;
-  } else if (notice.dataset.copied!=="1") notice.textContent="";
+    message=words().autoNext;
+  } else if (notice.dataset.copied==="1") return;
+  if (notice.textContent!==message) notice.textContent=message;
 }
 function paintLive(view,force=false) {
   const state=view.state;
@@ -82,6 +153,12 @@ function paintLive(view,force=false) {
   const draft=force && page==="question" ? get("answer")?.value ?? "" : "";
   view.key=key;
   const ui=words();
+  if (!view.onStage && !["lobby","countdown"].includes(phase)) {
+    view.onStage=true;
+    clearInterval(questionTimer);
+    route=view.route;
+    hideDuelPanel();
+  }
   if (phase==="done") {
     round={answers:state.answers.map(answer=>({...answer,id:answer.id??null})),done:true};
     results(false);
@@ -89,9 +166,17 @@ function paintLive(view,force=false) {
     return;
   }
   if (phase==="lobby" || phase==="countdown") {
-    swap("live-lobby");
-    setWorld(state?.index??0,state?.ownScore??0);
-    get("live-title").textContent=phase==="lobby" ? ui.live : ui.getReady;
+    if (view.onStage) {
+      swap("question");
+      setWorld(state.index,state.ownScore);
+      get("prompt").textContent=ui.getReady;
+      get("answer-form").hidden=true;
+      get("skip").hidden=true;
+      tickLive(view);
+      return;
+    }
+    showDuelPanel("live-lobby");
+    get("duel-title").textContent=phase==="countdown" ? ui.getReady : ui.live;
     get("live-status").textContent=!state ? ui.joiningRoom : phase==="countdown" ? "" : ui.liveRules;
     get("own-ready").textContent=state?.ready ? ui.isReady : ui.notReady;
     get("friend-ready").textContent=!state?.opponentJoined ? ui.waitSeat : state.opponentReady ? ui.isReady : ui.notReady;
@@ -108,10 +193,19 @@ function paintLive(view,force=false) {
       get("live-ready").disabled=true;
       liveAction(view,"ready");
     };
-    get("live-ready").hidden=phase==="countdown";
-    get("live-seats").hidden=phase==="countdown";
-    get("live-url").parentElement.hidden=phase==="countdown";
-    get("live-room-code").hidden=phase==="countdown";
+    get("live-retry").onclick=()=>{
+      view.failures=0;
+      view.paused=false;
+      view.error=null;
+      updateLiveNotice(view);
+      syncLive(view);
+    };
+    get("live-back").onclick=showDuelMenu;
+    get("live-ready").hidden=!state || phase==="countdown";
+    get("live-seats").hidden=!state || phase==="countdown";
+    get("live-url").parentElement.hidden=!state || phase==="countdown";
+    get("live-room-code").hidden=!state || phase==="countdown";
+    get("live-back").hidden=phase==="countdown";
   } else {
     const question=mineQuestion(state.prompt);
     swap("question");
@@ -138,25 +232,35 @@ function paintLive(view,force=false) {
         : a?.reason==="timeout" ? ui.timeUp : a?.reason==="skip" ? ui.skipped
           : a?.reason==="checked" ? ui.unverifiable : ui.wrong;
       get("arrival").textContent=`${ui.depth} · ${get("depth").textContent}`;
-    } else if (!locked) bindSuggestions(question);
+    } else if (!locked) {
+      bindSuggestions(question);
+      get("answer").addEventListener("input",()=>{
+        view.feedback=null;
+        updateLiveNotice(view);
+      });
+    }
   }
   updateLiveNotice(view);
   tickLive(view);
 }
 function submitLive(view,text) {
   const state=view.state;
-  if (!state || state.phase!=="question" || state.locked || Date.now()+view.offset>=state.deadline) return;
+  if (!state || view.busy || state.phase!=="question" || state.locked || Date.now()+view.offset>=state.deadline) return;
+  view.feedback=null;
   get("answer").disabled=true;
   get("answer-form").querySelector("button").disabled=true;
   get("suggestions").hidden=true;
   liveAction(view,"submit",{index:state.index,text,language:lang});
+  updateLiveNotice(view);
 }
 function tickLive(view) {
   const state=view.state;
   if (!state) return;
   const now=Date.now()+view.offset;
   if (state.phase==="countdown") {
-    get("live-status").textContent=String(Math.max(0,Math.ceil((state.opens-now)/1000)));
+    const target=get("live-status") ?? get("category");
+    const countdown=String(Math.max(0,Math.ceil((state.opens-now)/1000)));
+    if (target.textContent!==countdown) target.textContent=countdown;
   } else if (state.phase==="question" && !state.locked) {
     const seconds=Math.max(0,Math.ceil((state.deadline-now)/1000));
     get("timer").textContent=seconds;

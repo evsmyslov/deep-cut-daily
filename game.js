@@ -91,22 +91,28 @@ const strings = {
   }
 };
 Object.assign(strings.en, {
-  live:"Friend duel", liveLabel:"Live duel", yourSeat:"You", friendSeat:"Friend", ready:"Ready",
+  live:"Friend duel", yourSeat:"You", friendSeat:"Friend", ready:"Ready",
   isReady:"Ready", notReady:"Not ready", waitSeat:"Waiting to join", joiningRoom:"Connecting to the room…",
-  liveRules:"Share the link and both press Ready. The first answer cuts the other player’s remaining time to 10 seconds.",
+  liveRules:"Share the link and both press Ready. The first accepted answer gives the other player up to 10 seconds.",
   getReady:"Get ready", answerLocked:"Answer locked. Waiting for your friend.", rush:"Your friend answered. You have up to 10 seconds.",
   autoNext:"Next question starts automatically.", networkLost:"Connection interrupted. Reconnecting…",
   roomExpired:"This invite has expired. Create a new duel.", roomFull:"This room already has two players.",
-  suggestion:"Did you mean?", joinCode:"Join by code", roomCode:"Room code", badCode:"Enter the 16-character room code.", originalEdition:"Original edition"
+  suggestion:"Did you mean?", joinCode:"Join by code", roomCode:"Room code", badCode:"Enter the 16-character room code.", originalEdition:"Original edition",
+  createRoom:"Create a room", retryLive:"Retry connection", duelMenu:"Duel menu",
+  wrongRetry:"That answer doesn’t fit. Try again.", lookupRetry:"Answer check unavailable. Try again or enter another answer.",
+  retryRule:"If an answer doesn’t fit, you can try again until time runs out."
 });
 Object.assign(strings.ru, {
-  live:"Дуэль с другом", liveLabel:"Синхронная дуэль", yourSeat:"Вы", friendSeat:"Друг", ready:"Готов",
+  live:"Дуэль с другом", yourSeat:"Вы", friendSeat:"Друг", ready:"Готов",
   isReady:"Готов", notReady:"Не готов", waitSeat:"Ещё не подключился", joiningRoom:"Подключаемся к лобби…",
-  liveRules:"Поделитесь ссылкой и оба нажмите «Готов». После первого ответа у второго игрока останется до 10 секунд.",
+  liveRules:"Поделитесь ссылкой и оба нажмите «Готов». После первого засчитанного ответа у второго игрока останется до 10 секунд.",
   getReady:"Приготовьтесь", answerLocked:"Ответ принят. Ждём друга.", rush:"Друг ответил. У вас до 10 секунд.",
   autoNext:"Следующий вопрос начнётся автоматически.", networkLost:"Связь прервалась. Переподключаемся…",
   roomExpired:"Срок действия ссылки истёк. Создайте новую дуэль.", roomFull:"В этой комнате уже два игрока.",
-  suggestion:"Имели в виду?", joinCode:"Войти по коду", roomCode:"Код комнаты", badCode:"Введите код комнаты из 16 символов.", originalEdition:"Первый выпуск"
+  suggestion:"Имели в виду?", joinCode:"Войти по коду", roomCode:"Код комнаты", badCode:"Введите код комнаты из 16 символов.", originalEdition:"Первый выпуск",
+  createRoom:"Создать комнату", retryLive:"Повторить подключение", duelMenu:"Меню дуэли",
+  wrongRetry:"Ответ не подходит. Попробуйте ещё раз.", lookupRetry:"Проверка недоступна. Повторите попытку или введите другой ответ.",
+  retryRule:"Если ответ не подходит, можно попробовать снова, пока есть время."
 });
 const get = id => document.getElementById(id);
 const today = () => Math.max(START, Math.floor(Date.now() / DAY));
@@ -153,6 +159,11 @@ function readRoute() {
   const scoreText=args.get("score") ?? "";
   const rival=fixed && /^\d{1,3}$/.test(scoreText) && Number(scoreText)<=maximum ? Number(scoreText) : null;
   return {mode:"daily",day,fixed,revision,rival,key:editionKey(day,revision)};
+}
+function dailyRoute() {
+  const day=today();
+  const revision=latestEditionRevision(day);
+  return {mode:"daily",day,fixed:false,revision,rival:null,key:editionKey(day,revision)};
 }
 function questionAt(index) {
   if (route.mode==="daily") return mineQuestion(dailyIds(route.day,route.revision)[index]);
@@ -224,6 +235,7 @@ function localize() {
   get("lang").setAttribute("aria-label", words().language);
   get("nav").setAttribute("aria-label", words().menu);
   get("close").setAttribute("aria-label", words().close);
+  get("duel-close").setAttribute("aria-label", words().close);
   const tierCards = [4,0,1,2,3].map(index => {
     const tier = words().tiers[index];
     const card = element("div", "");
@@ -243,14 +255,16 @@ function swap(id) {
   get("stage").replaceChildren(get(id).content.cloneNode(true));
   localize();
   const ui = words();
+  get("duel").disabled=route.mode==="live" && id!=="results";
   get("edition").textContent = route.mode === "daily" ? `${route.day === today() ? ui.today : ui.past} / ${displayDate(route.day)}` : ui[route.mode];
   get("footer-mode").textContent = route.mode === "daily" && route.rival !== null ? ui.versus : `30 s · ${ui.active.split(" · ").at(-1)}`;
   clock();
 }
 function intro(focus = false) {
   clearInterval(questionTimer);
-  stopLive();
-  if (route.mode === "live") { enterLive(); return; }
+  closeDuel();
+  const invitation=route.mode==="live" ? route : null;
+  if (invitation) route=dailyRoute();
   clearTimeout(rideTimer);
   get("miner").classList.remove("moving");
   roomStamp = null;
@@ -291,12 +305,12 @@ function intro(focus = false) {
     else question();
   };
   if (focus) get("start").focus();
+  if (invitation) enterLive(invitation);
 }
 
 function question(draft = "", focus = true) {
   clearInterval(questionTimer);
   swap("question");
-  const playRound = round;
   const index = round.answers.length - Number(round.feedback);
   const model = questionAt(index);
   const ui = words();
@@ -306,7 +320,12 @@ function question(draft = "", focus = true) {
   get("prompt").textContent = model[lang];
   get("answer").placeholder = ui.placeholder;
   get("answer").value = draft;
+  const input=get("answer");
+  const form=get("answer-form");
+  const submit=form.querySelector("button");
+  const status=get("check-status");
   bindSuggestions(model);
+  input.addEventListener("input", () => { status.textContent = ""; });
   get("finish-endless").hidden = route.mode !== "endless";
   get("finish-endless").onclick = complete;
   get("next").onclick = () => {
@@ -317,31 +336,38 @@ function question(draft = "", focus = true) {
     question();
   };
   get("skip").onclick = () => settle("", null, "skip");
-  get("answer-form").onsubmit = async event => {
+  form.onsubmit = async event => {
     event.preventDefault();
     const text = get("answer").value.trim();
     const key = answerKey(text);
     if (!key || round.feedback || round.pending) return;
     if (Date.now() >= round.deadline) { settle("", null, "timeout"); return; }
     let entry = model.aliases.get(key);
-    if (entry || !model.lookup || (model.id === "weapons" && /^(weapon|fictional weapon|оружие|вымышленное оружие)$/.test(key))) {
-      settle(text, entry, "answer"); return;
+    if (entry) { settle(text, entry, "answer"); return; }
+    if (!model.lookup || (model.id === "weapons" && /^(weapon|fictional weapon|оружие|вымышленное оружие)$/.test(key))) {
+      reject("wrongRetry"); return;
     }
-    clearInterval(questionTimer);
     const pending = {text};
     round.pending = pending;
-    save();
-    lockQuestion();
+    input.readOnly=true;
+    submit.disabled=true;
+    get("suggestions").hidden=true;
+    status.textContent=words().checking;
+    let failure="wrongRetry";
     try { entry = (await request("verify", { id:model.id, text, language:lang }, 6500)).answer; }
-    catch { entry = null; }
-    if (round === playRound && page === "question" && round.pending === pending) settle(text, entry, "checked");
+    catch { failure="lookupRetry"; }
+    if (!form.isConnected || round.pending!==pending) return;
+    if (Date.now()>=round.deadline) { settle("",null,"timeout"); return; }
+    if (entry) settle(text,entry,"checked");
+    else reject(failure);
   };
-  function lockQuestion() {
-    get("answer").disabled = true;
-    get("suggestions").hidden = true;
-    get("skip").disabled = true;
-    get("timer").textContent = "…";
-    get("check-status").textContent = words().checking;
+  function reject(message) {
+    round.pending=null;
+    input.readOnly=false;
+    submit.disabled=false;
+    status.textContent=words()[message];
+    input.focus({preventScroll:true});
+    input.select();
   }
   function settle(text, entry, reason) {
     if (round.feedback) return;
@@ -378,17 +404,7 @@ function question(draft = "", focus = true) {
     if (moveFocus) get("next").focus({preventScroll:true});
   }
   if (round.feedback) { reveal(focus); return; }
-  if (round.pending) {
-    lockQuestion();
-    if (focus) {
-      const pending = round.pending;
-      const text = pending.text;
-      request("verify", {id:model.id,text,language:lang},6500)
-        .then(result => result.answer).catch(() => null)
-        .then(entry => { if (round === playRound && page === "question" && round.pending === pending) settle(text,entry,"checked"); });
-    }
-    return;
-  }
+  round.pending=null;
   if (!round.deadline) {
     round.deadline = Date.now() + LIMIT * 1000;
     save();
@@ -560,9 +576,6 @@ function openEdition(day,mode,duel,revision) {
     url.searchParams.set("mode","mine");
     url.searchParams.set("edition",iso(day));
     if ((revision ?? latestEditionRevision(day))===2) url.searchParams.set("set","2");
-  } else if (mode==="guest") {
-    url.searchParams.set("join",duel);
-    url.hash=`join-${duel}`;
   } else if (mode) {
     url.searchParams.set("mode",mode);
     if (duel) url.searchParams.set("room",duel);
@@ -570,33 +583,6 @@ function openEdition(day,mode,duel,revision) {
   history.pushState(browserId ? {minePlayer:browserId} : null,"",url);
   route=readRoute();
   intro(true);
-}
-function showJoinCode() {
-  const ui=words();
-  const form=element("form","");
-  form.className="join-form";
-  const label=element("label",ui.roomCode);
-  label.htmlFor="room-code-input";
-  const input=element("input","");
-  input.id=label.htmlFor;
-  input.autocomplete="off";
-  input.autocapitalize="none";
-  input.spellcheck=false;
-  input.maxLength=19;
-  const status=element("p","");
-  status.setAttribute("role","status");
-  const submit=element("button",ui.joinCode);
-  submit.className="primary";
-  form.append(label,input,submit,status);
-  form.onsubmit=event=>{
-    event.preventDefault();
-    const code=input.value.trim().toLowerCase().replace(/[\s-]/g,"");
-    if (!isRoomCode(code)) {status.textContent=ui.badCode;return;}
-    get("modal").close();
-    openEdition(undefined,"guest",code);
-  };
-  modal(ui.joinCode,form);
-  input.focus();
 }
 function modal(title, ...content) {
   get("modal-title").textContent = title;
@@ -659,20 +645,11 @@ function launch() {
   route = readRoute();
   mountWorld();
   get("home").onclick = event => { event.preventDefault(); openEdition(); };
-  get("rules").onclick = () => modal(words().rules, ...[...words().rulesText,words().openRules,words().moreRules].map(text=>element("p",text)));
+  get("rules").onclick = () => modal(words().rules, ...[...words().rulesText,words().openRules,words().moreRules,words().retryRule].map(text=>element("p",text)));
   get("endless").onclick = () => openEdition(undefined,"endless");
-  get("join-code").onclick = showJoinCode;
-  get("duel").onclick = async () => {
-    const button = get("duel");
-    button.disabled = true;
-    const previous = route;
-    try {
-      const result = await request("live",{action:"create"});
-      if (previous === route) openEdition(undefined,"live",result.room);
-    } catch {
-      if (previous === route) modal(words().duel,element("p",words().matchError));
-    } finally { button.disabled = false; }
-  };
+  get("duel").onclick = showDuelMenu;
+  get("duel-close").onclick = closeDuel;
+  get("duel-modal").addEventListener("cancel", event => { event.preventDefault(); closeDuel(); });
   get("stats").onclick = showStats;
   get("archive").onclick = () => {
     const ui = words();
@@ -713,8 +690,8 @@ function launch() {
   addEventListener("popstate", () => { route = readRoute(); intro(); });
   intro();
   setInterval(() => {
-    if (route.mode === "daily" && !route.fixed && page === "intro" && route.day !== today()) {
-      route = readRoute();
+    if (route.mode === "daily" && !route.fixed && page === "intro" && route.day !== today() && !get("duel-modal").open) {
+      route = dailyRoute();
       intro();
     } else clock();
   }, 1000);

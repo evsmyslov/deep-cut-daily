@@ -7,15 +7,12 @@
 <meta name="description" content="A daily open-answer quiz. Find the facts that others overlook. Play in English or Russian.">
 <title>Rare Below</title>
 <link rel="icon" href="art/mark.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Pixelify+Sans:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=live2">
+<link rel="stylesheet" href="style.css?v=duel-dialog">
 <script defer src="catalog-data.js"></script>
 <script defer src="open-questions.js?v=live2"></script>
 <script defer src="suggestions.js?v=live2"></script>
-<script defer src="live-client.js?v=live2"></script>
-<script defer src="game.js?v=live2"></script>
+<script defer src="live-client.js?v=duel-dialog"></script>
+<script defer src="game.js?v=duel-dialog"></script>
 </head>
 <body>
 <header class="top"><div class="shell top-inner">
@@ -23,7 +20,7 @@
   <nav id="nav"><button id="rules" data-text="rules"></button><button id="stats" data-text="stats"></button><button id="lang" aria-label="Switch language"></button></nav>
 </div></header>
 <main class="shell">
-  <div class="daily-bar"><p><span class="live" aria-hidden="true"></span><span id="edition"></span></p><div class="mode-buttons"><button id="endless" data-text="endless"></button><button id="duel" data-text="duel"></button><button id="join-code" data-text="joinCode"></button><button id="archive" data-text="archive"></button></div></div>
+  <div class="daily-bar"><p><span class="live" aria-hidden="true"></span><span id="edition"></span></p><div class="mode-buttons"><button id="endless" data-text="endless"></button><button id="duel" data-text="duel" aria-haspopup="dialog"></button><button id="archive" data-text="archive"></button></div></div>
   <section class="machine" id="machine">
     <div class="world" aria-hidden="true">
       <div class="world-track" id="world-track"></div>
@@ -43,6 +40,10 @@
 </main>
 <footer class="bottom shell"><span>RARE BELOW</span><span data-text="reset"></span></footer>
 <dialog id="modal" aria-labelledby="modal-title"><div class="dialog-head"><h2 id="modal-title"></h2><form method="dialog"><button id="close" aria-label="Close dialog">×</button></form></div><div id="modal-content"></div></dialog>
+<dialog id="duel-modal" aria-labelledby="duel-title">
+  <div class="dialog-head"><h2 id="duel-title" data-text="live"></h2><button id="duel-close" type="button" aria-label="Close dialog">×</button></div>
+  <div id="duel-body"></div>
+</dialog>
 <template id="intro">
   <div class="intro">
     <div class="intro-content">
@@ -77,10 +78,21 @@
     <p id="answer-source" class="answer-source" role="status"></p>
   </section>
 </template>
+<template id="duel-menu">
+  <div class="duel-menu">
+    <button class="primary" id="duel-create" data-text="createRoom"></button>
+    <form class="join-form" id="duel-join">
+      <label for="room-code-input" data-text="roomCode"></label>
+      <div class="join-controls">
+        <input id="room-code-input" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="19" required>
+        <button class="quiet" data-text="joinCode"></button>
+      </div>
+    </form>
+    <p id="duel-menu-notice" role="status"></p>
+  </div>
+</template>
 <template id="live-lobby">
-  <section class="round live-lobby">
-    <p class="label" data-text="liveLabel"></p>
-    <h1 id="live-title"></h1>
+  <section class="live-lobby">
     <p id="live-status" class="challenge" role="status"></p>
     <div class="live-seats" id="live-seats">
       <div><span data-text="yourSeat"></span><strong id="own-ready"></strong></div>
@@ -92,7 +104,11 @@
       <button class="quiet" id="live-copy" data-text="invite"></button>
     </div>
     <p id="live-room-code"><span data-text="roomCode"></span> <code id="current-room-code"></code></p>
-    <button class="primary" id="live-ready" data-text="ready"></button>
+    <div class="actions">
+      <button class="primary" id="live-ready" data-text="ready"></button>
+      <button class="quiet" id="live-retry" data-text="retryLive" hidden></button>
+      <button class="quiet" id="live-back" data-text="duelMenu"></button>
+    </div>
     <p id="live-notice" role="status"></p>
   </section>
 </template>

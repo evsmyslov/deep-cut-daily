@@ -1,6 +1,9 @@
-:root{color-scheme:dark;--bg:#182122;--panel:#243030;--ink:#f5efdc;--muted:#b9c0b2;--accent:#e6ba80;--edge:#465550;--green:#b2c8a6;--pixel:"Pixelify Sans","Golos Text",monospace;--mono:"IBM Plex Mono",monospace;--sans:"Golos Text",system-ui,sans-serif}
+@font-face{font-family:"Terminus";src:url("fonts/terminus.ttf") format("truetype");font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:"Terminus";src:url("fonts/terminus-bold.ttf") format("truetype");font-style:normal;font-weight:600 900;font-display:swap}
+:root{color-scheme:dark;--bg:#182122;--panel:#243030;--ink:#f5efdc;--muted:#b9c0b2;--accent:#e6ba80;--edge:#465550;--green:#b2c8a6;--pixel:"Terminus",monospace;--mono:var(--pixel);--sans:var(--pixel)}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);margin:0;font:1rem/1.55 var(--sans)}
+body{background:var(--bg);color:var(--ink);margin:0;font:1.125rem/1.45 var(--sans)}
+code{font-family:var(--mono)}
 button,input,textarea{font:inherit}
 button{cursor:pointer;color:inherit}
 a{color:inherit}
@@ -228,25 +231,33 @@ main.shell{width:100%;padding-top:14px}
   .tier:nth-child(5) { border-left: 0; }
 }
 
-/* Keep the title readable at a glance and the pixel face for instruments. */
-.intro h1,.live-lobby h1 {
-  font-family:var(--sans);
-  font-weight:800;
-  line-height:1.01;
-  letter-spacing:-.048em;
+.intro h1 {
+  line-height:1;
+  letter-spacing:-.025em;
   text-shadow:0 3px 0 #102028;
 }
-.intro h1{font-size:clamp(3rem,6.9vw,5.8rem)}
-.live-lobby h1{font-size:clamp(2rem,5.8vw,3.65rem);margin:10px 0 12px}
+.intro h1{font-size:clamp(3rem,6.8vw,5.6rem)}
+.round h1{letter-spacing:0}
+#duel-modal{width:min(500px,calc(100% - 24px));background:#15242b;border:1px solid #829a89;box-shadow:0 6px 0 #0c1418,0 14px 44px #070f14bb}
+#duel-modal::backdrop{background:#0d1518a6}
+#duel-modal .dialog-head{padding-bottom:12px;border-bottom:1px solid var(--edge)}
+#duel-modal .dialog-head h2{font-size:clamp(1.35rem,5vw,1.75rem);line-height:1.1}
+.duel-menu,.live-lobby{margin-top:14px}
+.duel-menu>.primary{width:100%}
+#duel-menu-notice,#live-notice{margin:12px 0 0;color:var(--accent);font-size:1rem}
+#duel-menu-notice:empty,#live-notice:empty,#live-status:empty{display:none}
+.join-form{display:grid;gap:5px;margin-top:16px}
+.join-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.join-controls input{min-width:0;width:100%}
 .live-seats,.live-url{display:grid;gap:8px;margin:14px 0;grid-template-columns:1fr 1fr}
 .live-seats>div{background:#15232adb;border:1px solid #6a807087;padding:9px 12px;border-radius:5px;min-width:0}
 .live-seats span,.live-seats strong{display:block}
-.live-seats span{color:var(--muted);font-size:.79rem}
-.live-seats strong{font-size:.97rem;color:var(--green)}
+.live-seats span{color:var(--muted);font-size:.9rem}
+.live-seats strong{font-size:1rem;color:var(--green)}
 .live-url{grid-template-columns:minmax(0,1fr) auto}
 .live-url input{min-width:0;font:500 .8rem var(--mono)}
-#live-notice{color:var(--muted);font-size:.86rem;min-height:1.5em}
-#live-status:has(+ [hidden]){color:var(--accent);font-size:2rem}
+#live-status:has(+ [hidden]):not(:empty){color:var(--accent);font-size:2rem}
+#check-status{font-size:1rem;color:#ffe0a5}
 .answer-suggestions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 13px;color:#e9d5a2;font-size:.87rem}
 .answer-suggestions button{text-align:left;min-height:34px;border-color:#8d8063;background:#23282b}
 #recap li{display:block;min-width:0;padding:0;border:0}
@@ -265,10 +276,11 @@ main.shell{width:100%;padding-top:14px}
 .answer-source{font-size:.85rem}
 @media(max-width:730px){
   .intro h1{font-size:clamp(2.7rem,10vw,4.3rem)}
-  .live-url button{padding-inline:7px;font-size:.8rem}
-  .live-lobby{padding-bottom:22px}
+  nav button,.daily-bar button,.live-url button{font-size:.9rem}
 }
 #live-room-code{color:var(--muted);font-size:.86rem;margin:0 0 13px}
 #live-room-code code{color:var(--accent);font-size:.9rem;user-select:all}
-.join-form{display:grid;gap:9px}
-.join-form p{margin:0;color:var(--accent)}
+@media(max-width:420px){
+  #duel-modal{padding:14px}
+  .live-url{grid-template-columns:minmax(0,1fr)}
+}
