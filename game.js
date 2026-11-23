@@ -50,11 +50,11 @@ const strings = {
     pending:"Loading anonymous picks…", noData:"Too few completed expeditions for anonymous counts. The list shows the quiz’s rarity tiers.",
     surveyError:"Community counts are unavailable. The list shows the quiz’s rarity tiers.",
     surveyData:"Community picks, from least to most selected.",
-    community:"Community picks", dictionary:"Examples by rarity", early:"Previous four-question expedition",
+    community:"Player counts and known answers", dictionary:"All known answers", early:"Previous four-question expedition",
     language:"Switch to Russian", menu:"Game menu", tiers:["Shard","Crystal","Relic","Core Heart","Trace"],
     categories:{science:"Science",places:"Geography",culture:"Pop culture",variety:"General knowledge"},
     rulesText:["Answer eight questions in English or Russian. Your score determines how deep you dig. A zero-point answer leaves you at the same depth.",
-      "A find earns 10, 25, 55, 85 or 120 points, based on an editorial estimate of its rarity. Both languages share the same answers and points.",
+      "A find earns 10, 25, 55, 85 or 120 points. Both languages share the same answers and points.",
       "A new set opens at 00:00 UTC. Everyone gets the same questions. Your progress stays in this browser.",
       "After the expedition, accepted choices are counted anonymously. A challenge link shares your score."],
     awards:[["First Footstep","Complete an expedition."],["Gem Hunter","Find three Core Hearts in one expedition."],["Corebreaker","Earn 960 points in one expedition."]]
@@ -82,11 +82,11 @@ const strings = {
     pending:"Загружаем анонимные ответы…", noData:"Пока мало завершённых экспедиций для анонимной сводки. Ниже — ответы по уровням редкости в игре.",
     surveyError:"Сводка игроков недоступна. Ниже — ответы по уровням редкости в игре.",
     surveyData:"Выбор игроков, от самых редких до самых частых.",
-    community:"Выбор игроков", dictionary:"Примеры по редкости", early:"Прошлая экспедиция из четырёх вопросов",
+    community:"Известные ответы и выбор игроков", dictionary:"Все известные ответы", early:"Прошлая экспедиция из четырёх вопросов",
     language:"Переключить на английский", menu:"Меню игры", tiers:["Осколок","Кристалл","Реликт","Сердце ядра","След"],
     categories:{science:"Наука",places:"География",culture:"Поп-культура",variety:"Общие знания"},
     rulesText:["Ответьте на восемь вопросов по-русски или по-английски. Глубина зависит от набранных очков. При нуле за ответ шахтёр остаётся на месте.",
-      "Находка приносит 10, 25, 55, 85 или 120 очков по заранее заданной оценке редкости. Ответы и баллы одинаковы для обоих языков.",
+      "Находка приносит 10, 25, 55, 85 или 120 очков. Ответы и баллы одинаковы для обоих языков.",
       "Новый выпуск выходит в 03:00 по Москве. Вопросы у всех одинаковые. Прогресс сохраняется в этом браузере.",
       "После экспедиции засчитанные ответы попадают в анонимную сводку. Ссылка-вызов передаёт ваш счёт."],
     awards:[["Первый шаг","Завершить экспедицию."],["Искатель самоцветов","Найти три сердца ядра за экспедицию."],["Покоритель ядра","Набрать 960 очков за экспедицию."]]
@@ -110,6 +110,8 @@ Object.assign(strings.en, {
   easy:"Easy", hard:"Hard", rare:"Rare only",
   endlessModes:["Skip any question and keep digging.","Skipping is disabled. The run ends when time runs out.","Keep the streak alive with answers worth at least 55 points."],
   rareRetry:"It fits, but this mode needs a Crystal or rarer. Try again.", streakEnded:"Time ran out. Your streak has ended.", answersFound:"answers found",
+  dataRarity:"Each question has one Core Heart. The bank estimates rarity using population, Wikidata coverage, or editorial estimates. Results show player counts when enough people have finished.",
+  sourceCredits:"Questions use adapted data from",
   sound:"Audio", music:"Music", effects:"Sound effects", musicVolume:"Music volume", effectsVolume:"Sound effects volume",
   friends:"Friends", friendCode:"Your friend code", friendAdd:"Add friend", friendCodeInput:"Friend code",
   friendIntro:"Share your friend code to keep in touch and invite each other to duels.",
@@ -136,6 +138,8 @@ Object.assign(strings.ru, {
   easy:"Обычный", hard:"На вылет", rare:"Только редкие",
   endlessModes:["Пропускайте любые вопросы и копайте дальше.","Без пропусков. Когда время истечёт, забег завершится.","Поддерживайте серию ответами от 55 очков."],
   rareRetry:"Ответ подходит, но здесь нужен «Кристалл» или выше. Попробуйте ещё раз.", streakEnded:"Время вышло. Серия завершена.", answersFound:"ответов засчитано",
+  dataRarity:"У каждого вопроса одно Сердце ядра. Для оценки редкости используются население, число языковых версий в Викиданных или редакционная оценка. В итогах видна частота ответов, когда выпуск прошли достаточно игроков.",
+  sourceCredits:"В вопросах использованы адаптированные данные из",
   sound:"Звук", music:"Музыка", effects:"Звуковые эффекты", musicVolume:"Громкость музыки", effectsVolume:"Громкость эффектов",
   friends:"Друзья", friendCode:"Ваш код друга", friendAdd:"Добавить друга", friendCodeInput:"Код друга",
   friendIntro:"Поделитесь своим кодом, чтобы добавлять друзей и приглашать их на дуэли.",
@@ -213,13 +217,17 @@ function dailyRoute() {
   const revision=latestEditionRevision(day);
   return {mode:"daily",day,fixed:false,revision,rival:null,key:editionKey(day,revision)};
 }
+let cachedDeck;
 function questionAt(index) {
   if (route.mode==="daily") return mineQuestion(dailyIds(route.day,route.revision)[index]);
   const version=round.deckVersion ?? 1;
   const size=mineDecks[version].length;
   const cycle=route.mode==="endless" ? Math.floor(index/size) : 0;
-  const ids=mineIds((round.seed+cycle)>>>0,route.mode,version);
-  return mineQuestion(ids[index%ids.length]);
+  const seed=(round.seed+cycle)>>>0;
+  if (cachedDeck?.seed!==seed || cachedDeck.version!==version) {
+    cachedDeck={seed,version,ids:mineIds(seed,route.mode,version)};
+  }
+  return mineQuestion(cachedDeck.ids[index%size]);
 }
 function depthAt(points) {
   const stop = depthThresholds.findLastIndex(threshold => points >= threshold);
@@ -286,6 +294,16 @@ function mountWorld() {
     const layer = element("div", "");
     layer.className = "world-layer";
     layer.style.backgroundImage = `url("art/shaft/${index}.png")`;
+    if (index===1 || index===2) {
+      const detail=element("span","");
+      detail.className=index===1 ? "soil-crawler" : "buried-fossil";
+      layer.append(detail);
+    }
+    if (index>=3) {
+      const detail=element("span","");
+      detail.className="stone-glint";
+      layer.append(detail);
+    }
     get("world-track").append(layer);
     get("depth-map").append(element("span", ""));
     if (index > 0) get("progress").append(element("i", ""));
@@ -322,6 +340,7 @@ function swap(id) {
   page = id;
   get("stage").replaceChildren(get(id).content.cloneNode(true));
   localize();
+  get("hud-duel-score").hidden=route.mode!=="live";
   const ui = words();
   get("duel").disabled=route.mode==="live" && id!=="results";
   get("friends").disabled=get("duel").disabled;
@@ -522,6 +541,7 @@ function results(focus = true) {
     ? ui.streakEnded : earned([round]).flatMap((unlocked, index) => unlocked ? [ui.awards[index][0]] : []).at(-1);
   get("comparison").hidden = !["duel","live"].includes(route.mode) && route.rival == null;
   if (route.mode === "daily" && route.rival !== null) showComparison(route.rival,points);
+  const recapUpdates=[];
   round.answers.forEach((answer,index)=>{
     const model=route.mode==="live" ? mineQuestion(answer.prompt) : questionAt(index);
     const row=element("li","");
@@ -532,7 +552,7 @@ function results(focus = true) {
     const extras=element("div","");
     extras.id=`recap-detail-${index}`;
     extras.className="recap-detail";
-    showRecapChoices(extras,model);
+    recapUpdates.push(bindRecap(details,extras,model,answer,round.rivalAnswers?.[index]));
     details.append(summary,extras);
     row.append(details);
     get("recap").append(row);
@@ -558,7 +578,7 @@ ${ui.dare}
 ${url.href}`);
   };
   get("answer-source").hidden = route.mode !== "daily";
-  if (route.mode === "daily") showAnswerSurvey();
+  if (route.mode === "daily") showAnswerSurvey(recapUpdates);
   if (route.mode === "duel") {
     get("refresh-duel").onclick = refreshMatch;
     refreshMatch();
@@ -640,21 +660,48 @@ async function request(path,data,timeout=8000,transport=undefined,lifetime) {
   }
 }
 
-function showRecapChoices(root,model,picked=[],rounds=0) {
-  const ui=words();
-  const list=element("ul","");
-  if (picked.length) {
-    for (const row of picked) list.append(element("li",`${row[lang]} · ${row.count} / ${rounds}`));
-  } else {
-    const choices=[...model.entries].sort((a,b)=>scores[b.tier]-scores[a.tier]);
-    for (const entry of choices.slice(0,12)) list.append(element("li",`${entry[lang]} · ${ui.tiers[entry.tier]} · +${scores[entry.tier]}`));
+function bindRecap(details,root,model,answer,rival) {
+  let counts=[], rounds=0, verified=[], loading=false;
+  function render() {
+    const ui=words();
+    const known=new Map(model.entries.map(entry=>[entry.id,entry]));
+    for (const entry of [answer,rival,...verified,...counts]) {
+      if (entry?.id!=null && !known.has(entry.id)) known.set(entry.id,entry);
+    }
+    const played=new Map(counts.map(entry=>[entry.id,entry.count]));
+    const choices=[...known.values()].sort((a,b)=>
+      (played.get(a.id) ?? 0)-(played.get(b.id) ?? 0) || pointsFor(b)-pointsFor(a) || a[lang].localeCompare(b[lang],lang));
+    const list=element("ul","");
+    if (choices.length>15) list.tabIndex=0;
+    choices.forEach(entry=>{
+      const frequency=rounds ? ` · ${played.get(entry.id) ?? 0} / ${rounds}` : "";
+      list.append(element("li",`${entry[lang]} · ${ui.tiers[entry.tier]} · +${pointsFor(entry)}${frequency}`));
+    });
+    const title=element("p",model[lang]);
+    const items=[title];
+    if (rival) items.push(element("p",duelAnswerText(rival)));
+    items.push(element("small",`${rounds ? ui.community : ui.dictionary} · ${choices.length}`),list);
+    root.replaceChildren(...items);
   }
-  root.replaceChildren(element("p",model[lang]),element("small",picked.length?ui.community:ui.dictionary),list);
+  details.ontoggle=async()=>{
+    if (!details.open) return;
+    render();
+    if (!model.lookup || loading) return;
+    loading=true;
+    try {
+      verified=(await request("answer-list",{id:model.id})).answers;
+      if (root.isConnected && details.open) render();
+    } catch { loading=false; }
+  };
+  return (picked,total)=>{
+    counts=picked??[];
+    rounds=total??0;
+    if (details.open) render();
+  };
 }
-async function showAnswerSurvey() {
+async function showAnswerSurvey(recapUpdates) {
   const status=get("answer-source");
   const data={edition:iso(route.day),editionRevision:route.revision,picks:round.answers.map(answer=>answer.id)};
-  const models=round.answers.map((_,index)=>questionAt(index));
   status.textContent=words().pending;
   let survey;
   try { survey=await request("mine-answers",data); } catch { survey=null; }
@@ -662,7 +709,7 @@ async function showAnswerSurvey() {
   const ui=words();
   const counts=survey?.counts;
   status.textContent=counts ? ui.surveyData : survey ? ui.noData : ui.surveyError;
-  if (counts) models.forEach((model,index)=>showRecapChoices(get(`recap-detail-${index}`),model,counts[index],survey.rounds));
+  if (counts) recapUpdates.forEach((update,index)=>update(counts[index],survey.rounds));
 }
 function openEdition(day,mode,duel,revision) {
   const url=new URL(gameRoot);
@@ -754,7 +801,16 @@ function launch() {
   route = readRoute();
   mountWorld();
   get("home").onclick = event => { event.preventDefault(); openEdition(); };
-  get("rules").onclick = () => modal(words().rules, ...[...words().rulesText,words().openRules,words().moreRules,words().retryRule].map(text=>element("p",text)));
+  get("rules").onclick = () => {
+    const ui=words();
+    const credits=element("p",`${ui.sourceCredits} `);
+    const geo=element("a","GeoNames (CC BY 4.0)");
+    geo.href="https://www.geonames.org/export/";
+    const wiki=element("a","Wikidata (CC0)");
+    wiki.href="https://www.wikidata.org/wiki/Wikidata:Licensing";
+    credits.append(geo," · ",wiki);
+    modal(ui.rules,...[...ui.rulesText,ui.openRules,ui.moreRules,ui.retryRule,ui.dataRarity].map(text=>element("p",text)),credits);
+  };
   get("endless").onclick = showEndlessMenu;
   get("sound").onclick = showAudioMenu;
   get("friends").onclick = showFriends;

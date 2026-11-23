@@ -102,7 +102,14 @@ main{padding-top:24px}
 .world,.world-track,.world-shade{position:absolute;inset:0;pointer-events:none}
 .world{z-index:-1;overflow:hidden;background:#19242a}
 .world-track{display:grid;grid-auto-rows:100%;transform:translateY(calc(-100% * var(--stop)));transition:transform 840ms cubic-bezier(.58,.04,.27,1) var(--dig-delay,0ms)}
-.world-layer{background-position:center;background-size:100% 100%;image-rendering:pixelated}
+.world-layer{position:relative;overflow:hidden;background-position:center;background-size:100% 100%;image-rendering:pixelated}
+.soil-crawler,.buried-fossil,.stone-glint{position:absolute;display:block;pointer-events:none}
+.soil-crawler{width:clamp(32px,5vw,64px);aspect-ratio:28/13;top:38%;left:10%;background:url("art/shaft/soil-crawler.png") 0 0/400% 100% no-repeat;opacity:.78;animation:crawl-steps .8s steps(3) infinite alternate, crawl-path 12s ease-in-out infinite alternate}
+.buried-fossil{width:clamp(94px,15vw,178px);aspect-ratio:61/41;left:9%;top:54%;background:url("art/shaft/buried-fossil.png") center/contain no-repeat;opacity:.53;transform:rotate(-12deg)}
+.stone-glint{width:4px;height:4px;top:45%;left:14%;background:#f5d39a;opacity:.28;box-shadow:38px 41px #d1bd8a,80px -20px #f7e7b9,-28px 55px #948e88;animation:stone-light 6s steps(6) infinite alternate}
+@keyframes crawl-steps{to{background-position:100% 0}}
+@keyframes crawl-path{to{transform:translate(130%,38%)}}
+@keyframes stone-light{to{opacity:.75;transform:translate(4px,-9px)}}
 .world-shade{background:linear-gradient(90deg,#0a1419a8 0%,transparent 16%,transparent 32%,#101b2290 48%,#111b22d9 61%,#111b22ed 100%),linear-gradient(180deg,#0a141b8a,transparent 24%,transparent 80%,#09141bdb)}
 .miner{position:absolute;left:26.7%;top:56%;transform:translate(-50%,-50%);width:76px;height:76px;transition:top .7s;z-index:1}
 .machine[data-depth="0"] .miner{top:65%}
@@ -114,6 +121,8 @@ main{padding-top:24px}
 .readout{display:grid;justify-self:start;background:#101a23e8;min-width:90px;padding:9px 12px;border:1px solid #526262;border-radius:4px;box-shadow:0 3px #0a111a}
 .readout strong{color:var(--accent);font:700 1.6rem/1.15 var(--pixel);letter-spacing:0;white-space:nowrap}
 .hud-score{justify-self:end;text-align:right}.hud-progress{justify-self:stretch;text-align:center;min-width:0}
+.hud-duel-score{margin-top:5px;padding-top:5px;border-top:1px solid var(--edge);color:var(--green);white-space:nowrap}
+.hud-duel-score b{font-size:1.14em;color:var(--ink)}
 .hud-progress .progress{margin:6px 0 0;gap:3px}.hud-progress .progress i{height:6px;min-width:0}
 .hud-progress .progress i.active{background:var(--green)}
 .depth-map{position:absolute;top:113px;bottom:64px;left:24px;display:grid;grid-template-rows:repeat(9,1fr);align-items:center;width:20px}
@@ -199,7 +208,7 @@ main.shell{width:100%;padding-top:14px}
  #answer-form input{padding-inline:7px}
  #answer-form button{padding-inline:8px}
 }
-@media(prefers-reduced-motion:reduce){.world-track,.miner{transition:none}.miner.moving::before{animation:none}}
+@media(prefers-reduced-motion:reduce){.world-track,.miner{transition:none}.miner.moving::before,.soil-crawler,.stone-glint{animation:none}}
 
 /* Keep the geology at a fixed scale while players expand the recap. */
 .machine:has(.results) {
@@ -254,6 +263,7 @@ main.shell{width:100%;padding-top:14px}
 .answer-suggestions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 13px;color:#e9d5a2;font-size:.87rem}
 .answer-suggestions button{text-align:left;min-height:34px;border-color:#8d8063;background:#23282b}
 #recap li{display:block;min-width:0;padding:0;border:0}
+#recap > li:has(details[open]){grid-column:1/-1}
 #recap details{margin-bottom:6px;border:1px solid #48605d;background:#142128cc;border-radius:5px}
 #recap details[open]{border-color:#a19472}
 #recap summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:8px;padding:8px 10px;align-items:flex-start}
@@ -264,7 +274,8 @@ main.shell{width:100%;padding-top:14px}
 .recap-detail{padding:9px 10px;border-top:1px solid #48605d}
 .recap-detail p{margin:0 0 5px;font-weight:600}
 .recap-detail small,.answer-source{color:var(--muted)}
-.recap-detail ul{margin:4px 0 0;padding-left:17px}
+.recap-detail ul{margin:4px 0 0;padding-left:17px;max-height:min(42svh,340px);overflow:auto}
+.rival-answer{color:var(--green);margin:8px 0}
 #recap .recap-detail li{padding:2px 0;display:list-item}
 .answer-source{font-size:.85rem}
 @media(max-width:730px){

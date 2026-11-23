@@ -253,8 +253,15 @@ function updateLiveNotice(view) {
   } else if (notice.dataset.copied==="1") return;
   if (notice.textContent!==message) notice.textContent=message;
 }
+function duelAnswerText(answer) {
+  const ui=words();
+  const label=answer?.tier>=0 ? answer[lang] : answer?.reason==="timeout" ? ui.timeUp
+    : answer?.reason==="checked" ? ui.unverifiable : ui.skipped;
+  return `${ui.friendSeat} · ${label} · +${answer ? pointsFor(answer) : 0}`;
+}
 function paintLive(view,force=false) {
   const state=view.state;
+  if (state) get("hud-rival").textContent=state.rivalScore ?? 0;
   const phase=state?.phase ?? "lobby";
   const key=[phase,state?.index,state?.locked,state?.ready,state?.opponentJoined,state?.opponentReady].join("/");
   if (!force && key===view.key) { updateLiveNotice(view); tickLive(view); return; }
@@ -268,7 +275,7 @@ function paintLive(view,force=false) {
     hideDuelPanel();
   }
   if (phase==="done") {
-    round={answers:state.answers.map(answer=>({...answer,id:answer.id??null})),done:true};
+    round={answers:state.answers.map(answer=>({...answer,id:answer.id??null})),rivalAnswers:state.rivalAnswers,done:true};
     results(false);
     showComparison(state.rivalScore,state.ownScore);
     return;
@@ -342,6 +349,8 @@ function paintLive(view,force=false) {
         : a?.reason==="timeout" ? ui.timeUp : a?.reason==="skip" ? ui.skipped
           : a?.reason==="checked" ? ui.unverifiable : ui.wrong;
       get("arrival").textContent=`${ui.depth} · ${get("depth").textContent}`;
+      get("rival-verdict").textContent=duelAnswerText(state.rivalPick);
+      get("rival-verdict").hidden=!state.rivalPick;
     } else if (!locked) {
       bindSuggestions(question);
       get("answer").addEventListener("input",()=>{

@@ -179,7 +179,13 @@ function showAudioMenu() {
 }
 function prepareAudio() {
   document.addEventListener("visibilitychange",refreshAudio);
+  function unlock() {
+    if (!musicRequested || gameAudio?.state!=="running") activateAudio();
+  }
+  document.addEventListener("pointerup",unlock,true);
+  document.addEventListener("keydown",unlock,true);
   document.addEventListener("click",event=>{
+    if (!musicRequested) unlock();
     const button=event.target.closest?.("button");
     if (!button || button.disabled || !audioOptions.effects || !audioVolume.effects) return;
     activateAudio(false);

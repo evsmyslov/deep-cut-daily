@@ -2,32 +2,55 @@
 function spellingDistance(left,right,limit) {
   if (Math.abs(left.length-right.length)>limit) return limit+1;
   let row=Array.from({length:right.length+1},(_,index)=>index);
+  let beforePrevious;
   for(let i=1;i<=left.length;i++) {
     const previous=row;
     row=[i];
     for(let j=1;j<=right.length;j++) {
       row[j]=Math.min(previous[j]+1,row[j-1]+1,previous[j-1]+Number(left[i-1]!==right[j-1]));
+      if (i>1 && j>1 && left[i-1]===right[j-2] && left[i-2]===right[j-1]) {
+        row[j]=Math.min(row[j],beforePrevious[j-2]+1);
+      }
     }
-    if (Math.min(...row)>limit) return limit+1;
+    beforePrevious=previous;
   }
   return row.at(-1);
 }
 
+const keyboardLatin="`qwertyuiop[]asdfghjkl;'zxcvbnm,.";
+const keyboardCyrillic="ёйцукенгшщзхъфывапролджэячсмитьбю";
+function alternateLayout(value) {
+  const cyrillic=/\p{Script=Cyrillic}/u.test(value);
+  if (cyrillic && /\p{Script=Latin}/u.test(value)) return "";
+  const from=cyrillic ? keyboardCyrillic : keyboardLatin;
+  const to=cyrillic ? keyboardLatin : keyboardCyrillic;
+  return [...value.toLowerCase()].map(char=>to[from.indexOf(char)] ?? char).join("");
+}
 function suggestAnswers(model,value) {
   const key=answerKey(value);
   if (model.aliases.has(key)) return [];
+  const retyped=model.aliases.get(answerKey(alternateLayout(value)));
+  if (retyped && key.length>=3) return [retyped];
   if (model.id==="long-films" && ["lotr","l o t r","lord of the rings","the lord of the rings","властелин колец","вк"].includes(key)) {
     return model.entries.slice(0,3);
   }
-  if (key.length<5) return [];
-  const limit=key.length<8 ? 1 : 2;
+  if (key.length<4) return [];
+  const limit=key.length<8 ? 1 : key.length<16 ? 2 : 3;
+  const digits=key.match(/\d+/g)?.join(",");
+  const compact=key.replaceAll(" ","");
   const candidates=new Map();
   for(const [alias,entry] of model.aliases) {
-    if (!alias || alias[0]!==key[0]) continue;
-    const distance=spellingDistance(key,alias,limit);
-    if (distance<=limit && distance<(candidates.get(entry)??Infinity)) candidates.set(entry,distance);
+    if (!alias || (digits && digits!==alias.match(/\d+/g)?.join(","))) continue;
+    const tight=alias.replaceAll(" ","");
+    const sameLetters=compact===tight;
+    const distance=sameLetters ? .15 : spellingDistance(key,alias,limit);
+    if (distance>limit) continue;
+    const rank=distance+Number(alias[0]!==key[0])*.22+Math.abs(alias.length-key.length)*.04;
+    if (rank<(candidates.get(entry)??Infinity)) candidates.set(entry,rank);
   }
-  return [...candidates].sort((a,b)=>a[1]-b[1]).slice(0,3).map(([entry])=>entry);
+  const ranked=[...candidates].sort((a,b)=>a[1]-b[1]);
+  const best=ranked[0]?.[1];
+  return ranked.filter(([,rank])=>rank<=best+.35).slice(0,3).map(([entry])=>entry);
 }
 function bindSuggestions(model) {
   const field=get("answer");

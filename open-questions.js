@@ -750,7 +750,7 @@ add("long-films","Name a film longer than 2 hours 30 minutes.","Назовите
 `);
 
 const mineDecks = {1:firstDeck, 2:secondDeck, 3:Object.keys(catalog)};
-const MINE_DECK_VERSION = 4;
+const MINE_DECK_VERSION = 5;
 const mineCalendars = [
   {from:MINE_DAY, order:dailyOrder},
   {from:Date.parse("2026-11-24") / 86400000, order:[
@@ -769,8 +769,12 @@ function mineIds(seed, mode, version = MINE_DECK_VERSION) {
     const start = ((seed - from) * 8) % order.length;
     return Array.from({length:8}, (_,i) => order[(start + i) % order.length]);
   }
+  if (version===5) return mixedBank(seed);
+  return shuffleMine(mineDecks[version],seed);
+}
+function shuffleMine(deck,seed) {
   let value = seed >>> 0;
-  const ids = [...mineDecks[version]];
+  const ids = [...deck];
   for (let i=ids.length-1; i>0; i--) {
     value = (Math.imul(value,1664525) + 1013904223) >>> 0;
     const j = value % (i+1);
@@ -779,16 +783,24 @@ function mineIds(seed, mode, version = MINE_DECK_VERSION) {
   return ids;
 }
 const prepared = new Map();
+function hasMineQuestion(id) {
+  return typeof id==="string" && (Object.hasOwn(catalog,id) || generatedQuestions.has(id));
+}
 function mineQuestion(id) {
   if (prepared.has(id)) return prepared.get(id);
-  const [en, ru, rows, lookup] = catalog[id];
+  const [en, ru, rows, lookup] = catalog[id] ?? generatedModel(id);
   const aliases = new Map();
-  const entries = rows.map(([tier,en,ru], index) => {
-    const entry = { id:index, tier, en:en.split("|")[0], ru:ru.split("|")[0] || en.split("|")[0] };
+  const best=Math.max(...rows.map(row=>MINE_SCORES[row[0]]));
+  const highest=rows.findLastIndex(row=>MINE_SCORES[row[0]]===best);
+  const entries = rows.map(([tier,en,ru,entryId], index) => {
+    const rank=index===highest ? 3 : tier===3 ? 2 : tier;
+    const entry = {id:entryId??index,tier:rank,en:en.split("|")[0],ru:ru.split("|")[0] || en.split("|")[0]};
     for (const name of [...en.split("|"), ...ru.split("|")]) if (name) aliases.set(answerKey(name), entry);
     return entry;
   });
-  const question = {id,en,ru,entries,aliases,lookup};
+  const answerById=new Map(entries.map(entry=>[entry.id,entry]));
+  const question = {id,en,ru,entries,answerById,aliases,lookup};
+  if (prepared.size>=128) prepared.delete(prepared.keys().next().value);
   prepared.set(id,question);
   return question;
 }
@@ -981,6 +993,164 @@ add("numbered-albums","Name a music album with a digit in its title.","Назо�
 3;98.12.28 Otokotachi no Wakare;98.12.28 男達の別れ
 `);
 mineDecks[4]=Object.keys(catalog);
+
+add("fictional-vehicles","Name a vehicle with its own name in a work of fiction.","Назовите транспорт с собственным именем из вымышленного произведения.",`
+4;Millennium Falcon;Тысячелетний сокол|Сокол тысячелетия
+0;Batmobile;Бэтмобиль
+0;TARDIS;ТАРДИС
+0;Black Pearl;Чёрная жемчужина
+0;Hogwarts Express;Хогвартс-экспресс
+1;Nautilus|Captain Nemo's Nautilus;Наутилус капитана Немо|Наутилус
+1;USS Enterprise|Enterprise NCC-1701;Энтерпрайз
+1;Flying Dutchman|Flying Dutchman from Pirates of the Caribbean;Летучий голландец
+1;KITT|Knight Industries Two Thousand;КИТТ
+1;Chitty Chitty Bang Bang;Пиф-паф ой-ой-ой
+1;Lightning McQueen;Молния Маккуин
+2;Serenity|Serenity from Firefly;Серенити|Безмятежность
+2;Old Bessie|Planet Express Ship;Старая Бесси|Корабль Межпланетного экспресса
+2;The Magic School Bus|Magic School Bus;Волшебный школьный автобус
+2;Slave I|Slave One|Firespray gunship of Boba Fett;Раб I|Раб-1
+2;Rocinante|Rocinante from The Expanse;Росинант
+2;Normandy SR-2|Normandy SR2|Normandy;Нормандия SR-2|Нормандия
+3;Samus's Gunship|Samus Gunship;Корабль Самус
+3;Swordfish II|Swordfish 2;Меч-рыба II|Суордфиш II
+3;Sleeper Service|GSV Sleeper Service;Спальная служба|Служба сна
+`);
+add("fermented-foods","Name a food made using fermentation.","Назовите продукт, который готовят с помощью ферментации.",`
+4;yogurt|yoghurt;йогурт
+0;kimchi;кимчи
+0;sauerkraut;квашеная капуста
+0;kefir;кефир
+1;sourdough bread|sourdough;хлеб на закваске|хлеб на кислой закваске
+1;miso;мисо
+1;tempeh|tempe;темпе
+1;fermented pickles|lacto-fermented cucumbers;квашеные огурцы|молочнокислые огурцы
+1;soy sauce;соевый соус
+1;Roquefort;рокфор
+2;natto;натто
+2;fish sauce|nam pla|nuoc mam;рыбный соус|нам пла|ныок мам
+2;injera;ынджера|инджера
+2;idli;идли
+2;dosa;доса
+2;dahi|dadhi;дахи
+2;ryazhenka;ряженка
+2;matsoni|matsun;мацони|мацун
+3;fermented poi|sour poi;кислый пои|ферментированный пои
+3;surströmming|surstromming;сюрстрёмминг
+3;douchi;доучи|ферментированные чёрные соевые бобы
+3;hákarl|hakarl;хаукарль|хакарл
+`);
+add("writing-systems","Name a writing system used for a living spoken language.","Назовите систему письма, которой записывают живой разговорный язык.",`
+4;Latin script|Latin alphabet;латиница|латинский алфавит
+4;Cyrillic|Cyrillic alphabet;кириллица
+0;Arabic script|Arabic alphabet;арабское письмо|арабский алфавит
+0;Chinese characters|Hanzi;китайские иероглифы|ханьцзы
+0;Greek alphabet;греческий алфавит
+0;Hangul|Hangeul;хангыль
+0;Hebrew alphabet;еврейский алфавит|древнееврейское письмо
+1;Devanagari;деванагари
+1;Georgian alphabet|Mkhedruli;грузинское письмо|мхедрули
+1;Armenian alphabet;армянский алфавит
+1;Thai script|Thai alphabet;тайское письмо|тайский алфавит
+1;Katakana;катакана
+1;Hiragana;хирагана
+2;Tibetan script;тибетское письмо
+2;Khmer script;кхмерское письмо
+2;Ge'ez script|Ethiopic script;эфиопское письмо|письмо геэз
+2;Bengali script|Bangla script;бенгальское письмо
+2;Cherokee syllabary;слоговое письмо чероки
+2;N'Ko|NKo;нко
+2;Tifinagh|Neo-Tifinagh;тифинаг
+3;Osmanya|Osmanya alphabet;османья
+3;Nyiakeng Puachue Hmong;ньякенг пуачуэ хмонг
+3;Ol Chiki|Ol Cemet;ол-чики
+`);
+add("plucked-strings","Name an instrument typically played by plucking its strings.","Назовите инструмент, на котором обычно играют щипком по струнам.",`
+4;guitar;гитара
+0;harp;арфа
+0;ukulele;укулеле
+0;balalaika;балалайка
+0;banjo;банджо
+0;mandolin;мандолина
+1;lute;лютня
+1;sitar;ситар
+1;harpsichord;клавесин
+1;koto;кото
+1;oud;уд
+1;gusli;гусли
+1;domra;домра
+2;theorbo;теорба
+2;shamisen|samisen;сямисэн
+2;pipa;пипа
+2;guzheng|zheng;гучжэн
+2;kora;кора
+2;charango;чаранго
+2;bandura;бандура
+3;setar;сетар
+3;baglama|saz;баглама|саз
+3;qinqin;циньцинь
+`);
+add("architectural-materials","Name a traditional material used for roofing buildings.","Назовите традиционный материал, которым покрывают крыши зданий.",`
+4;clay tiles|roof tiles;глиняная черепица|черепица
+0;slate|natural slate;кровельный сланец|сланец
+0;straw thatch|straw;солома|соломенная кровля
+0;wood shingles|shingles;деревянный гонт|гонт
+1;reed thatch|reed;тростник|камыш
+1;copper sheets|copper;медь|медные листы
+1;corrugated iron|corrugated metal;гофрированное железо|профнастил
+1;concrete roof tiles;бетонная черепица
+1;terracotta;терракота
+2;palm leaves|palm fronds;пальмовые листья
+2;birch bark;береста
+2;bamboo;бамбук
+2;lead sheets|lead roofing;свинцовые листы|свинцовая кровля
+2;zinc sheets|zinc roofing;цинковые листы|цинковая кровля
+2;sod|turf roofing;дёрн|дерновая кровля
+3;limestone roof slabs|limestone roofing;известняковые плиты|известняковая кровля
+3;gneiss roofing slabs|gneiss slabs;кровельные плиты из гнейса
+3;heather thatch;вересковая кровля|вереск
+`);
+
+const generatedQuestions=new Map(QUESTION_BANK.questions.map(([id,...record])=>[id,record]));
+const bankGroups=new Map([["handwritten",Object.keys(catalog)]]);
+for (const [id,[group]] of generatedQuestions) {
+  if (!bankGroups.has(group)) bankGroups.set(group,[]);
+  bankGroups.get(group).push(id);
+}
+mineDecks[5]=[...Object.keys(catalog),...generatedQuestions.keys()];
+function mixedBank(seed) {
+  const groups=shuffleMine([...bankGroups.values()],seed).map((ids,index)=>shuffleMine(ids,(seed+index*11369)>>>0));
+  const deck=[];
+  const longest=Math.max(...groups.map(group=>group.length));
+  for (let index=0;index<longest;index++) {
+    for (const group of groups) if (group[index]) deck.push(group[index]);
+  }
+  return deck;
+}
+function generatedModel(id) {
+  const [group,pool,en,ru,answers]=generatedQuestions.get(id);
+  const size=answers.length;
+  const rows=answers.map((reference,index)=>{
+    const [itemId,english,russian]=QUESTION_BANK.pools[pool][reference];
+    const position=index/size;
+    const tier=index===size-1 ? 3 : position<.18 ? 4 : position<.5 ? 0 : position<.82 ? 1 : 2;
+    return [tier,english,russian,itemId];
+  });
+  return [en,ru,rows,bankLookup(group,id)];
+}
+function bankLookup(group,id) {
+  const entity=id.match(/-q(\d+)$/)?.[1];
+  const relation={
+    "film-actors":["P161",["Q11424"]],
+    "film-directors":["P57",["Q11424"]],
+    "music-albums":["P175",["Q482994","Q208569"]],
+    "novels-by-author":["P50",["Q8261"]],
+    "named-species":["P171",[]]
+  }[group];
+  if (!entity || !relation) return null;
+  return {field:relation[0],types:relation[1],entity:`Q${entity}`,species:group==="named-species"};
+}
+mineCalendars.push({from:Date.parse("2026-11-26")/86400000,order:mixedBank(20261126)});
 const REPLAY_DAY = Date.parse("2026-11-23") / 86400000;
 const latestEditionRevision = day => day === REPLAY_DAY ? 2 : 1;
 const currentDailyQuestions = ["long-films","trees","constellations","fictional-places","breads","animation","water-machines","herbs"];
