@@ -367,7 +367,7 @@ class MineScene {
     ctx.translate(x,y);
     ctx.scale(side,1);
     if (layer===0 || (layer===1 && choice>.25)) this.rootVein(index,time);
-    else if (layer<=2 || (layer===3 && choice>.7)) this.waterPocket(index,time);
+    else if (layer<=2 || (layer===3 && choice>.7)) this.dripstone(index,time,palette);
     else if (layer<=5) this.mineralPocket(index,time,palette,choice);
     else this.heatFissure(index,time,layer===8);
     ctx.restore();
@@ -401,22 +401,40 @@ class MineScene {
     ctx.globalAlpha = 1;
   }
 
-  waterPocket(index,time) {
-    const reach = 29+this.hash(index,134)*19;
-    this.shape("#2d4950",[[0,-21],[12,-20],[19,-7],[reach,-13],[reach-8,-4],[13,-3],[8,-12]]);
-    this.shape("#426b70",[[6,-20],[10,-20],[17,-12],[16,-3],[14,-5],[13,-11]]);
-    this.shape("#a4bbb0",[[9,-20],[12,-20],[16,-13],[15,-6],[14,-11]]);
-    this.shape("#27454e",[[4,10],[15,6],[reach,6],[reach+9,10],[reach-6,15],[12,14]]);
-    this.shape("#789c97",[[9,10],[16,7],[reach-2,7],[reach+2,10],[16,10]]);
-    const phase = (time/1390+this.hash(index,111))%1;
-    if (phase<.67) {
-      this.block("#80b6ac",16,-6+(phase/.67)**2*15,1,4);
-      this.block("#d2ded2",16,-6+(phase/.67)**2*15,1,1);
-    } else {
-      const spread = (phase-.67)/.33;
-      const ctx = this.context;
-      ctx.globalAlpha = 1-spread;
-      this.block("#adbfb0",16-spread*9,10,2+spread*18,1);
+  dripstone(index,time,palette) {
+    const [shadow,base,stone,edge] = palette;
+    const width = 36 + Math.floor(this.hash(index,134)*13);
+    const ctx = this.context;
+
+    ctx.globalAlpha = .79;
+    this.shape(shadow,[[1,-13],[7,-19],[19,-24],[width-8,-22],[width,-15],
+      [width-6,-11],[width-2,-4],[width-10,5],[28,9],[12,12],[3,6],[7,-2]]);
+    ctx.globalAlpha = 1;
+    this.shape(stone,[[1,-13],[7,-19],[19,-24],[width-8,-22],[width,-15],
+      [width-11,-18],[20,-18],[10,-13],[4,-6]]);
+    this.shape(base,[[3,6],[11,5],[16,7],[26,4],[width-9,1],[width-2,-4],
+      [width-10,5],[28,9],[12,12]]);
+
+    const mainTip = -2 + Math.floor(this.hash(index,58)*4);
+    const rightTip = -8-Math.floor(this.hash(index,108)*6);
+    for (const [x,top,tip,half,lean] of [[12,-17,-10,4,-2],[22,-19,mainTip,6,1],[34,-18,rightTip,5,3]]) {
+      this.shape(stone,[[x-half,top],[x+half,top-1],[x+half-1,top+5],[x+lean,tip],
+        [x+lean-2,tip-2],[x-3,top+7]]);
+      ctx.globalAlpha = .52;
+      this.shape(edge,[[x-3,top],[x,top],[x+lean,tip],[x+lean-2,tip-2],[x-1,top+6]]);
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.globalAlpha = .57;
+    this.block(edge,11,7,5,1);
+    this.block(edge,21,6,4,1);
+    this.block(stone,30,5,5,1);
+    ctx.globalAlpha = 1;
+    const phase = (time/1850+this.hash(index,111))%1;
+    if (phase<.32) {
+      ctx.globalAlpha = .72*(1-this.ease(phase/.32));
+      const y = mainTip+1+((phase/.32)**2)*(6-mainTip);
+      this.block("#a2c1ba",23,y,1,2);
       ctx.globalAlpha = 1;
     }
   }
