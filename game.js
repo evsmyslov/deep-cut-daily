@@ -53,7 +53,7 @@ const strings = {
     community:"Player counts and known answers", dictionary:"All known answers", early:"Previous four-question expedition",
     language:"Switch to Russian", menu:"Game menu", tiers:["Shard","Crystal","Relic","Core Heart","Trace"],
     categories:{science:"Science",places:"Geography",culture:"Pop culture",variety:"General knowledge"},
-    rulesText:["Answer eight questions in English or Russian. Your score determines how deep you dig. A zero-point answer leaves you at the same depth.",
+    rulesText:["Answer eight questions in English or Russian. Your score determines how far the cart descends. A zero-point answer leaves you at the same depth.",
       "A find earns 10, 25, 55, 85 or 120 points. Both languages share the same answers and points.",
       "A new set opens at 00:00 UTC. Everyone gets the same questions. Your progress stays in this browser.",
       "After the expedition, accepted choices are counted anonymously. A challenge link shares your score."],
@@ -85,7 +85,7 @@ const strings = {
     community:"Известные ответы и выбор игроков", dictionary:"Все известные ответы", early:"Прошлая экспедиция из четырёх вопросов",
     language:"Переключить на английский", menu:"Меню игры", tiers:["Осколок","Кристалл","Реликт","Сердце ядра","След"],
     categories:{science:"Наука",places:"География",culture:"Поп-культура",variety:"Общие знания"},
-    rulesText:["Ответьте на восемь вопросов по-русски или по-английски. Глубина зависит от набранных очков. При нуле за ответ шахтёр остаётся на месте.",
+    rulesText:["Ответьте на восемь вопросов по-русски или по-английски. Очки определяют, как далеко спустится вагонетка. При нуле за ответ она остаётся на месте.",
       "Находка приносит 10, 25, 55, 85 или 120 очков. Ответы и баллы одинаковы для обоих языков.",
       "Новый выпуск выходит в 03:00 по Москве. Вопросы у всех одинаковые. Прогресс сохраняется в этом браузере.",
       "После экспедиции засчитанные ответы попадают в анонимную сводку. Ссылка-вызов передаёт ваш счёт."],
@@ -108,7 +108,7 @@ Object.assign(strings.en, {
   duelNetwork:"This browser couldn’t reach the room server.", duelResponse:"The room server returned an unexpected response.",
   directDuel:"Open duel directly", memberExpired:"This room session is no longer valid. Open a fresh invitation.",
   easy:"Easy", hard:"Hard", rare:"Rare only",
-  endlessModes:["Skip any question and keep digging.","Skipping is disabled. The run ends when time runs out.","Keep the streak alive with answers worth at least 55 points."],
+  endlessModes:["Skip any question and continue your descent.","Skipping is disabled. The run ends when time runs out.","Keep the streak alive with answers worth at least 55 points."],
   rareRetry:"It fits, but this mode needs a Crystal or rarer. Try again.", streakEnded:"Time ran out. Your streak has ended.", answersFound:"answers found",
   dataRarity:"Each question has one Core Heart. The bank estimates rarity using population, Wikidata coverage, or editorial estimates. Results show player counts when enough people have finished.",
   sourceCredits:"Questions use adapted data from",
@@ -116,6 +116,8 @@ Object.assign(strings.en, {
   friends:"Friends", friendCode:"Your friend code", friendAdd:"Add friend", friendCodeInput:"Friend code",
   friendIntro:"Share your friend code to keep in touch and invite each other to duels.",
   friendDevice:"This profile is saved in this browser.", noFriends:"No friends added yet.",
+  editFriendName:"Edit name", friendNameLabel:"Private name", friendNameHint:"Saved in this browser. Clear the name to show the code instead.",
+  saveFriendName:"Save", cancelFriendName:"Cancel",
   incoming:"Duel invitations", nobodyInvited:"No pending invitations.", challengeFriend:"Invite to duel",
   acceptInvite:"Join duel", declineInvite:"Decline", removeFriend:"Remove", friendsLoading:"Loading your friends…",
   contactCode:"Enter the eight-character friend code.", contactMissing:"Friend not found.", contactSelf:"This is your own code."
@@ -136,7 +138,7 @@ Object.assign(strings.ru, {
   duelNetwork:"Браузер не смог связаться с сервером комнаты.", duelResponse:"Сервер комнаты вернул неожиданный ответ.",
   directDuel:"Открыть дуэль напрямую", memberExpired:"Сеанс этой комнаты больше недействителен. Откройте новое приглашение.",
   easy:"Обычный", hard:"На вылет", rare:"Только редкие",
-  endlessModes:["Пропускайте любые вопросы и копайте дальше.","Без пропусков. Когда время истечёт, забег завершится.","Поддерживайте серию ответами от 55 очков."],
+  endlessModes:["Пропускайте любые вопросы и продолжайте спуск.","Без пропусков. Когда время истечёт, забег завершится.","Поддерживайте серию ответами от 55 очков."],
   rareRetry:"Ответ подходит, но здесь нужен «Кристалл» или выше. Попробуйте ещё раз.", streakEnded:"Время вышло. Серия завершена.", answersFound:"ответов засчитано",
   dataRarity:"У каждого вопроса одно Сердце ядра. Для оценки редкости используются население, число языковых версий в Викиданных или редакционная оценка. В итогах видна частота ответов, когда выпуск прошли достаточно игроков.",
   sourceCredits:"В вопросах использованы адаптированные данные из",
@@ -144,6 +146,8 @@ Object.assign(strings.ru, {
   friends:"Друзья", friendCode:"Ваш код друга", friendAdd:"Добавить друга", friendCodeInput:"Код друга",
   friendIntro:"Поделитесь своим кодом, чтобы добавлять друзей и приглашать их на дуэли.",
   friendDevice:"Профиль сохранён в этом браузере.", noFriends:"Пока здесь нет друзей.",
+  editFriendName:"Изменить имя", friendNameLabel:"Личное имя", friendNameHint:"Имя хранится в этом браузере. Очистите поле, чтобы снова видеть код.",
+  saveFriendName:"Сохранить", cancelFriendName:"Отмена",
   incoming:"Приглашения на дуэль", nobodyInvited:"Нет новых приглашений.", challengeFriend:"Пригласить в дуэль",
   acceptInvite:"Войти в дуэль", declineInvite:"Отклонить", removeFriend:"Удалить", friendsLoading:"Загружаем друзей…",
   contactCode:"Введите код друга из восьми символов.", contactMissing:"Друг не найден.", contactSelf:"Это ваш собственный код."
@@ -242,39 +246,11 @@ function depthAt(points) {
 }
 const layerName = stop => strata[stop][lang === "ru" ? 2 : 1];
 
-const digTime = 1080;
-let digFrame;
-function stopDigging() {
-  cancelAnimationFrame(digFrame);
-  const miner=get("miner");
-  miner.classList.remove("moving");
-  miner.style.removeProperty("--miner-pose");
-}
-function animateMiner() {
-  stopDigging();
-  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-  const miner=get("miner");
-  void miner.offsetWidth;
-  miner.classList.add("moving");
-  const started=performance.now();
-  let displayed=-1;
-  function draw(now) {
-    const frame=Math.max(0,Math.min(15,Math.floor((now-started)*15/digTime)));
-    if (frame!==displayed) {
-      miner.style.setProperty("--miner-pose",`${frame*100/15}%`);
-      displayed=frame;
-    }
-    if (frame===15) stopDigging();
-    else digFrame=requestAnimationFrame(draw);
-  }
-  digFrame=requestAnimationFrame(draw);
-}
+let mineScene;
 function setWorld(count = 0, points = 0, animate = false) {
   const machine = get("machine");
   const progress = get("progress");
   const {stop, travel, km} = depthAt(points);
-  machine.style.setProperty("--dig-delay", animate ? "240ms" : "0ms");
-  machine.style.setProperty("--stop", travel);
   machine.dataset.stop = stop;
   machine.dataset.depth = km;
   get("depth").textContent = `${km.toLocaleString(lang,{maximumFractionDigits:1})} ${words().km}`;
@@ -288,25 +264,12 @@ function setWorld(count = 0, points = 0, animate = false) {
     if (i === stop) dot.setAttribute("aria-current", "step");
     else dot.removeAttribute("aria-current");
   });
-  if (animate) animateMiner();
+  mineScene.moveTo(travel + Math.max(0,points-maximum)/140, animate);
 }
 
 function mountWorld() {
+  mineScene = new MineScene(get("mine-scene"));
   strata.forEach((_, index) => {
-    const layer = element("div", "");
-    layer.className = "world-layer";
-    layer.style.backgroundImage = `url("art/shaft/${index}.png")`;
-    if (index===1 || index===2) {
-      const detail=element("span","");
-      detail.className=index===1 ? "soil-crawler" : "buried-fossil";
-      layer.append(detail);
-    }
-    if (index>=3) {
-      const detail=element("span","");
-      detail.className="stone-glint";
-      layer.append(detail);
-    }
-    get("world-track").append(layer);
     get("depth-map").append(element("span", ""));
     if (index > 0) get("progress").append(element("i", ""));
   });
@@ -355,7 +318,6 @@ function intro(focus = false) {
   closeDuel();
   const invitation=route.mode==="live" ? route : null;
   if (invitation) route=dailyRoute();
-  stopDigging();
   roomStamp = null;
   swap("intro");
   setWorld(0);
@@ -479,7 +441,6 @@ function question(draft = "", focus = true) {
     round.feedback = true;
     save();
     if (reason==="timeout" && strict) { complete(); return; }
-    if (!entry) stopDigging();
     setWorld(round.answers.length, score(round), Boolean(entry));
     playCue(entry ? "find" : "skip",entry?.tier);
     reveal(true);

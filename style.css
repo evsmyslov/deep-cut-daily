@@ -93,39 +93,16 @@ dialog::backdrop{background:#101718b0}
 }
 @media(max-width:365px){.brand img{display:none}nav button{padding-inline:5px}}
 
-/* The artwork, miner and instruments stay mounted while question content changes. */
+/* The mine scene and instruments stay mounted while question content changes. */
 :root{--bg:#121b22;--panel:#1c282f;--edge:#485658;--accent:#f0ca8b;--green:#a9c8b7}
 .shell{width:min(1200px,calc(100% - 48px))}
 .top{background:#162027}
 main{padding-top:24px}
-.machine{position:relative;isolation:isolate;min-height:clamp(570px,73svh,810px);display:grid;grid-template-rows:auto 1fr auto;border-radius:7px;--stop:0}
-.world,.world-sway,.world-track,.world-shade{position:absolute;inset:0;pointer-events:none}
+.machine{position:relative;isolation:isolate;min-height:clamp(570px,73svh,810px);display:grid;grid-template-rows:auto 1fr auto;border-radius:7px}
+.world,.world-shade,#mine-scene{position:absolute;inset:0;pointer-events:none}
 .world{z-index:-1;overflow:hidden;background:#19242a}
-.world-sway{animation:cavern-sway 7s ease-in-out infinite alternate}
-@keyframes cavern-sway{
-  from{transform:translate(-5px,-3px) rotate(-.34deg) scale(1.045)}
-  to{transform:translate(5px,3px) rotate(.34deg) scale(1.045)}
-}
-.world-track{display:grid;grid-auto-rows:100%;transform:translateY(calc(-100% * var(--stop)));transition:transform 840ms cubic-bezier(.58,.04,.27,1) var(--dig-delay,0ms)}
-.world-layer{position:relative;overflow:hidden;background-position:center;background-size:100% 100%;image-rendering:pixelated}
-.soil-crawler,.buried-fossil,.stone-glint{position:absolute;display:block;pointer-events:none}
-.soil-crawler{width:clamp(32px,5vw,64px);aspect-ratio:28/13;top:38%;left:10%;background:url("art/shaft/soil-crawler.png") 0 0/400% 100% no-repeat;opacity:.78;animation:crawl-steps .8s steps(3) infinite alternate, crawl-path 12s ease-in-out infinite alternate}
-.buried-fossil{width:clamp(94px,15vw,178px);aspect-ratio:61/41;left:9%;top:54%;background:url("art/shaft/buried-fossil.png") center/contain no-repeat;opacity:.53;transform:rotate(-12deg)}
-.stone-glint{width:4px;height:4px;top:45%;left:14%;background:#f5d39a;opacity:.28;box-shadow:38px 41px #d1bd8a,80px -20px #f7e7b9,-28px 55px #948e88;animation:stone-light 6s steps(6) infinite alternate}
-@keyframes crawl-steps{to{background-position:100% 0}}
-@keyframes crawl-path{to{transform:translate(130%,38%)}}
-@keyframes stone-light{to{opacity:.75;transform:translate(4px,-9px)}}
-.world-shade{background:linear-gradient(90deg,#0a1419a8 0%,transparent 16%,transparent 32%,#101b2290 48%,#111b22d9 61%,#111b22ed 100%),linear-gradient(180deg,#0a141b8a,transparent 24%,transparent 80%,#09141bdb)}
-.miner{position:absolute;left:26.7%;top:64%;transform:translate(-50%,-50%);width:clamp(66px,8vw,126px);height:clamp(66px,8vw,126px);z-index:1}
-.miner-idle{position:absolute;inset:0;animation:miner-pacing 1.1s ease-in-out infinite alternate}
-.miner.moving .miner-idle{animation-play-state:paused}
-@keyframes miner-pacing{from{transform:translateX(-8px)}to{transform:translateX(8px)}}
-.miner-body{position:absolute;width:125%;height:125%;left:-12.5%;top:-18.75%;image-rendering:pixelated;z-index:1;background:url("art/shaft/miner-motion.png") var(--miner-pose,0%) 0/1600% 100% no-repeat}
-.miner:not(.moving) .miner-body{animation:miner-steps 550ms steps(2,end) infinite}
-@keyframes miner-steps{50%{transform:translateY(-2px)}}
-.miner-idle::before{content:"";position:absolute;width:135%;height:79%;left:76%;top:-9%;background:linear-gradient(90deg,#f6cd7261,transparent);clip-path:polygon(0 50%,100% 5%,100% 95%);opacity:.75;transform-origin:left center}
-.miner.moving .miner-idle::before{animation:dig-lamp 1080ms steps(3,end)}
-@keyframes dig-lamp{0%,100%{transform:none}20%,57%{transform:translateY(-6%) rotate(-8deg)}34%,70%,87%{transform:translate(8%,14%) rotate(17deg);opacity:.57}}
+#mine-scene{display:block;width:100%;height:100%;image-rendering:pixelated}
+.world-shade{background:linear-gradient(90deg,#0a141926 0%,transparent 14%,transparent 32%,#101b2270 47%,#111b22c9 63%,#111b22ed 100%),linear-gradient(180deg,#0a141b69,transparent 24%,transparent 77%,#09141b9e)}
 .mission-hud{display:grid;grid-template-columns:1fr minmax(105px,190px) 1fr;gap:12px;align-items:start;padding:22px 24px 0;color:var(--muted);font:600 .73rem/1.25 var(--mono);letter-spacing:.1em;text-transform:uppercase}
 .readout{display:grid;justify-self:start;background:#101a23e8;min-width:90px;padding:9px 12px;border:1px solid #526262;border-radius:4px;box-shadow:0 3px #0a111a}
 .readout strong{color:var(--accent);font:700 1.6rem/1.15 var(--pixel);letter-spacing:0;white-space:nowrap}
@@ -179,8 +156,8 @@ main.shell{width:100%;padding-top:14px}
 .daily-bar{margin-bottom:14px}
 .mode-buttons{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
 .mode-buttons button{color:#e4e6d7}
-.machine{border-inline:0;border-radius:0;box-shadow:none;min-height:max(610px,calc(100svh - 133px));--stop:0}
-.world-shade{background:linear-gradient(90deg,#0c1b2130,transparent 23%,#111b2240 39%,#131e23aa 53%,#17262b60 81%,#14232b40),linear-gradient(180deg,#07141a83,transparent 21%,transparent 78%,#122027d9)}
+.machine{border-inline:0;border-radius:0;box-shadow:none;min-height:max(610px,calc(100svh - 133px))}
+.world-shade{background:linear-gradient(90deg,#0c1b211e,transparent 25%,#111b2216 39%,#101a23a3 54%,#132025c2 79%,#14232bac),linear-gradient(180deg,#07141a52,transparent 21%,transparent 77%,#111f27a8)}
 .mission-hud{width:min(1050px,88%);justify-self:center;padding:20px 0 0}
 .depth-map{left:auto;right:max(12px,4.5vw)}
 #stage{justify-self:center;width:min(1130px,96%);padding:0 4% 0 29%}
@@ -206,7 +183,6 @@ main.shell{width:100%;padding-top:14px}
  .world-shade{background:linear-gradient(180deg,#121e271f,transparent 22%,#19262d 100%)}
  .mission-hud{width:100%;padding-inline:12px}
  .depth-map{right:9px}
- .miner{width:65px;height:65px}
  #stage{width:100%;padding:151px 0 0}
  .round #prompt{padding:12px;margin-bottom:15px}
  .timer{flex-basis:37px}
@@ -214,7 +190,6 @@ main.shell{width:100%;padding-top:14px}
  #answer-form input{padding-inline:7px}
  #answer-form button{padding-inline:8px}
 }
-@media(prefers-reduced-motion:reduce){.world-track{transition:none}.world-sway,.miner-idle,.miner:not(.moving) .miner-body,.miner.moving .miner-idle::before,.soil-crawler,.stone-glint{animation:none}}
 
 /* Keep the geology at a fixed scale while players expand the recap. */
 .machine:has(.results) {
@@ -308,7 +283,15 @@ main.shell{width:100%;padding-top:14px}
 #modal-content section > small{display:block;color:var(--muted);margin-top:6px}
 .friend-rows{list-style:none;padding:0;display:grid;gap:6px}
 .friend-rows li{display:flex;align-items:center;flex-wrap:wrap;gap:5px}
-.friend-rows code{color:var(--accent);flex:1}
+.friend-identity{flex:1 0 88px;min-width:0;display:grid;gap:2px;overflow-wrap:anywhere}
+.friend-identity strong{color:var(--ink);font-size:1rem;line-height:1.2}
+.friend-identity code{color:var(--accent)}
+.friend-identity strong+code{color:var(--muted);font-size:.78rem}
+.friend-name-editor{width:100%;margin:3px 0 8px;padding:10px;background:#152129;border:1px solid var(--edge);border-radius:4px}
+.friend-name-editor label{display:block;margin-bottom:6px}
+.friend-name-controls{display:flex;flex-wrap:wrap;gap:5px}
+.friend-name-controls input{flex:1 1 12ch;min-width:min(100%,12ch)}
+.friend-name-editor small{display:block;margin-top:6px;color:var(--muted)}
 .friend-invites{border-top:1px solid var(--edge);margin-top:14px}
 #friends-status{color:var(--accent);margin-bottom:0}
 #friends-status:empty{display:none}

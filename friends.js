@@ -1,11 +1,18 @@
 "use strict";
 
 const friendsStorage="rare-below-friends-enabled";
+const friendNamesStorage="rare-below-friend-names";
+const friendNames=new Map();
 const friendsConnection={relay:false};
 let friendsEnabled=false;
 let activeInvites;
 let inboxLoading=false;
 try { friendsEnabled=localStorage.getItem(friendsStorage)==="1"; } catch { /* The current tab can still participate. */ }
+try {
+  for (const [code,name] of Object.entries(JSON.parse(localStorage.getItem(friendNamesStorage)) ?? {})) {
+    if (typeof name==="string" && name) friendNames.set(code,name);
+  }
+} catch { /* An unavailable store does not prevent editing names in this tab. */ }
 
 const friendsRequest=data=>requestLobby("friends",friendsConnection,data);
 const friendButton=(label,action)=>{
@@ -15,6 +22,69 @@ const friendButton=(label,action)=>{
   button.onclick=action;
   return button;
 };
+function paintFriendIdentity(identity, code) {
+  const name=friendNames.get(code);
+  const codeLabel=element("code",code);
+  identity.replaceChildren(...(name ? [element("strong",name),codeLabel] : [codeLabel]));
+}
+function friendIdentity(code) {
+  const identity=element("span","");
+  identity.className="friend-identity";
+  identity.dataset.friendCode=code;
+  paintFriendIdentity(identity,code);
+  return identity;
+}
+function friendNameEditor(code, panel) {
+  const ui=words();
+  const form=element("form","");
+  form.className="friend-name-editor";
+  form.id=`friend-name-editor-${code}`;
+  form.hidden=true;
+  const label=element("label",ui.friendNameLabel);
+  const input=element("input","");
+  input.id=`friend-name-${code}`;
+  input.maxLength=32;
+  input.autocomplete="off";
+  input.setAttribute("aria-describedby",`friend-name-hint-${code}`);
+  label.htmlFor=input.id;
+  const hint=element("small",ui.friendNameHint);
+  hint.id=input.getAttribute("aria-describedby");
+  const controls=element("div","");
+  controls.className="friend-name-controls";
+  const save=element("button",ui.saveFriendName);
+  save.className="primary";
+  const cancel=friendButton(ui.cancelFriendName,close);
+  const edit=friendButton(ui.editFriendName,()=>{
+    if (!form.hidden) { close(); return; }
+    input.value=friendNames.get(code) ?? "";
+    form.hidden=false;
+    edit.setAttribute("aria-expanded","true");
+    input.focus();
+    input.select();
+  });
+  edit.setAttribute("aria-controls",form.id);
+  edit.setAttribute("aria-expanded","false");
+  function close() {
+    form.hidden=true;
+    edit.setAttribute("aria-expanded","false");
+    edit.focus();
+  }
+  form.onsubmit=event=>{
+    event.preventDefault();
+    const name=input.value.replace(/\s+/g," ").replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g,"").trim();
+    if (name) friendNames.set(code,name);
+    else friendNames.delete(code);
+    try { localStorage.setItem(friendNamesStorage,JSON.stringify(Object.fromEntries(friendNames))); }
+    catch { /* Keep the name for the current tab. */ }
+    for (const identity of panel.querySelectorAll("[data-friend-code]")) {
+      if (identity.dataset.friendCode===code) paintFriendIdentity(identity,code);
+    }
+    close();
+  };
+  controls.append(input,save,cancel);
+  form.append(label,controls,hint);
+  return {edit,form};
+}
 function showFriendInvites(invites,target=activeInvites) {
   const badge=get("friend-unread");
   badge.textContent=invites.length;
@@ -37,7 +107,7 @@ function showFriendInvites(invites,target=activeInvites) {
       } catch (error) { if (get("friends-status")) get("friends-status").textContent=friendError(error.code); }
       finally { decline.disabled=false; }
     });
-    row.append(element("code",invitation.sender),join,decline);
+    row.append(friendIdentity(invitation.sender),join,decline);
     list.append(row);
   }
   target.replaceChildren(element("h3",ui.incoming),invites.length ? list : element("p",ui.nobodyInvited));
@@ -130,7 +200,8 @@ function paintFriends(panel,status,data) {
     const row=element("li","");
     const invite=friendButton(ui.challengeFriend,()=>perform(invite,"invite",code));
     const remove=friendButton(ui.removeFriend,()=>perform(remove,"remove",code));
-    row.append(element("code",code),invite,remove);
+    const editor=friendNameEditor(code,panel);
+    row.append(friendIdentity(code),invite,editor.edit,remove,editor.form);
     contacts.append(row);
   }
   activeInvites=element("section","");
