@@ -232,8 +232,33 @@ function depthAt(points) {
 }
 const layerName = stop => strata[stop][lang === "ru" ? 2 : 1];
 
-let rideTimer;
 const digTime = 1080;
+let digFrame;
+function stopDigging() {
+  cancelAnimationFrame(digFrame);
+  const miner=get("miner");
+  miner.classList.remove("moving");
+  miner.style.removeProperty("--miner-pose");
+}
+function animateMiner() {
+  stopDigging();
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+  const miner=get("miner");
+  void miner.offsetWidth;
+  miner.classList.add("moving");
+  const started=performance.now();
+  let displayed=-1;
+  function draw(now) {
+    const frame=Math.max(0,Math.min(15,Math.floor((now-started)*15/digTime)));
+    if (frame!==displayed) {
+      miner.style.setProperty("--miner-pose",`${frame*100/15}%`);
+      displayed=frame;
+    }
+    if (frame===15) stopDigging();
+    else digFrame=requestAnimationFrame(draw);
+  }
+  digFrame=requestAnimationFrame(draw);
+}
 function setWorld(count = 0, points = 0, animate = false) {
   const machine = get("machine");
   const progress = get("progress");
@@ -253,15 +278,7 @@ function setWorld(count = 0, points = 0, animate = false) {
     if (i === stop) dot.setAttribute("aria-current", "step");
     else dot.removeAttribute("aria-current");
   });
-  if (animate) {
-    const miner = get("miner");
-    clearTimeout(rideTimer);
-    miner.style.setProperty("--dig-time", `${digTime}ms`);
-    miner.classList.remove("moving");
-    void miner.offsetWidth;
-    miner.classList.add("moving");
-    rideTimer = setTimeout(() => miner.classList.remove("moving"),digTime);
-  }
+  if (animate) animateMiner();
 }
 
 function mountWorld() {
@@ -317,8 +334,7 @@ function intro(focus = false) {
   closeDuel();
   const invitation=route.mode==="live" ? route : null;
   if (invitation) route=dailyRoute();
-  clearTimeout(rideTimer);
-  get("miner").classList.remove("moving");
+  stopDigging();
   roomStamp = null;
   swap("intro");
   setWorld(0);
@@ -436,10 +452,7 @@ function question(draft = "", focus = true) {
     round.feedback = true;
     save();
     if (reason==="timeout" && strict) { complete(); return; }
-    if (!entry) {
-      clearTimeout(rideTimer);
-      get("miner").classList.remove("moving");
-    }
+    if (!entry) stopDigging();
     setWorld(round.answers.length, score(round), Boolean(entry));
     playCue(entry ? "find" : "skip",entry?.tier);
     reveal(true);

@@ -106,11 +106,9 @@ main{padding-top:24px}
 .world-shade{background:linear-gradient(90deg,#0a1419a8 0%,transparent 16%,transparent 32%,#101b2290 48%,#111b22d9 61%,#111b22ed 100%),linear-gradient(180deg,#0a141b8a,transparent 24%,transparent 80%,#09141bdb)}
 .miner{position:absolute;left:26.7%;top:56%;transform:translate(-50%,-50%);width:76px;height:76px;transition:top .7s;z-index:1}
 .machine[data-depth="0"] .miner{top:65%}
-.miner-body{position:absolute;width:125%;height:125%;left:-12.5%;top:-18.75%;image-rendering:pixelated;z-index:1;background:url("art/shaft/miner-motion.png") 0 0/1600% 100% no-repeat}
+.miner-body{position:absolute;width:125%;height:125%;left:-12.5%;top:-18.75%;image-rendering:pixelated;z-index:1;background:url("art/shaft/miner-motion.png") var(--miner-pose,0%) 0/1600% 100% no-repeat}
 .miner::before{content:"";position:absolute;width:135%;height:79%;left:76%;top:-9%;background:linear-gradient(90deg,#f6cd7261,transparent);clip-path:polygon(0 50%,100% 5%,100% 95%);opacity:.75;transform-origin:left center}
-.miner.moving .miner-body{animation:dig-poses var(--dig-time,1080ms) steps(15) both}
-.miner.moving::before{animation:dig-lamp var(--dig-time,1080ms) steps(3,end)}
-@keyframes dig-poses{to{background-position:100% 0}}
+.miner.moving::before{animation:dig-lamp 1080ms steps(3,end)}
 @keyframes dig-lamp{0%,100%{transform:none}20%,57%{transform:translateY(-6%) rotate(-8deg)}34%,70%,87%{transform:translate(8%,14%) rotate(17deg);opacity:.57}}
 .mission-hud{display:grid;grid-template-columns:1fr minmax(105px,190px) 1fr;gap:12px;align-items:start;padding:22px 24px 0;color:var(--muted);font:600 .73rem/1.25 var(--mono);letter-spacing:.1em;text-transform:uppercase}
 .readout{display:grid;justify-self:start;background:#101a23e8;min-width:90px;padding:9px 12px;border:1px solid #526262;border-radius:4px;box-shadow:0 3px #0a111a}
@@ -201,7 +199,7 @@ main.shell{width:100%;padding-top:14px}
  #answer-form input{padding-inline:7px}
  #answer-form button{padding-inline:8px}
 }
-@media(prefers-reduced-motion:reduce){.world-track,.miner{transition:none}.miner.moving .miner-body,.miner.moving::before{animation:none}}
+@media(prefers-reduced-motion:reduce){.world-track,.miner{transition:none}.miner.moving::before{animation:none}}
 
 /* Keep the geology at a fixed scale while players expand the recap. */
 .machine:has(.results) {
