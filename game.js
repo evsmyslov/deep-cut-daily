@@ -11,6 +11,7 @@ const questionsPerRound = 8;
 const maximum = questionsPerRound * Math.max(...scores);
 const storage = "rare-below-v1";
 const answerService = "https://deep-cut-answer-data.choicehelix2.chatgpt.site";
+const gameRoot = new URL("./",document.baseURI);
 const strata = [
   [0,"Surface","Поверхность"],
   [8,"Upper crust","Верхняя кора"],
@@ -96,7 +97,7 @@ Object.assign(strings.en, {
   getReady:"Get ready", answerLocked:"Answer locked. Waiting for your friend.", rush:"Your friend answered. You have up to 10 seconds.",
   autoNext:"Next question starts automatically.", networkLost:"Connection interrupted. Reconnecting…",
   roomExpired:"This invite has expired. Create a new duel.", roomFull:"This room already has two players.",
-  suggestion:"Did you mean?"
+  suggestion:"Did you mean?", joinCode:"Join by code", roomCode:"Room code", badCode:"Enter the 16-character room code.", originalEdition:"Original edition"
 });
 Object.assign(strings.ru, {
   live:"Дуэль с другом", liveLabel:"Синхронная дуэль", yourSeat:"Вы", friendSeat:"Друг", ready:"Готов",
@@ -105,7 +106,7 @@ Object.assign(strings.ru, {
   getReady:"Приготовьтесь", answerLocked:"Ответ принят. Ждём друга.", rush:"Друг ответил. У вас до 10 секунд.",
   autoNext:"Следующий вопрос начнётся автоматически.", networkLost:"Связь прервалась. Переподключаемся…",
   roomExpired:"Срок действия ссылки истёк. Создайте новую дуэль.", roomFull:"В этой комнате уже два игрока.",
-  suggestion:"Имели в виду?"
+  suggestion:"Имели в виду?", joinCode:"Войти по коду", roomCode:"Код комнаты", badCode:"Введите код комнаты из 16 символов.", originalEdition:"Первый выпуск"
 });
 const get = id => document.getElementById(id);
 const today = () => Math.max(START, Math.floor(Date.now() / DAY));
@@ -133,27 +134,33 @@ function save() {
   library[route.key] = round;
   persist();
 }
+const isRoomCode = value => /^[a-f0-9]{16}$/.test(value ?? "");
+const editionKey = (day, revision) => `daily:${day}${revision===2 ? ":2" : ""}`;
 function readRoute() {
-  const args = new URLSearchParams(location.search);
-  const key = args.get("edition") ?? "";
-  const date = /^\d{4}-\d\d-\d\d$/.test(key) ? Date.parse(key) / DAY : NaN;
-  const valid = date >= START && date <= today() && iso(date) === key;
-  const scoreText = args.get("score") ?? "";
-  const rival = /^\d{1,3}$/.test(scoreText) && Number(scoreText) <= maximum ? Number(scoreText) : null;
-  const mode = args.get("mode");
-  const duel = args.get("room");
-  if ((mode === "duel" || mode === "live") && /^[a-f0-9]{16}$/.test(duel ?? "")) return {mode,duel,key:`${mode}:${duel}`};
-  if (mode === "endless") return {mode, key:"endless"};
-  const day = valid ? date : today();
-  return {mode:"daily", day, fixed:valid, rival:valid ? rival : null, key:`daily:${day}`};
+  const args=new URLSearchParams(location.search);
+  const pathInvite=location.pathname.match(/\/play\/join\/([a-f0-9]{16})\/?$/)?.[1];
+  const guestRoom=[pathInvite,args.get("join"),location.hash.match(/^#join-([a-f0-9]{16})$/)?.[1]].find(isRoomCode);
+  if (guestRoom) return {mode:"live",duel:guestRoom,seat:"guest",key:`live:${guestRoom}:guest`};
+  const mode=args.get("mode");
+  const duel=args.get("room");
+  if ((mode==="duel" || mode==="live") && isRoomCode(duel)) return {mode,duel,key:`${mode}:${duel}`};
+  if (mode==="endless") return {mode,key:"endless"};
+  const key=args.get("edition") ?? "";
+  const date=/^\d{4}-\d\d-\d\d$/.test(key) ? Date.parse(key)/DAY : NaN;
+  const fixed=date>=START && date<=today() && iso(date)===key;
+  const day=fixed ? date : today();
+  const revision=fixed && args.get("set")!=="2" ? 1 : latestEditionRevision(day);
+  const scoreText=args.get("score") ?? "";
+  const rival=fixed && /^\d{1,3}$/.test(scoreText) && Number(scoreText)<=maximum ? Number(scoreText) : null;
+  return {mode:"daily",day,fixed,revision,rival,key:editionKey(day,revision)};
 }
 function questionAt(index) {
-  const seed = route.mode === "daily" ? route.day : round.seed;
-  const version = round.deckVersion ?? 1;
-  const size = mineDecks[version].length;
-  const cycle = route.mode === "endless" ? Math.floor(index / size) : 0;
-  const ids = mineIds((seed + cycle) >>> 0, route.mode, version);
-  return mineQuestion(ids[index % ids.length]);
+  if (route.mode==="daily") return mineQuestion(dailyIds(route.day,route.revision)[index]);
+  const version=round.deckVersion ?? 1;
+  const size=mineDecks[version].length;
+  const cycle=route.mode==="endless" ? Math.floor(index/size) : 0;
+  const ids=mineIds((round.seed+cycle)>>>0,route.mode,version);
+  return mineQuestion(ids[index%ids.length]);
 }
 function depthAt(points) {
   const stop = depthThresholds.findLastIndex(threshold => points >= threshold);
@@ -446,11 +453,10 @@ function results(focus = true) {
   if (endless) get("today").textContent = ui.fresh;
   get("share").onclick = () => {
     if (route.mode === "duel") { copyChallenge(location.href); return; }
-    const url = new URL(location.href);
-    url.search = "";
-    url.hash = "";
+    const url = new URL(gameRoot);
     url.searchParams.set("mode", "mine");
     url.searchParams.set("edition", iso(route.day));
+    if (route.revision===2) url.searchParams.set("set","2");
     url.searchParams.set("score", points);
     const card = round.answers.map(answer => marks[answer.tier] ?? "⬛").join("");
     copyChallenge(`${GAME_NAME} · ${iso(route.day)}
@@ -510,8 +516,9 @@ async function request(path,data,timeout=8000) {
   const abort=new AbortController();
   const timer=setTimeout(()=>abort.abort(),timeout);
   try {
-    const response=await fetch(`${answerService}/${path}`,{
-      method:"POST",headers:{"Content-Type":"application/json"},
+    const base=location.origin===answerService ? "" : answerService;
+    const response=await fetch(`${base}/${path}`,{
+      method:"POST",headers:{"Content-Type":"text/plain;charset=UTF-8"},
       body:JSON.stringify(path==="verify" ? data : {...data,browser:anonymousId()}),signal:abort.signal
     });
     const payload=await response.json();
@@ -536,7 +543,7 @@ function showRecapChoices(root,model,picked=[],rounds=0) {
 }
 async function showAnswerSurvey() {
   const status=get("answer-source");
-  const data={edition:iso(route.day),picks:round.answers.map(answer=>answer.id)};
+  const data={edition:iso(route.day),editionRevision:route.revision,picks:round.answers.map(answer=>answer.id)};
   const models=round.answers.map((_,index)=>questionAt(index));
   status.textContent=words().pending;
   let survey;
@@ -547,20 +554,49 @@ async function showAnswerSurvey() {
   status.textContent=counts ? ui.surveyData : survey ? ui.noData : ui.surveyError;
   if (counts) models.forEach((model,index)=>showRecapChoices(get(`recap-detail-${index}`),model,counts[index],survey.rounds));
 }
-function openEdition(day, mode, duel) {
-  const url = new URL(location.href);
-  url.search = "";
-  url.hash = "";
-  if (day !== undefined) {
-    url.searchParams.set("mode", "mine");
-    url.searchParams.set("edition", iso(day));
-  } else if(mode) {
+function openEdition(day,mode,duel,revision) {
+  const url=new URL(gameRoot);
+  if (day!==undefined) {
+    url.searchParams.set("mode","mine");
+    url.searchParams.set("edition",iso(day));
+    if ((revision ?? latestEditionRevision(day))===2) url.searchParams.set("set","2");
+  } else if (mode==="guest") {
+    url.searchParams.set("join",duel);
+    url.hash=`join-${duel}`;
+  } else if (mode) {
     url.searchParams.set("mode",mode);
-    if(duel) url.searchParams.set("room",duel);
+    if (duel) url.searchParams.set("room",duel);
   }
   history.pushState(browserId ? {minePlayer:browserId} : null,"",url);
-  route = readRoute();
+  route=readRoute();
   intro(true);
+}
+function showJoinCode() {
+  const ui=words();
+  const form=element("form","");
+  form.className="join-form";
+  const label=element("label",ui.roomCode);
+  label.htmlFor="room-code-input";
+  const input=element("input","");
+  input.id=label.htmlFor;
+  input.autocomplete="off";
+  input.autocapitalize="none";
+  input.spellcheck=false;
+  input.maxLength=19;
+  const status=element("p","");
+  status.setAttribute("role","status");
+  const submit=element("button",ui.joinCode);
+  submit.className="primary";
+  form.append(label,input,submit,status);
+  form.onsubmit=event=>{
+    event.preventDefault();
+    const code=input.value.trim().toLowerCase().replace(/[\s-]/g,"");
+    if (!isRoomCode(code)) {status.textContent=ui.badCode;return;}
+    get("modal").close();
+    openEdition(undefined,"guest",code);
+  };
+  modal(ui.joinCode,form);
+  input.focus();
 }
 function modal(title, ...content) {
   get("modal-title").textContent = title;
@@ -586,8 +622,9 @@ function showStats() {
   const completed = Object.entries(library).filter(([key,item])=>key.startsWith("daily:") && item.done).map(([,item])=>item);
   let day = today();
   let consecutive = 0;
-  if (!library[`daily:${day}`]?.done) day--;
-  while (library[`daily:${day}`]?.done) { consecutive++; day--; }
+  const finished = day => library[editionKey(day,latestEditionRevision(day))]?.done || library[editionKey(day,1)]?.done;
+  if (!finished(day)) day--;
+  while (finished(day)) {consecutive++;day--;}
   const grid = element("div", "");
   grid.className = "stat-grid";
   const best = Math.max(0, ...completed.map(score));
@@ -624,6 +661,7 @@ function launch() {
   get("home").onclick = event => { event.preventDefault(); openEdition(); };
   get("rules").onclick = () => modal(words().rules, ...[...words().rulesText,words().openRules,words().moreRules].map(text=>element("p",text)));
   get("endless").onclick = () => openEdition(undefined,"endless");
+  get("join-code").onclick = showJoinCode;
   get("duel").onclick = async () => {
     const button = get("duel");
     button.disabled = true;
@@ -645,6 +683,12 @@ function launch() {
       button.className = "archive-item";
       button.onclick = () => { get("modal").close(); openEdition(day); };
       list.append(button);
+    }
+    if (today()-REPLAY_DAY<=14) {
+      const first=element("button",`${displayDate(REPLAY_DAY)} · ${ui.originalEdition}`);
+      first.className="archive-item";
+      first.onclick=()=>{get("modal").close();openEdition(REPLAY_DAY,undefined,undefined,1);};
+      list.append(first);
     }
     const classic = element("a", ui.classic);
     classic.href = "classic/";

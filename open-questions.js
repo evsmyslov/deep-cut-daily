@@ -791,3 +791,94 @@ function mineQuestion(id) {
   prepared.set(id,question);
   return question;
 }
+add("trees","Name a tree that grows in a temperate climate.","Назовите дерево, которое растёт в умеренном климате.",`
+0;oak;дуб
+0;birch;берёза
+0;pine;сосна
+0;maple;клён
+1;spruce;ель
+1;ash;ясень
+1;willow;ива
+1;elm;вяз
+1;beech;бук
+1;larch;лиственница
+2;alder;ольха
+2;hornbeam;граб
+2;rowan|mountain ash;рябина
+2;silver birch;берёза повислая|бородавчатая берёза
+2;European yew|common yew;тис ягодный|тис
+3;dawn redwood|metasequoia;метасеквойя|метасеквойя глиптостробовидная
+3;hophornbeam|hop hornbeam;хмелеграб
+3;Kentucky coffeetree;бундук двудомный|кентуккийское кофейное дерево
+3;Japanese katsura|katsura tree;багрянник японский
+`);
+add("breads","Name a regional type of bread.","Назовите разновидность хлеба, характерную для какой-либо страны или региона.",`
+0;baguette|French baguette;багет
+0;lavash;лаваш
+0;pita;пита
+1;focaccia;фокачча
+1;ciabatta;чиабатта
+1;naan;наан
+1;challah;хала
+2;injera;ынджера|инджера
+2;khobz;хобз
+2;pumpernickel;пумперникель
+2;pandebono|pan de bono;пан-де-боно|пандебоно
+2;matzo|matzah|matsa;маца
+3;pane carasau;пане каразау|хлеб каразау
+3;lagana;лагана
+3;lahoh|lahooh;лахох
+3;damper|Australian damper;дампер
+3;georgian shotis puri|shotis puri;шотис пури|шоти
+3;broa de milho|broa;броа де милью|португальский кукурузный хлеб
+`);
+add("constellations","Name a constellation recognized by the International Astronomical Union.","Назовите созвездие, признанное Международным астрономическим союзом.",`
+0;Orion;Орион
+0;Ursa Major|Great Bear;Большая Медведица
+0;Ursa Minor|Little Bear;Малая Медведица
+1;Cassiopeia;Кассиопея
+1;Andromeda;Андромеда
+1;Scorpius|Scorpio;Скорпион
+1;Cygnus|Swan;Лебедь
+1;Crux|Southern Cross;Южный Крест
+2;Aquila|Eagle;Орёл
+2;Lyra;Лира
+2;Delphinus|Dolphin;Дельфин
+2;Pegasus;Пегас
+2;Hydra;Гидра
+3;Reticulum|Reticle;Сетка
+3;Horologium|Clock;Часы
+3;Antlia|Air Pump;Насос
+3;Caelum;Резец
+3;Mensa|Table Mountain;Столовая Гора
+3;Microscopium|Microscope;Микроскоп
+3;Circinus|Compass;Циркуль
+`, [["Q8928"],["constellation","созвездие"],["former","obsolete","устаревш","упраздн"]]);
+add("animation","Name an animated feature film.","Назовите полнометражный анимационный фильм.",`
+0;Shrek;Шрек
+0;Toy Story;История игрушек
+0;The Lion King|Lion King;Король Лев
+0;Frozen;Холодное сердце
+1;Spirited Away;Унесённые призраками
+1;Finding Nemo;В поисках Немо
+1;Ratatouille;Рататуй
+1;Princess Mononoke;Принцесса Мононоке
+1;Wall-E|WALL E;ВАЛЛ-И|ВАЛЛИ
+2;The Iron Giant|Iron Giant;Стальной гигант
+2;Coraline;Коралина в Стране Кошмаров|Коралина
+2;Fantastic Mr. Fox;Бесподобный мистер Фокс
+2;Song of the Sea;Песнь моря
+2;Klaus;Клаус
+3;Persepolis;Персеполис
+3;The Red Turtle|Red Turtle;Красная черепаха
+3;The King and the Mockingbird|Le Roi et l Oiseau;Король и птица
+3;I Lost My Body;Я потерял своё тело
+3;Wolfwalkers;Легенда о волках|Волчьи всадники
+3;The Triplets of Belleville|Triplets of Belleville;Трио из Бельвилля
+`, [["Q202866"],["animated feature film","feature length animated film","полнометражный анимационный фильм"],["short film","series","короткометраж","сериал"]]);
+const REPLAY_DAY = Date.parse("2026-11-23") / 86400000;
+const latestEditionRevision = day => day === REPLAY_DAY ? 2 : 1;
+const currentDailyQuestions = ["long-films","trees","constellations","fictional-places","breads","animation","water-machines","herbs"];
+function dailyIds(day,revision=1) {
+  return revision===2 && day===REPLAY_DAY ? currentDailyQuestions : mineIds(day,"daily");
+}

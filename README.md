@@ -4,10 +4,10 @@ An English/Russian quiz where specific answers earn points for rarity. The miner
 
 - Daily has eight questions and opens at 00:00 UTC.
 - Endless shuffles the open prompts in successive cycles and can be ended at any point.
-- Friend duels start when both players press Ready. The same eight questions and timers run on both devices; the first submitted answer limits the other player’s remaining time to ten seconds. Scores are compared after the last question. Older asynchronous room links still work.
+- Friend duels start when both players press Ready. The same eight questions and timers run on both devices; the first submitted answer limits the other player’s remaining time to ten seconds. Scores are compared after the last question. Older asynchronous room links still work. New invitations open the guest seat directly. Players can also enter the room code from the game menu.
 - After the daily round, community picks are ordered by observed frequency once there are three completed rounds. Scores use fixed rarity tiers.
 
-The local catalog contains 40 open questions and 1,691 topic-specific entries. Some categories verify additional names against Wikidata. Coverage varies with the catalog and Wikidata. Typed text for a lookup is sent to the answer service, which stores only the recognized entity and its public labels. Prior versions and their links are kept in `shaft/`, `expedition/`, and `classic/`.
+The local catalog contains 44 open questions and 1,768 topic-specific entries. Some categories verify additional names against Wikidata. Coverage varies with the catalog and Wikidata. Typed text for a lookup is sent to the answer service, which stores only the recognized entity and its public labels. Prior versions and their links are kept in `shaft/`, `expedition/`, and `classic/`.
 
 ## Deployment
 

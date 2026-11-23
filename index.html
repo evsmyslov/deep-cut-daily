@@ -10,12 +10,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Pixelify+Sans:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=live1">
+<link rel="stylesheet" href="style.css?v=live2">
 <script defer src="catalog-data.js"></script>
-<script defer src="open-questions.js?v=live1"></script>
-<script defer src="suggestions.js?v=live1"></script>
-<script defer src="live-client.js?v=live1"></script>
-<script defer src="game.js?v=live1"></script>
+<script defer src="open-questions.js?v=live2"></script>
+<script defer src="suggestions.js?v=live2"></script>
+<script defer src="live-client.js?v=live2"></script>
+<script defer src="game.js?v=live2"></script>
 </head>
 <body>
 <header class="top"><div class="shell top-inner">
@@ -23,7 +23,7 @@
   <nav id="nav"><button id="rules" data-text="rules"></button><button id="stats" data-text="stats"></button><button id="lang" aria-label="Switch language"></button></nav>
 </div></header>
 <main class="shell">
-  <div class="daily-bar"><p><span class="live" aria-hidden="true"></span><span id="edition"></span></p><div class="mode-buttons"><button id="endless" data-text="endless"></button><button id="duel" data-text="duel"></button><button id="archive" data-text="archive"></button></div></div>
+  <div class="daily-bar"><p><span class="live" aria-hidden="true"></span><span id="edition"></span></p><div class="mode-buttons"><button id="endless" data-text="endless"></button><button id="duel" data-text="duel"></button><button id="join-code" data-text="joinCode"></button><button id="archive" data-text="archive"></button></div></div>
   <section class="machine" id="machine">
     <div class="world" aria-hidden="true">
       <div class="world-track" id="world-track"></div>
@@ -91,6 +91,7 @@
       <input id="live-url" readonly inputmode="none">
       <button class="quiet" id="live-copy" data-text="invite"></button>
     </div>
+    <p id="live-room-code"><span data-text="roomCode"></span> <code id="current-room-code"></code></p>
     <button class="primary" id="live-ready" data-text="ready"></button>
     <p id="live-notice" role="status"></p>
   </section>

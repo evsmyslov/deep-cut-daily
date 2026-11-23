@@ -16,7 +16,7 @@ function enterLive() {
 }
 
 async function syncLive(view) {
-  if (liveView!==view || view.polling || view.permanentError) return;
+  if (liveView!==view || view.polling || view.permanentError || document.prerendering) return;
   view.polling=true;
   try {
     await sendLive(view,view.state?"state":"join");
@@ -29,7 +29,7 @@ async function syncLive(view) {
 }
 async function sendLive(view,action,values={}) {
   const before=Date.now();
-  const state=await request("live",{action,room:view.route.duel,...values});
+  const state=await request("live",{action,room:view.route.duel,seat:view.route.seat,...values});
   if (liveView!==view || (view.state && (state.revision<view.state.revision ||
     (state.revision===view.state.revision && state.now<view.state.now)))) return;
   const after=Date.now();
@@ -95,11 +95,13 @@ function paintLive(view,force=false) {
     get("live-status").textContent=!state ? ui.joiningRoom : phase==="countdown" ? "" : ui.liveRules;
     get("own-ready").textContent=state?.ready ? ui.isReady : ui.notReady;
     get("friend-ready").textContent=!state?.opponentJoined ? ui.waitSeat : state.opponentReady ? ui.isReady : ui.notReady;
-    get("live-url").value=location.href;
+    const invite=new URL(`/play/join/${view.route.duel}/`,answerService).href;
+    get("live-url").value=invite;
+    get("current-room-code").textContent=view.route.duel;
     get("live-url").onclick=event=>event.currentTarget.select();
     get("live-copy").onclick=()=>{
       get("live-notice").dataset.copied="1";
-      copyChallenge(location.href,"live-notice");
+      copyChallenge(invite,"live-notice");
     };
     get("live-ready").disabled=!state || state.ready || view.busy;
     get("live-ready").onclick=()=>{
@@ -109,6 +111,7 @@ function paintLive(view,force=false) {
     get("live-ready").hidden=phase==="countdown";
     get("live-seats").hidden=phase==="countdown";
     get("live-url").parentElement.hidden=phase==="countdown";
+    get("live-room-code").hidden=phase==="countdown";
   } else {
     const question=mineQuestion(state.prompt);
     swap("question");
