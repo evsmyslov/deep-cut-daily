@@ -143,7 +143,7 @@ add("films","Name a feature film.","Назовите полнометражны�
 add("novels","Name a novel.","Назовите роман.",`
 0;War and Peace;Война и мир
 0;1984|Nineteen Eighty-Four;1984
-0;The Hobbit|Hobbit;Хоббит|Хоббит или Туда и обратно
+0;The Hobbit|Hobbit;Хоббит, или Туда и обратно|Хоббит
 1;Jane Eyre;Джейн Эйр
 1;Pride and Prejudice;Гордость и предубеждение
 1;Dune;Дюна
@@ -159,24 +159,24 @@ add("novels","Name a novel.","Назовите роман.",`
 3;The Melancholy of Resistance;Меланхолия сопротивления
 `, [["Q8261"],["novel","роман"],["novel series","серия романов","graphic novel","графический роман"]]);
 
-add("video-games","Name a video game. Give a specific title within a series.","Назовите видеоигру. Если это серия, укажите конкретную часть.",`
-0;Minecraft;Майнкрафт
+add("video-games","Name a specific video game title.","Назовите конкретную видеоигру.",`
+0;Minecraft;Minecraft|Майнкрафт
 0;Tetris;Тетрис
-0;Fortnite;Фортнайт
-1;Portal;Портал
-1;Stardew Valley;Стардью Вэлли|Долина Стардью
-1;Hollow Knight;Холлоу Найт
-1;Grand Theft Auto V|GTA V|GTA 5;ГТА 5
-1;The Witcher 3 Wild Hunt|Witcher 3;Ведьмак 3|Ведьмак 3 Дикая охота
-2;Disco Elysium;Диско Элизиум
-2;Slay the Spire;Убей шпиль
-2;Celeste;Селеста
-2;Return of the Obra Dinn;Возвращение Обра Динн
-3;Rain World;Мир дождя
-3;Hypnospace Outlaw;Хипноспейс Аутлоу
-3;Chants of Sennaar;Песни Сеннаара
-3;The Case of the Golden Idol;Дело о золотом идоле
-3;A Short Hike;Короткий поход
+0;Fortnite;Fortnite|Фортнайт
+1;Portal;Portal|Портал
+1;Stardew Valley;Stardew Valley|Стардью Вэлли|Долина Стардью
+1;Hollow Knight;Hollow Knight|Холлоу Найт
+1;Grand Theft Auto V|GTA V|GTA 5;Grand Theft Auto V|ГТА 5
+1;The Witcher 3: Wild Hunt|Witcher 3;Ведьмак 3: Дикая Охота|Ведьмак 3
+2;Disco Elysium;Disco Elysium|Диско Элизиум
+2;Slay the Spire;Slay the Spire|Убей шпиль
+2;Celeste;Celeste|Селеста
+2;Return of the Obra Dinn;Return of the Obra Dinn|Возвращение Обра Динн
+3;Rain World;Rain World|Мир дождя
+3;Hypnospace Outlaw;Hypnospace Outlaw|Хипноспейс Аутлоу
+3;Chants of Sennaar;Chants of Sennaar|Песни Сеннаара
+3;The Case of the Golden Idol;The Case of the Golden Idol|Дело о золотом идоле
+3;A Short Hike;A Short Hike|Короткий поход
 `, [["Q7889"],["video game","видеоигра","компьютерная игра"],["series","франшиза","серия игр"]]);
 
 add("instruments","Name a musical instrument.","Назовите музыкальный инструмент.",`
@@ -750,17 +750,18 @@ add("long-films","Name a film longer than 2 hours 30 minutes.","Назовите
 `);
 
 const mineDecks = {1:firstDeck, 2:secondDeck, 3:Object.keys(catalog)};
-const MINE_DECK_VERSION = 3;
+const MINE_DECK_VERSION = 4;
 const mineCalendars = [
   {from:MINE_DAY, order:dailyOrder},
   {from:Date.parse("2026-11-24") / 86400000, order:[
-    "herbs","weapons","observatory","elements","fictional-places","drinkware","mountains","myth",
+    "fictional-robots","city-films","non-electric-clocks","numbered-albums","fictional-places","drinkware","mountains","myth",
     "shipwrecks","desserts","countries","programming","painting","lens","water-machines","card-games",
     "gemstones","africa","films","instruments","craters","video-games","currency","rivers",
     "novels","americas","spacecraft","languages","birds","capitals","metals","dinosaurs",
-    "europe","architects","board-games","islands","asia","composers","oceania"
+    "europe","architects","board-games","islands","asia","composers","oceania","herbs","weapons","observatory","elements"
   ]},
-  {from:Date.parse("2026-11-25") / 86400000, order:["long-films",...secondDeck.filter(id=>id!=="films"),"films"]}
+  {from:Date.parse("2026-11-25") / 86400000, order:["long-films",...secondDeck.filter(id=>id!=="films"),"films",
+    "fictional-robots","city-films","non-electric-clocks","numbered-albums"]}
 ];
 function mineIds(seed, mode, version = MINE_DECK_VERSION) {
   if (mode === "daily") {
@@ -876,6 +877,110 @@ add("animation","Name an animated feature film.","Назовите полном�
 3;Wolfwalkers;Легенда о волках|Волчьи всадники
 3;The Triplets of Belleville|Triplets of Belleville;Трио из Бельвилля
 `, [["Q202866"],["animated feature film","feature length animated film","полнометражный анимационный фильм"],["short film","series","короткометраж","сериал"]]);
+
+// Localized titles from PlayStation, EA and Netflix. Common spellings stay searchable.
+// https://www.playstation.com/ru-ua/the-last-of-us/
+// https://www.playstation.com/ru-ua/games/horizon-forbidden-west/
+// https://www.ea.com/ru/games/library/rpg/sci-fi-rpg
+// https://www.netflix.com/by-ru/title/81399614
+extend("video-games",`
+1;The Last of Us Part I|The Last of Us Part 1;Одни из нас: Часть I|Одни из нас: Часть 1
+1;The Last of Us Part II|The Last of Us 2|TLOU2;Одни из нас: Часть II|Одни из нас: Часть 2
+1;Uncharted 4: A Thief's End|Uncharted 4;Uncharted 4: Путь вора|Анчартед 4|Путь вора
+2;Uncharted: The Lost Legacy|The Lost Legacy;Uncharted: Утерянное наследие|Утерянное наследие
+2;Horizon Forbidden West;Horizon Запретный Запад|Горизонт Запретный Запад|Хорайзон Запретный Запад
+2;Star Wars Jedi: Fallen Order|Jedi Fallen Order;Звёздные войны Джедаи: Павший Орден|Джедаи Павший Орден
+2;Mass Effect 2|ME2;Mass Effect 2|Масс Эффект 2
+`);
+extend("animation",`
+2;The Mitchells vs. the Machines|The Mitchells versus the Machines;Митчеллы против машин
+2;Guillermo del Toro's Pinocchio|Pinocchio 2022;Пиноккио Гильермо дель Торо
+`);
+add("fictional-robots","Name a fictional robot with a name of its own.","Назовите вымышленного робота с собственным именем.",`
+0;R2-D2|R2D2;R2-D2|Арту-Диту
+0;WALL-E|WALLE;ВАЛЛ-И|ВАЛЛИ
+0;Optimus Prime;Оптимус Прайм
+1;C-3PO|C3PO;C-3PO|Си-Трипио
+1;Bender|Bender Bending Rodriguez;Бендер|Бендер Родригес
+1;Baymax;Бэймакс|Беймакс
+1;BB-8|BB8;BB-8|Би-Би-8
+1;EVE|Extraterrestrial Vegetation Evaluator;ЕВА
+2;Johnny 5|Johnny Five|Number 5;Джонни 5|Номер 5
+2;Astro Boy|Atom;Астробой|Атом
+2;Alpha 5|Alpha Five;Альфа-5
+2;Marvin the Paranoid Android|Marvin;Марвин|Параноидальный андроид Марвин
+2;TARS;TARS|ТАРС
+2;The Iron Giant|Iron Giant;Стальной гигант
+3;R. Daneel Olivaw|Daneel Olivaw;Р. Дэниел Оливо|Дэниел Оливо|Дэниел Оливоу
+3;Tik-Tok|Tik Tok of Oz;Тик-Ток из страны Оз|Тик-Ток
+3;K-2SO|K2SO;K-2SO|Кей-Туэсо
+3;Crow T. Robot|Crow T Robot;Кроу Т. Робот
+3;Tom Servo;Том Серво
+`);
+add("city-films","Name a film whose English title contains the name of a real city.","Назовите фильм, в английском названии которого есть название реального города.",`
+0;Casablanca;Касабланка
+0;Chicago;Чикаго
+0;Midnight in Paris;Полночь в Париже
+1;Philadelphia;Филадельфия
+1;Gangs of New York;Банды Нью-Йорка
+1;Last Tango in Paris;Последнее танго в Париже
+1;Escape from New York;Побег из Нью-Йорка
+1;Train to Busan;Поезд в Пусан
+2;Tokyo Story;Токийская повесть|Токийская история
+2;Paris, Texas|Paris Texas;Париж, Техас
+2;Munich;Мюнхен
+2;In Bruges;Залечь на дно в Брюгге
+2;Vicky Cristina Barcelona;Вики Кристина Барселона
+2;Cairo Station;Каирский вокзал
+3;Dublin Oldschool;Дублин Олдскул
+3;Rome, Open City|Rome Open City;Рим — открытый город
+3;My Winnipeg;Мой Виннипег
+3;Lisbon Story;Лиссабонская история
+3;Oslo, August 31st|Oslo August 31st;Осло, 31 августа
+3;The Last Black Man in San Francisco;Последний чёрный в Сан-Франциско
+3;The Battle of Algiers|Battle of Algiers;Битва за Алжир
+`);
+add("non-electric-clocks","Name a device that measures time without electricity.","Назовите устройство, которое измеряет время без электричества.",`
+0;Sundial;Солнечные часы
+0;Hourglass|Sandglass;Песочные часы
+0;Mechanical wristwatch|Wind-up wristwatch;Механические наручные часы
+1;Pendulum clock;Маятниковые часы
+1;Water clock|Clepsydra;Водяные часы|Клепсидра
+1;Mechanical pocket watch|Wind-up pocket watch;Механические карманные часы
+1;Cuckoo clock;Часы с кукушкой
+1;Self-winding watch|Automatic watch;Часы с автоподзаводом
+2;Candle clock;Свечные часы
+2;Incense clock;Благовонные часы|Ароматические часы
+2;Marine chronometer;Морской хронометр
+2;Mechanical tower clock;Механические башенные часы
+2;Nocturnal|Nocturlabe;Ноктурлабиум|Ноктурнал
+3;Elephant clock|Al-Jazari's elephant clock;Слоновые часы|Часы-слон аль-Джазари
+3;Congreve rolling ball clock|Congreve clock;Шариковые часы Конгрива|Часы Конгрива
+3;Candle alarm clock;Свечной будильник
+3;Oil-lamp clock|Oil lamp clock;Масляные часы|Часы с масляной лампой
+`);
+add("numbered-albums","Name a music album with a digit in its title.","Назовите музыкальный альбом, в названии которого есть цифра.",`
+0;1989|1989 Taylor Swift;1989
+0;21|21 Adele;21
+0;25|25 Adele;25
+1;24K Magic|24K Magic Bruno Mars;24K Magic
+1;30|30 Adele;30
+1;4|4 Beyoncé;4
+1;808s & Heartbreak|808s and Heartbreak;808s & Heartbreak
+1;1984 Van Halen|1984;1984
+2;2112|2112 Rush;2112
+2;1999|1999 Prince;1999
+2;3 Feet High and Rising;3 Feet High and Rising
+2;5150|5150 Van Halen;5150
+2;2001|2001 Dr Dre;2001
+2;The 20/20 Experience;The 20/20 Experience
+3;69 Love Songs;69 Love Songs
+3;13 Songs|13 Songs Fugazi;13 Songs
+3;154|154 Wire;154
+3;Talking Heads: 77|77 Talking Heads;Talking Heads: 77
+3;98.12.28 Otokotachi no Wakare;98.12.28 男達の別れ
+`);
+mineDecks[4]=Object.keys(catalog);
 const REPLAY_DAY = Date.parse("2026-11-23") / 86400000;
 const latestEditionRevision = day => day === REPLAY_DAY ? 2 : 1;
 const currentDailyQuestions = ["long-films","trees","constellations","fictional-places","breads","animation","water-machines","herbs"];

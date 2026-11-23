@@ -1,7 +1,7 @@
 let liveView=null;
 let duelFrame;
 
-function relayDuelRequest(_url,{body,signal}) {
+function relayDuelRequest(url,{body,signal}) {
   if (!duelFrame) {
     const frame=element("iframe","");
     frame.hidden=true;
@@ -29,7 +29,7 @@ function relayDuelRequest(_url,{body,signal}) {
     };
     loaded.then(()=>{
       if (!signal.aborted) {
-        try { frame.contentWindow.postMessage(body,answerService,[channel.port2]); }
+        try { frame.contentWindow.postMessage({path:new URL(url).pathname,body},answerService,[channel.port2]); }
         catch (error) { finish(reject,error); }
       }
     });
@@ -44,13 +44,13 @@ function duelError(code) {
   return words()[label];
 }
 
-async function requestDuel(connection,data,timeout=8000,onAlternate=()=>{}) {
-  if (connection.relay) return request("live",data,timeout,relayDuelRequest);
-  try { return await request("live",data,timeout); }
+async function requestLobby(path,connection,data,timeout=8000,onAlternate=()=>{}) {
+  if (connection.relay) return request(path,data,timeout,relayDuelRequest);
+  try { return await request(path,data,timeout); }
   catch (error) {
     if (location.origin!==new URL(publicGame).origin || !["network","timeout"].includes(error.code)) throw error;
     onAlternate();
-    const state=await request("live",data,timeout,relayDuelRequest);
+    const state=await request(path,data,timeout,relayDuelRequest);
     connection.relay=true;
     return state;
   }
@@ -88,8 +88,8 @@ function showDuelMenu() {
   join.onsubmit=event=>{
     event.preventDefault();
     if (create.disabled) return;
-    const code=input.value.toLowerCase().replace(/[\s-]/g,"");
-    if (!isRoomCode(code)) { notice.textContent=words().badCode; input.focus(); return; }
+    const code=normalizeRoomCode(input.value.replace(/[\s-]/g,""));
+    if (!code) { notice.textContent=words().badCode; input.focus(); return; }
     enterLive({mode:"live",duel:code,seat:"guest",key:`live:${code}:guest`});
   };
   create.onclick=async()=>{
@@ -99,7 +99,7 @@ function showDuelMenu() {
     submit.disabled=true;
     notice.textContent=words().joiningRoom;
     try {
-      const created=await requestDuel(connection,{action:"create"},8000,()=>{
+      const created=await requestLobby("live",connection,{action:"create",shortCode:true},8000,()=>{
         notice.textContent=words().connectingAgain;
       });
       if (create.isConnected && get("duel-modal").open) {
@@ -147,7 +147,7 @@ async function syncLive(view) {
 async function sendLive(view,action,values={}) {
   const before=Date.now();
   const data={action,room:view.route.duel,seat:view.route.seat,...values};
-  const state=await requestDuel(view.connection,data,8000,()=>{
+  const state=await requestLobby("live",view.connection,data,8000,()=>{
     if (liveView===view && !view.state) get("live-status").textContent=words().connectingAgain;
   });
   if (liveView!==view) return;
@@ -157,6 +157,13 @@ async function sendLive(view,action,values={}) {
   if (view.state && (state.revision<view.state.revision ||
     (state.revision===view.state.revision && state.now<view.state.now))) return;
   const after=Date.now();
+  if (state.phase==="question" && (view.state?.phase!=="question" || view.state.index!==state.index)) playCue("round");
+  if (state.phase==="reveal" && view.state?.phase!=="reveal") {
+    if (state.ownPick?.tier>=0) playCue("find",state.ownPick.tier);
+    else playCue("skip");
+  }
+  if (state.phase==="done" && view.state?.phase!=="done") playCue("finish");
+  if (action==="submit" && state.feedback) playCue("reject");
   view.offset=state.now-(before+Math.min(500,(after-before)/2));
   view.state=state;
   view.error=null;
@@ -256,6 +263,7 @@ function paintLive(view,force=false) {
       copyChallenge(invite.href,"live-notice");
     };
     get("live-ready").onclick=()=>{
+      activateAudio();
       get("live-ready").disabled=true;
       liveAction(view,"ready",{ready:!state.ready});
     };

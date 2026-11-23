@@ -9,6 +9,7 @@ const colors = ["#b1bba6", "#c58f6f", "#94c1a9", "#eac57f", "#777b73"];
 const marks = ["⬜", "🟫", "🟩", "🟨", "▫️"];
 const questionsPerRound = 8;
 const maximum = questionsPerRound * Math.max(...scores);
+const endlessModes = ["easy","hard","rare"];
 const storage = "rare-below-v1";
 const answerService = "https://deep-cut-answer-data.choicehelix2.chatgpt.site";
 const publicGame = "https://evsmyslov.github.io/deep-cut-daily/";
@@ -33,7 +34,7 @@ const strings = {
     moreRules:"You get 30 seconds per question. Some categories can check unfamiliar names in Wikidata.",
     matchIntro:"Play the same eight questions as your friend. Scores appear when both players finish.",
     matchWait:"Waiting for your friend to finish.", matchReady:"Invite ready. You can play now.",
-    matchError:"Could not open this duel. Try again.", endlessIntro:"Keep digging as long as you like. Finish the run whenever you’re ready.",
+    matchError:"Could not open this duel. Try again.",
     mineRun:"Endless run", fresh:"New run", previous:"Previous eight-question expedition",
     rules:"How to play", stats:"Stats", archive:"Archive", reset:"New expedition at 00:00 UTC", daily:"Daily expedition",
     hero:"Journey to\nthe Core", pitch:"Think of an answer that fits and that most people would overlook. The rarer the find, the deeper you go.",
@@ -50,13 +51,13 @@ const strings = {
     surveyError:"Community counts are unavailable. The list shows the quiz’s rarity tiers.",
     surveyData:"Community picks, from least to most selected.",
     community:"Community picks", dictionary:"Examples by rarity", early:"Previous four-question expedition",
-    language:"Switch to Russian", menu:"Game menu", tiers:["Pebble","Ore","Relic","Core Gem","Dust"],
+    language:"Switch to Russian", menu:"Game menu", tiers:["Shard","Crystal","Relic","Core Heart","Trace"],
     categories:{science:"Science",places:"Geography",culture:"Pop culture",variety:"General knowledge"},
     rulesText:["Answer eight questions in English or Russian. Your score determines how deep you dig. A zero-point answer leaves you at the same depth.",
       "A find earns 10, 25, 55, 85 or 120 points, based on an editorial estimate of its rarity. Both languages share the same answers and points.",
       "A new set opens at 00:00 UTC. Everyone gets the same questions. Your progress stays in this browser.",
       "After the expedition, accepted choices are counted anonymously. A challenge link shares your score."],
-    awards:[["First Footstep","Complete an expedition."],["Gem Hunter","Find three Core Gems in one expedition."],["Corebreaker","Earn 960 points in one expedition."]]
+    awards:[["First Footstep","Complete an expedition."],["Gem Hunter","Find three Core Hearts in one expedition."],["Corebreaker","Earn 960 points in one expedition."]]
   },
   ru: {
     endless:"Бесконечный", duel:"Дуэль", invite:"Скопировать приглашение", solo:"Выпуск дня", refresh:"Обновить дуэль", stopRun:"Завершить забег",
@@ -65,7 +66,7 @@ const strings = {
     moreRules:"На вопрос даётся 30 секунд. Для части тем незнакомые названия проверяются по Викиданным.",
     matchIntro:"У вас и друга восемь одинаковых вопросов. Счёт соперника откроется, когда оба завершат дуэль.",
     matchWait:"Ждём, пока друг закончит дуэль.", matchReady:"Приглашение готово. Можно начинать.",
-    matchError:"Не удалось открыть дуэль. Попробуйте ещё раз.", endlessIntro:"Копайте сколько угодно. Забег можно завершить в любой момент.",
+    matchError:"Не удалось открыть дуэль. Попробуйте ещё раз.",
     mineRun:"Бесконечный забег", fresh:"Новый забег", previous:"Прежняя экспедиция из восьми вопросов",
     rules:"Правила", stats:"Статистика", archive:"Архив", reset:"Новый выпуск в 03:00 МСК", daily:"Ежедневная экспедиция",
     hero:"К центру\nЗемли", pitch:"Найдите подходящий ответ, который не сразу придёт в голову. Чем реже находка, тем глубже вы спускаетесь.",
@@ -82,13 +83,13 @@ const strings = {
     surveyError:"Сводка игроков недоступна. Ниже — ответы по уровням редкости в игре.",
     surveyData:"Выбор игроков, от самых редких до самых частых.",
     community:"Выбор игроков", dictionary:"Примеры по редкости", early:"Прошлая экспедиция из четырёх вопросов",
-    language:"Переключить на английский", menu:"Меню игры", tiers:["Галька","Руда","Реликт","Самоцвет ядра","Пыль"],
+    language:"Переключить на английский", menu:"Меню игры", tiers:["Осколок","Кристалл","Реликт","Сердце ядра","След"],
     categories:{science:"Наука",places:"География",culture:"Поп-культура",variety:"Общие знания"},
     rulesText:["Ответьте на восемь вопросов по-русски или по-английски. Глубина зависит от набранных очков. При нуле за ответ шахтёр остаётся на месте.",
       "Находка приносит 10, 25, 55, 85 или 120 очков по заранее заданной оценке редкости. Ответы и баллы одинаковы для обоих языков.",
       "Новый выпуск выходит в 03:00 по Москве. Вопросы у всех одинаковые. Прогресс сохраняется в этом браузере.",
       "После экспедиции засчитанные ответы попадают в анонимную сводку. Ссылка-вызов передаёт ваш счёт."],
-    awards:[["Первый шаг","Завершить экспедицию."],["Искатель самоцветов","Найти три самоцвета ядра за экспедицию."],["Покоритель ядра","Набрать 960 очков за экспедицию."]]
+    awards:[["Первый шаг","Завершить экспедицию."],["Искатель самоцветов","Найти три сердца ядра за экспедицию."],["Покоритель ядра","Набрать 960 очков за экспедицию."]]
   }
 };
 Object.assign(strings.en, {
@@ -98,13 +99,23 @@ Object.assign(strings.en, {
   getReady:"Get ready", answerLocked:"Answer locked. Waiting for your friend.", rush:"Your friend answered. You have up to 10 seconds.",
   autoNext:"Next question starts automatically.",
   roomExpired:"This invite has expired. Create a new duel.", roomFull:"This room already has two players.",
-  suggestion:"Did you mean?", joinCode:"Join by code", roomCode:"Room code", badCode:"Enter the 16-character room code.", originalEdition:"Original edition",
+  suggestion:"Did you mean?", joinCode:"Join by code", roomCode:"Room code", badCode:"Enter the six-character room code.", originalEdition:"Original edition",
   createRoom:"Create a room", retryLive:"Retry connection", duelMenu:"Duel menu",
   wrongRetry:"That answer doesn’t fit. Try again.", lookupRetry:"Answer check unavailable. Try again or enter another answer.",
   retryRule:"If an answer doesn’t fit, you can try again until time runs out.",
   unready:"Cancel ready", connectingAgain:"Trying another connection…",
   duelTimeout:"The room server took too long to respond.", duelOffline:"Your browser is offline.",
-  duelNetwork:"This browser couldn’t reach the room server.", duelResponse:"The room server returned an unexpected response."
+  duelNetwork:"This browser couldn’t reach the room server.", duelResponse:"The room server returned an unexpected response.",
+  easy:"Easy", hard:"Hard", rare:"Rare only",
+  endlessModes:["Skip any question and keep digging.","Skipping is disabled. The run ends when time runs out.","Keep the streak alive with answers worth at least 55 points."],
+  rareRetry:"It fits, but this mode needs a Crystal or rarer. Try again.", streakEnded:"Time ran out. Your streak has ended.", answersFound:"answers found",
+  sound:"Audio", music:"Music", effects:"Sound effects",
+  friends:"Friends", friendCode:"Your friend code", friendAdd:"Add friend", friendCodeInput:"Friend code",
+  friendIntro:"Share your friend code to keep in touch and invite each other to duels.",
+  friendDevice:"This profile is saved in this browser.", noFriends:"No friends added yet.",
+  incoming:"Duel invitations", nobodyInvited:"No pending invitations.", challengeFriend:"Invite to duel",
+  acceptInvite:"Join duel", declineInvite:"Decline", removeFriend:"Remove", friendsLoading:"Loading your friends…",
+  contactCode:"Enter the eight-character friend code.", contactMissing:"Friend not found.", contactSelf:"This is your own code."
 });
 Object.assign(strings.ru, {
   live:"Дуэль с другом", yourSeat:"Вы", friendSeat:"Друг", ready:"Готов",
@@ -113,13 +124,23 @@ Object.assign(strings.ru, {
   getReady:"Приготовьтесь", answerLocked:"Ответ принят. Ждём друга.", rush:"Друг ответил. У вас до 10 секунд.",
   autoNext:"Следующий вопрос начнётся автоматически.",
   roomExpired:"Срок действия ссылки истёк. Создайте новую дуэль.", roomFull:"В этой комнате уже два игрока.",
-  suggestion:"Имели в виду?", joinCode:"Войти по коду", roomCode:"Код комнаты", badCode:"Введите код комнаты из 16 символов.", originalEdition:"Первый выпуск",
+  suggestion:"Имели в виду?", joinCode:"Войти по коду", roomCode:"Код комнаты", badCode:"Введите код комнаты из шести символов.", originalEdition:"Первый выпуск",
   createRoom:"Создать комнату", retryLive:"Повторить подключение", duelMenu:"Меню дуэли",
   wrongRetry:"Ответ не подходит. Попробуйте ещё раз.", lookupRetry:"Проверка недоступна. Повторите попытку или введите другой ответ.",
   retryRule:"Если ответ не подходит, можно попробовать снова, пока есть время.",
   unready:"Отменить готовность", connectingAgain:"Пробуем подключиться другим способом…",
   duelTimeout:"Сервер комнаты не ответил вовремя.", duelOffline:"Браузер сейчас без подключения к интернету.",
-  duelNetwork:"Браузер не смог связаться с сервером комнаты.", duelResponse:"Сервер комнаты вернул неожиданный ответ."
+  duelNetwork:"Браузер не смог связаться с сервером комнаты.", duelResponse:"Сервер комнаты вернул неожиданный ответ.",
+  easy:"Обычный", hard:"На вылет", rare:"Только редкие",
+  endlessModes:["Пропускайте любые вопросы и копайте дальше.","Без пропусков. Когда время истечёт, забег завершится.","Поддерживайте серию ответами от 55 очков."],
+  rareRetry:"Ответ подходит, но здесь нужен «Кристалл» или выше. Попробуйте ещё раз.", streakEnded:"Время вышло. Серия завершена.", answersFound:"ответов засчитано",
+  sound:"Звук", music:"Музыка", effects:"Звуковые эффекты",
+  friends:"Друзья", friendCode:"Ваш код друга", friendAdd:"Добавить друга", friendCodeInput:"Код друга",
+  friendIntro:"Поделитесь своим кодом, чтобы добавлять друзей и приглашать их на дуэли.",
+  friendDevice:"Профиль сохранён в этом браузере.", noFriends:"Пока здесь нет друзей.",
+  incoming:"Приглашения на дуэль", nobodyInvited:"Нет новых приглашений.", challengeFriend:"Пригласить в дуэль",
+  acceptInvite:"Войти в дуэль", declineInvite:"Отклонить", removeFriend:"Удалить", friendsLoading:"Загружаем друзей…",
+  contactCode:"Введите код друга из восьми символов.", contactMissing:"Друг не найден.", contactSelf:"Это ваш собственный код."
 });
 const get = id => document.getElementById(id);
 const today = () => Math.max(START, Math.floor(Date.now() / DAY));
@@ -147,17 +168,25 @@ function save() {
   library[route.key] = round;
   persist();
 }
-const isRoomCode = value => /^[a-f0-9]{16}$/.test(value ?? "");
+function normalizeRoomCode(value) {
+  if (/^[a-hj-np-z2-9]{6}$/i.test(value ?? "")) return value.toUpperCase();
+  if (/^[a-f0-9]{16}$/i.test(value ?? "")) return value.toLowerCase();
+  return null;
+}
 const editionKey = (day, revision) => `daily:${day}${revision===2 ? ":2" : ""}`;
 function readRoute() {
   const args=new URLSearchParams(location.search);
-  const pathInvite=location.pathname.match(/\/play\/join\/([a-f0-9]{16})\/?$/)?.[1];
-  const guestRoom=[pathInvite,args.get("join"),location.hash.match(/^#join-([a-f0-9]{16})$/)?.[1]].find(isRoomCode);
+  const pathInvite=location.pathname.match(/\/play\/join\/([^/]+)\/?$/)?.[1];
+  const guestRoom=[pathInvite,args.get("join"),location.hash.match(/^#join-(\w+)$/)?.[1]].map(normalizeRoomCode).find(Boolean);
   if (guestRoom) return {mode:"live",duel:guestRoom,seat:"guest",key:`live:${guestRoom}:guest`};
   const mode=args.get("mode");
-  const duel=args.get("room");
-  if ((mode==="duel" || mode==="live") && isRoomCode(duel)) return {mode,duel,key:`${mode}:${duel}`};
-  if (mode==="endless") return {mode,key:"endless"};
+  const duel=normalizeRoomCode(args.get("room"));
+  if ((mode==="duel" && duel?.length===16) || (mode==="live" && duel)) return {mode,duel,key:`${mode}:${duel}`};
+  if (mode==="endless") {
+    const requested=args.get("difficulty");
+    const difficulty=endlessModes.includes(requested) ? requested : "easy";
+    return {mode,difficulty,key:difficulty==="easy" ? "endless" : `endless:${difficulty}`};
+  }
   const key=args.get("edition") ?? "";
   const date=/^\d{4}-\d\d-\d\d$/.test(key) ? Date.parse(key)/DAY : NaN;
   const fixed=date>=START && date<=today() && iso(date)===key;
@@ -263,6 +292,7 @@ function swap(id) {
   localize();
   const ui = words();
   get("duel").disabled=route.mode==="live" && id!=="results";
+  get("friends").disabled=get("duel").disabled;
   get("edition").textContent = route.mode === "daily" ? `${route.day === today() ? ui.today : ui.past} / ${displayDate(route.day)}` : ui[route.mode];
   get("footer-mode").textContent = route.mode === "daily" && route.rival !== null ? ui.versus : `30 s · ${ui.active.split(" · ").at(-1)}`;
   clock();
@@ -284,14 +314,15 @@ function intro(focus = false) {
   get("challenge").hidden = route.mode !== "daily" || route.rival === null;
   if (route.mode !== "daily") {
     get("stage").querySelector("[data-text=daily]").hidden = true;
-    get("topic").textContent = ui[route.mode];
-    get("pitch").textContent = route.mode === "endless" ? ui.endlessIntro : ui.matchIntro;
+    get("topic").textContent = ui[route.difficulty ?? route.mode];
+    get("pitch").textContent = route.difficulty ? ui.endlessModes[endlessModes.indexOf(route.difficulty)] : ui.matchIntro;
     get("lobby-status").textContent = route.mode === "duel" ? ui.matchReady : "";
   }
   invite.hidden = route.mode !== "duel";
   invite.onclick = () => copyChallenge(location.href, "lobby-status");
   get("start").textContent = existing?.done ? ui.replay : existing ? ui.resume : ui.play;
   get("start").onclick = async () => {
+    if (!existing?.done) activateAudio();
     const button = get("start");
     let seed = existing?.seed;
     let deckVersion = MINE_DECK_VERSION;
@@ -321,9 +352,11 @@ function question(draft = "", focus = true) {
   const index = round.answers.length - Number(round.feedback);
   const model = questionAt(index);
   const ui = words();
+  const strict = route.mode==="endless" && route.difficulty!=="easy";
+  const minimumPoints = route.difficulty==="rare" ? 55 : 0;
   setWorld(round.answers.length, score(round));
   const denominator = route.mode === "endless" ? "" : ` / ${questionsPerRound}`;
-  get("category").textContent = `${ui.question} ${index + 1}${denominator}`;
+  get("category").textContent = route.difficulty ? `${ui[route.difficulty]} · ${ui.question} ${index+1}` : `${ui.question} ${index + 1}${denominator}`;
   get("prompt").textContent = model[lang];
   get("answer").placeholder = ui.placeholder;
   get("answer").value = draft;
@@ -342,7 +375,8 @@ function question(draft = "", focus = true) {
     save();
     question();
   };
-  get("skip").onclick = () => settle("", null, "skip");
+  get("skip").hidden=strict;
+  if (!strict) get("skip").onclick = () => settle("", null, "skip");
   form.onsubmit = async event => {
     event.preventDefault();
     const text = get("answer").value.trim();
@@ -373,21 +407,25 @@ function question(draft = "", focus = true) {
     input.readOnly=false;
     submit.disabled=false;
     status.textContent=words()[message];
+    playCue("reject");
     input.focus({preventScroll:true});
     input.select();
   }
   function settle(text, entry, reason) {
     if (round.feedback) return;
+    if (entry && pointsFor(entry)<minimumPoints) { reject("rareRetry"); return; }
     clearInterval(questionTimer);
     round.answers.push({text, id:entry?.id ?? null, tier:entry?.tier ?? -1, en:entry?.en, ru:entry?.ru, reason});
     round.pending = null;
     round.feedback = true;
     save();
+    if (reason==="timeout" && strict) { complete(); return; }
     if (!entry) {
       clearTimeout(rideTimer);
       get("miner").classList.remove("moving");
     }
     setWorld(round.answers.length, score(round), Boolean(entry));
+    playCue(entry ? "find" : "skip",entry?.tier);
     reveal(true);
   }
   function reveal(moveFocus) {
@@ -433,6 +471,7 @@ function complete() {
   round.done = true;
   round.pending = null;
   save();
+  playCue("finish");
   results();
 }
 const gemCount = round => round.answers.filter(a => a.tier === 3).length;
@@ -446,10 +485,12 @@ function results(focus = true) {
   const ui = words();
   const points = score(round);
   const endless = route.mode === "endless";
-  get("finished-topic").textContent = route.mode === "daily" ? displayDate(route.day) : ui[route.mode];
+  get("finished-topic").textContent = route.mode === "daily" ? displayDate(route.day) : ui[route.difficulty ?? route.mode];
   setWorld(round.answers.length, points);
-  get("total").textContent = endless ? `${points} ${ui.points} · ${round.answers.length}` : `${points} / ${maximum} ${ui.points}`;
-  get("badge").textContent = earned([round]).flatMap((unlocked, index) => unlocked ? [ui.awards[index][0]] : []).at(-1);
+  const found=round.answers.filter(answer=>answer.tier>=0).length;
+  get("total").textContent = endless ? `${points} ${ui.points} · ${found} ${ui.answersFound}` : `${points} / ${maximum} ${ui.points}`;
+  get("badge").textContent = endless && route.difficulty!=="easy" && round.answers.at(-1)?.reason==="timeout"
+    ? ui.streakEnded : earned([round]).flatMap((unlocked, index) => unlocked ? [ui.awards[index][0]] : []).at(-1);
   get("comparison").hidden = !["duel","live"].includes(route.mode) && route.rival == null;
   if (route.mode === "daily" && route.rival !== null) showComparison(route.rival,points);
   round.answers.forEach((answer,index)=>{
@@ -594,7 +635,7 @@ function openEdition(day,mode,duel,revision) {
     if ((revision ?? latestEditionRevision(day))===2) url.searchParams.set("set","2");
   } else if (mode) {
     url.searchParams.set("mode",mode);
-    if (duel) url.searchParams.set("room",duel);
+    if (duel) url.searchParams.set(mode==="endless" ? "difficulty" : "room",duel);
   }
   history.pushState(browserId ? {minePlayer:browserId} : null,"",url);
   route=readRoute();
@@ -604,6 +645,21 @@ function modal(title, ...content) {
   get("modal-title").textContent = title;
   get("modal-content").replaceChildren(...content);
   get("modal").showModal();
+}
+function showEndlessMenu() {
+  const list=element("div","");
+  list.className="mode-picker";
+  endlessModes.forEach((difficulty,index)=>{
+    const button=element("button",words()[difficulty]);
+    button.className="quiet";
+    button.append(element("small",words().endlessModes[index]));
+    button.onclick=()=>{
+      get("modal").close();
+      openEdition(undefined,"endless",difficulty);
+    };
+    list.append(button);
+  });
+  modal(words().endless,list);
 }
 async function copyChallenge(text, status = "share-status") {
   try {
@@ -662,7 +718,11 @@ function launch() {
   mountWorld();
   get("home").onclick = event => { event.preventDefault(); openEdition(); };
   get("rules").onclick = () => modal(words().rules, ...[...words().rulesText,words().openRules,words().moreRules,words().retryRule].map(text=>element("p",text)));
-  get("endless").onclick = () => openEdition(undefined,"endless");
+  get("endless").onclick = showEndlessMenu;
+  get("sound").onclick = showAudioMenu;
+  get("friends").onclick = showFriends;
+  startFriendPolling();
+  prepareAudio();
   get("duel").onclick = showDuelMenu;
   get("duel-close").onclick = closeDuel;
   get("duel-modal").addEventListener("cancel", event => { event.preventDefault(); closeDuel(); });
