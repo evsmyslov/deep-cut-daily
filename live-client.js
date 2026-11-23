@@ -1,4 +1,60 @@
 let liveView=null;
+let duelFrame;
+
+function relayDuelRequest(_url,{body,signal}) {
+  if (!duelFrame) {
+    const frame=element("iframe","");
+    frame.hidden=true;
+    frame.title=words().duel;
+    frame.setAttribute("sandbox","allow-scripts allow-same-origin");
+    frame.src=`${answerService}/play/duel-connection`;
+    const loaded=new Promise(resolve=>frame.addEventListener("load",resolve,{once:true}));
+    document.body.append(frame);
+    duelFrame={frame,loaded};
+  }
+  const {frame,loaded}=duelFrame;
+  return new Promise((resolve,reject)=>{
+    const channel=new MessageChannel();
+    function finish(callback,value) {
+      signal.removeEventListener("abort",abort);
+      channel.port1.close();
+      channel.port2.close();
+      callback(value);
+    }
+    function abort() { finish(reject,signal.reason); }
+    signal.addEventListener("abort",abort,{once:true});
+    channel.port1.onmessage=({data})=>{
+      if (data.error) finish(reject,new Error("Connection unavailable"));
+      else finish(resolve,new Response(data.text,{status:data.status}));
+    };
+    loaded.then(()=>{
+      if (!signal.aborted) {
+        try { frame.contentWindow.postMessage(body,answerService,[channel.port2]); }
+        catch (error) { finish(reject,error); }
+      }
+    });
+  });
+}
+
+function duelError(code) {
+  const label={
+    expired:"roomExpired",full:"roomFull",invalid:"badCode",timeout:"duelTimeout",
+    network:"duelNetwork",offline:"duelOffline",response:"duelResponse",retry:"duelResponse",origin:"duelResponse"
+  }[code] ?? "matchError";
+  return words()[label];
+}
+
+async function requestDuel(connection,data,timeout=8000,onAlternate=()=>{}) {
+  if (connection.relay) return request("live",data,timeout,relayDuelRequest);
+  try { return await request("live",data,timeout); }
+  catch (error) {
+    if (location.origin!==new URL(publicGame).origin || !["network","timeout"].includes(error.code)) throw error;
+    onAlternate();
+    const state=await request("live",data,timeout,relayDuelRequest);
+    connection.relay=true;
+    return state;
+  }
+}
 
 function leaveLive() {
   clearInterval(liveView?.poll);
@@ -37,17 +93,20 @@ function showDuelMenu() {
     enterLive({mode:"live",duel:code,seat:"guest",key:`live:${code}:guest`});
   };
   create.onclick=async()=>{
+    const connection={relay:false};
     create.disabled=true;
     input.disabled=true;
     submit.disabled=true;
     notice.textContent=words().joiningRoom;
     try {
-      const created=await request("live",{action:"create"});
+      const created=await requestDuel(connection,{action:"create"},8000,()=>{
+        notice.textContent=words().connectingAgain;
+      });
       if (create.isConnected && get("duel-modal").open) {
-        enterLive({mode:"live",duel:created.room,seat:"host",key:`live:${created.room}`},created);
+        enterLive({mode:"live",duel:created.room,seat:"host",key:`live:${created.room}`},created,connection);
       }
-    } catch {
-      if (create.isConnected) notice.textContent=words().matchError;
+    } catch (error) {
+      if (create.isConnected) notice.textContent=duelError(error.code);
     } finally {
       create.disabled=false;
       input.disabled=false;
@@ -55,10 +114,10 @@ function showDuelMenu() {
     }
   };
 }
-function enterLive(lobbyRoute,created=null) {
+function enterLive(lobbyRoute,created=null,connection={relay:false}) {
   leaveLive();
   const view={
-    route:lobbyRoute,state:created,offset:created ? created.now-Date.now() : 0,
+    route:lobbyRoute,state:created,connection,offset:created ? created.now-Date.now() : 0,
     key:"",polling:false,busy:false,error:null,failures:0,onStage:false,feedback:null
   };
   liveView=view;
@@ -78,13 +137,19 @@ async function syncLive(view) {
     view.error=error.code;
     view.permanentError=["expired","full","invalid"].includes(error.code);
     view.failures++;
-    if (!view.onStage && view.failures>=2) view.paused=true;
+    if (!view.onStage && (!view.state || view.failures>=2)) view.paused=true;
     updateLiveNotice(view);
-  } finally { view.polling=false; }
+  } finally {
+    view.polling=false;
+    if (liveView===view) updateLiveNotice(view);
+  }
 }
 async function sendLive(view,action,values={}) {
   const before=Date.now();
-  const state=await request("live",{action,room:view.route.duel,seat:view.route.seat,...values},action==="submit"?8000:4500);
+  const data={action,room:view.route.duel,seat:view.route.seat,...values};
+  const state=await requestDuel(view.connection,data,8000,()=>{
+    if (liveView===view && !view.state) get("live-status").textContent=words().connectingAgain;
+  });
   if (liveView!==view) return;
   if (action==="submit" && state.feedback && view.state?.phase==="question" && view.state.index===values.index) {
     view.feedback={index:values.index,message:state.feedback};
@@ -126,15 +191,16 @@ function updateLiveNotice(view) {
   if (!notice) return;
   const retry=get("live-retry");
   if (retry) {
-    retry.hidden=!view.paused || view.permanentError;
-    get("live-ready").disabled=!view.state || view.state.ready || view.busy || view.paused || view.permanentError;
+    retry.hidden=!view.error || view.permanentError;
+    retry.disabled=view.polling && !view.paused;
+    const ready=get("live-ready");
+    ready.disabled=!view.state || view.busy || view.paused || view.permanentError;
+    ready.textContent=view.state?.ready ? words().unready : words().ready;
     if (!view.state) get("live-status").textContent=view.error ? "" : words().joiningRoom;
   }
   let message="";
   if (view.error) {
-    const label={expired:"roomExpired",full:"roomFull",invalid:"roomExpired"}[view.error]
-      ?? (view.paused ? "matchError" : "networkLost");
-    message=words()[label];
+    message=duelError(view.error);
   } else if (view.state?.phase==="question") {
     message=view.state.locked ? words().answerLocked
       : view.busy ? words().checking
@@ -180,28 +246,32 @@ function paintLive(view,force=false) {
     get("live-status").textContent=!state ? ui.joiningRoom : phase==="countdown" ? "" : ui.liveRules;
     get("own-ready").textContent=state?.ready ? ui.isReady : ui.notReady;
     get("friend-ready").textContent=!state?.opponentJoined ? ui.waitSeat : state.opponentReady ? ui.isReady : ui.notReady;
-    const invite=new URL(`/play/join/${view.route.duel}/`,answerService).href;
-    get("live-url").value=invite;
+    const invite=new URL(publicGame);
+    invite.searchParams.set("join",view.route.duel);
+    get("live-url").value=invite.href;
     get("current-room-code").textContent=view.route.duel;
     get("live-url").onclick=event=>event.currentTarget.select();
     get("live-copy").onclick=()=>{
       get("live-notice").dataset.copied="1";
-      copyChallenge(invite,"live-notice");
+      copyChallenge(invite.href,"live-notice");
     };
-    get("live-ready").disabled=!state || state.ready || view.busy;
     get("live-ready").onclick=()=>{
       get("live-ready").disabled=true;
-      liveAction(view,"ready");
+      liveAction(view,"ready",{ready:!state.ready});
     };
     get("live-retry").onclick=()=>{
+      if (view.polling) return;
       view.failures=0;
       view.paused=false;
       view.error=null;
+      view.connection.relay=false;
+      duelFrame?.frame.remove();
+      duelFrame=null;
       updateLiveNotice(view);
       syncLive(view);
     };
     get("live-back").onclick=showDuelMenu;
-    get("live-ready").hidden=!state || phase==="countdown";
+    get("live-ready").hidden=!state || (phase==="countdown" && state.index>0);
     get("live-seats").hidden=!state || phase==="countdown";
     get("live-url").parentElement.hidden=!state || phase==="countdown";
     get("live-room-code").hidden=!state || phase==="countdown";
@@ -261,6 +331,8 @@ function tickLive(view) {
     const target=get("live-status") ?? get("category");
     const countdown=String(Math.max(0,Math.ceil((state.opens-now)/1000)));
     if (target.textContent!==countdown) target.textContent=countdown;
+    const ready=get("live-ready");
+    if (ready && now>=state.opens) ready.disabled=true;
   } else if (state.phase==="question" && !state.locked) {
     const seconds=Math.max(0,Math.ceil((state.deadline-now)/1000));
     get("timer").textContent=seconds;

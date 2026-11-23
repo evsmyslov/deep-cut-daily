@@ -11,6 +11,7 @@ const questionsPerRound = 8;
 const maximum = questionsPerRound * Math.max(...scores);
 const storage = "rare-below-v1";
 const answerService = "https://deep-cut-answer-data.choicehelix2.chatgpt.site";
+const publicGame = "https://evsmyslov.github.io/deep-cut-daily/";
 const gameRoot = new URL("./",document.baseURI);
 const strata = [
   [0,"Surface","Поверхность"],
@@ -95,24 +96,30 @@ Object.assign(strings.en, {
   isReady:"Ready", notReady:"Not ready", waitSeat:"Waiting to join", joiningRoom:"Connecting to the room…",
   liveRules:"Share the link and both press Ready. The first accepted answer gives the other player up to 10 seconds.",
   getReady:"Get ready", answerLocked:"Answer locked. Waiting for your friend.", rush:"Your friend answered. You have up to 10 seconds.",
-  autoNext:"Next question starts automatically.", networkLost:"Connection interrupted. Reconnecting…",
+  autoNext:"Next question starts automatically.",
   roomExpired:"This invite has expired. Create a new duel.", roomFull:"This room already has two players.",
   suggestion:"Did you mean?", joinCode:"Join by code", roomCode:"Room code", badCode:"Enter the 16-character room code.", originalEdition:"Original edition",
   createRoom:"Create a room", retryLive:"Retry connection", duelMenu:"Duel menu",
   wrongRetry:"That answer doesn’t fit. Try again.", lookupRetry:"Answer check unavailable. Try again or enter another answer.",
-  retryRule:"If an answer doesn’t fit, you can try again until time runs out."
+  retryRule:"If an answer doesn’t fit, you can try again until time runs out.",
+  unready:"Cancel ready", connectingAgain:"Trying another connection…",
+  duelTimeout:"The room server took too long to respond.", duelOffline:"Your browser is offline.",
+  duelNetwork:"This browser couldn’t reach the room server.", duelResponse:"The room server returned an unexpected response."
 });
 Object.assign(strings.ru, {
   live:"Дуэль с другом", yourSeat:"Вы", friendSeat:"Друг", ready:"Готов",
   isReady:"Готов", notReady:"Не готов", waitSeat:"Ещё не подключился", joiningRoom:"Подключаемся к лобби…",
   liveRules:"Поделитесь ссылкой и оба нажмите «Готов». После первого засчитанного ответа у второго игрока останется до 10 секунд.",
   getReady:"Приготовьтесь", answerLocked:"Ответ принят. Ждём друга.", rush:"Друг ответил. У вас до 10 секунд.",
-  autoNext:"Следующий вопрос начнётся автоматически.", networkLost:"Связь прервалась. Переподключаемся…",
+  autoNext:"Следующий вопрос начнётся автоматически.",
   roomExpired:"Срок действия ссылки истёк. Создайте новую дуэль.", roomFull:"В этой комнате уже два игрока.",
   suggestion:"Имели в виду?", joinCode:"Войти по коду", roomCode:"Код комнаты", badCode:"Введите код комнаты из 16 символов.", originalEdition:"Первый выпуск",
   createRoom:"Создать комнату", retryLive:"Повторить подключение", duelMenu:"Меню дуэли",
   wrongRetry:"Ответ не подходит. Попробуйте ещё раз.", lookupRetry:"Проверка недоступна. Повторите попытку или введите другой ответ.",
-  retryRule:"Если ответ не подходит, можно попробовать снова, пока есть время."
+  retryRule:"Если ответ не подходит, можно попробовать снова, пока есть время.",
+  unready:"Отменить готовность", connectingAgain:"Пробуем подключиться другим способом…",
+  duelTimeout:"Сервер комнаты не ответил вовремя.", duelOffline:"Браузер сейчас без подключения к интернету.",
+  duelNetwork:"Браузер не смог связаться с сервером комнаты.", duelResponse:"Сервер комнаты вернул неожиданный ответ."
 });
 const get = id => document.getElementById(id);
 const today = () => Math.max(START, Math.floor(Date.now() / DAY));
@@ -508,6 +515,7 @@ async function refreshMatch() {
   } catch { if (target.isConnected) target.textContent = words().matchError; }
 }
 let browserId;
+const isBrowserId=value=>typeof value==="string" && /^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/i.test(value);
 function newBrowserId() {
   const bytes=crypto.getRandomValues(new Uint8Array(16));
   bytes[6]=(bytes[6]&15)|64;
@@ -519,30 +527,38 @@ function anonymousId() {
   if (browserId) return browserId;
   const key=`${storage}-anonymous`;
   for (const store of ["localStorage","sessionStorage"]) {
-    try { browserId ||= window[store].getItem(key); } catch { /* Storage can be disabled in embedded browsers. */ }
+    try {
+      const id=window[store].getItem(key);
+      if (isBrowserId(id)) { browserId=id; break; }
+    } catch { /* Storage can be disabled in embedded browsers. */ }
   }
-  browserId ||= history.state?.minePlayer || newBrowserId();
+  const remembered=history.state?.minePlayer;
+  browserId ||= isBrowserId(remembered) ? remembered : newBrowserId();
   for (const store of ["localStorage","sessionStorage"]) {
     try { window[store].setItem(key,browserId); } catch { /* Fall back to tab history. */ }
   }
   try { history.replaceState({...history.state,minePlayer:browserId},""); } catch { /* Keep an in-memory ID. */ }
   return browserId;
 }
-async function request(path,data,timeout=8000) {
+async function request(path,data,timeout=8000,transport=(url,options)=>fetch(url,options)) {
   const abort=new AbortController();
   const timer=setTimeout(()=>abort.abort(),timeout);
   try {
     const base=location.origin===answerService ? "" : answerService;
-    const response=await fetch(`${base}/${path}`,{
+    const response=await transport(`${base}/${path}`,{
       method:"POST",headers:{"Content-Type":"text/plain;charset=UTF-8"},
       body:JSON.stringify(path==="verify" ? data : {...data,browser:anonymousId()}),signal:abort.signal
     });
-    const payload=await response.json();
-    if(!response.ok) throw Object.assign(new Error("Service response"),{code:payload.code??"network"});
+    const payload=await response.json().catch(()=>null);
+    if(!response.ok || !payload) {
+      const code=payload?.code ?? (response.status>=500 ? "retry" : "response");
+      throw Object.assign(new Error("Service response"),{code});
+    }
     return payload;
   } catch(error) {
     if (typeof error?.code === "string") throw error;
-    throw Object.assign(new Error("Connection unavailable"),{code:"network"});
+    const code=navigator.onLine===false ? "offline" : abort.signal.aborted ? "timeout" : "network";
+    throw Object.assign(new Error("Connection unavailable"),{code});
   } finally {clearTimeout(timer);}
 }
 

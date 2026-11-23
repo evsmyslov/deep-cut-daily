@@ -2,7 +2,7 @@
 @font-face{font-family:"Terminus";src:url("fonts/terminus-bold.ttf") format("truetype");font-style:normal;font-weight:600 900;font-display:swap}
 :root{color-scheme:dark;--bg:#182122;--panel:#243030;--ink:#f5efdc;--muted:#b9c0b2;--accent:#e6ba80;--edge:#465550;--green:#b2c8a6;--pixel:"Terminus",monospace;--mono:var(--pixel);--sans:var(--pixel)}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);margin:0;font:1.125rem/1.45 var(--sans)}
+body{background:var(--bg);color:var(--ink);margin:0;font:600 1.125rem/1.45 var(--sans)}
 code{font-family:var(--mono)}
 button,input,textarea{font:inherit}
 button{cursor:pointer;color:inherit}
@@ -256,6 +256,7 @@ main.shell{width:100%;padding-top:14px}
 .live-seats strong{font-size:1rem;color:var(--green)}
 .live-url{grid-template-columns:minmax(0,1fr) auto}
 .live-url input{min-width:0;font:500 .8rem var(--mono)}
+#live-ready:disabled{opacity:.65}
 #live-status:has(+ [hidden]):not(:empty){color:var(--accent);font-size:2rem}
 #check-status{font-size:1rem;color:#ffe0a5}
 .answer-suggestions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 13px;color:#e9d5a2;font-size:.87rem}
