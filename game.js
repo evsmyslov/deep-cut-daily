@@ -162,9 +162,7 @@ Object.assign(strings.en, {
   companyHost:"host", companyStandings:"Room standings", companyUnique:"Unique in this room",
   companyStarted:"This expedition has already started.", directCompany:"Open room directly",
   chartTitle:"Points by round", chartHint:"Select a point to open its round below.", chartPrev:"Earlier rounds", chartNext:"Later rounds",
-  recapTitle:"Round review",
-  reviewAnswer:"Suggest this answer", reviewSent:"Saved to the game owner's review queue.", reviewError:"Could not send the suggestion. Try again later.",
-  reviewInvalid:"Enter the answer as a short name or phrase.", reviewBusy:"The review queue is full for now."
+  recapTitle:"Round review"
 });
 Object.assign(strings.ru, {
   pack:"Тематические экспедиции", pickPack:"Выберите экспедицию", packIntro:"Семь вопросов на эту тему.",
@@ -176,9 +174,7 @@ Object.assign(strings.ru, {
   companyHost:"ведущий", companyStandings:"Таблица комнаты", companyUnique:"Уникальный ответ в комнате",
   companyStarted:"Экспедиция в этой комнате уже началась.", directCompany:"Открыть комнату напрямую",
   chartTitle:"Очки по раундам", chartHint:"Выберите точку, чтобы раскрыть её раунд в списке.", chartPrev:"Предыдущие раунды", chartNext:"Следующие раунды",
-  recapTitle:"Разбор раундов",
-  reviewAnswer:"Предложить этот ответ", reviewSent:"Ответ сохранён в очереди владельца игры.", reviewError:"Не удалось отправить. Повторите позже.",
-  reviewInvalid:"Введите ответ коротким названием или фразой.", reviewBusy:"Очередь проверки пока заполнена."
+  recapTitle:"Разбор раундов"
 });
 const get = id => document.getElementById(id);
 const today = () => Math.max(START, Math.floor(Date.now() / DAY));
@@ -316,7 +312,7 @@ function mountWorld() {
 function answerNote(model, answer) {
   if (answer?.id == null) return "";
   const english = model.answerById.get(answer.id)?.en ?? answer.en;
-  return mineAnswerNotes[model.id]?.[english]?.[lang==="ru" ? 1 : 0] ?? "";
+  return mineAnswerNotes[model.id]?.[english]?.[lang==="ru" ? 1 : 0] ?? (lang==="ru" ? answer.noteRu : answer.noteEn) ?? "";
 }
 
 function renderAnswerVerdict(model, answer, fallback, animate = false) {
@@ -479,11 +475,13 @@ function question(draft = "", focus = true) {
     if (Date.now() >= round.deadline) { settle("", null, "timeout"); return; }
     let entry = model.aliases.get(key);
     if (entry) { settle(text, entry, "answer"); return; }
-    if (!model.lookup || (model.id === "weapons" && /^(weapon|fictional weapon|оружие|вымышленное оружие)$/.test(key))) {
+    if (model.id === "weapons" && /^(weapon|fictional weapon|оружие|вымышленное оружие)$/.test(key)) {
       reject("wrongRetry"); return;
     }
+    const checkedAt = Date.now();
     const pending = {text};
     round.pending = pending;
+    clearInterval(questionTimer);
     input.readOnly=true;
     submit.disabled=true;
     get("suggestions").hidden=true;
@@ -492,7 +490,10 @@ function question(draft = "", focus = true) {
     try { entry = (await request("verify", { id:model.id, text, language:lang }, 6500)).answer; }
     catch { failure="lookupRetry"; }
     if (!form.isConnected || round.pending!==pending) return;
-    if (Date.now()>=round.deadline) { settle("",null,"timeout"); return; }
+    round.deadline += Date.now()-checkedAt;
+    round.pending = null;
+    save();
+    questionTimer = setInterval(tick,120);
     if (entry) settle(text,entry,"checked");
     else reject(failure);
   };
@@ -501,7 +502,6 @@ function question(draft = "", focus = true) {
     input.readOnly=false;
     submit.disabled=false;
     status.textContent=words()[message];
-    if (message==="wrongRetry") offerAnswerReview(model,input.value.trim());
     playCue("reject");
     input.focus({preventScroll:true});
     input.select();
@@ -510,7 +510,7 @@ function question(draft = "", focus = true) {
     if (round.feedback) return;
     if (entry && pointsFor(entry)<minimumPoints) { reject("rareRetry"); return; }
     clearInterval(questionTimer);
-    round.answers.push({text, prompt:model.id, id:entry?.id ?? null, tier:entry?.tier ?? -1, en:entry?.en, ru:entry?.ru, reason});
+    round.answers.push({...entry,text,prompt:model.id,id:entry?.id ?? null,tier:entry?.tier ?? -1,reason});
     round.pending = null;
     round.feedback = true;
     save();
@@ -526,7 +526,6 @@ function question(draft = "", focus = true) {
     get("answer-form").hidden = true;
     get("suggestions").hidden = true;
     get("skip").hidden = true;
-    get("review-answer").hidden = true;
     get("check-status").textContent = "";
     get("feedback").hidden = false;
     renderAnswerVerdict(model,answer,answer.reason === "timeout" ? names.timeUp
@@ -856,7 +855,7 @@ function bindRecap(details,root,model,answer,rival) {
   details.ontoggle=async()=>{
     if (!details.open) return;
     render();
-    if (!model.lookup || loading) return;
+      if (loading) return;
     loading=true;
     try {
       verified=(await request("answer-list",{id:model.id})).answers;

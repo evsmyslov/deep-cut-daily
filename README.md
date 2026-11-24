@@ -8,7 +8,7 @@ An English/Russian quiz where specific answers earn points for rarity. The miner
 - Friend duels start when both players press Ready. The same eight questions and timers run on both devices; the first submitted answer limits the other player’s remaining time to ten seconds. Scores are compared after the last question. Older asynchronous room links still work. New invitations open the guest seat directly. Players can also enter the room code from the game menu.
 - After the daily round, community picks are ordered by observed frequency once there are three completed rounds. Scores use fixed rarity tiers.
 
-Some categories verify additional names against Wikidata. Coverage varies by topic. An unrecognized answer can be submitted explicitly for editorial review. Prior versions and their links are kept in `shaft/`, `expedition/`, and `classic/`.
+The game checks answers when they are submitted. Catalog matches are instant. The server checks additional names against Wikidata where available and can ask an answer model for unfamiliar entries. Prior versions and their links are kept in `shaft/`, `expedition/`, and `classic/`.
 
 ## Question bank
 
@@ -21,7 +21,11 @@ New editorial questions live in `theme-questions.js`. Each question has a stable
 3. Include answers that are surprising for a reason. For striped animals, a young zebra shark has stripes, even though adults are spotted. In `answer-notes.js`, add a short original note in both languages under the question ID and its canonical English answer label. Explain which part of the clue it satisfies. The game shows these notes when it reveals the answer and in the round review.
 4. Set initial rarity tiers after checking the answer set. Each question has one +120 answer. After editorial review, add the question to the active calendar and decks. Use counts from completed daily expeditions to review tiers as sufficient data becomes available. Confirm any score changes manually in a new question ID for future editions so old results retain their scores.
 
-The Sites answer service stores proposals in its private `DB.mine_answer_review` table. The project owner or a reviewer with database access can open it through Sites database tools. A row contains the question ID, text, language and submission time. Reviewers match the proposal by question ID and add confirmed aliases or answers to the catalog. Deploy the same question source to the site and the answer service.
+The former manual review queue is retained in the private `DB.mine_answer_review` table. Deploy the same question source to the site and the answer service when activating a new catalog.
+
+### Live answer checks
+
+On the Sites Worker, set either `GROQ_API_KEY` or `OPENAI_API_KEY` as a runtime secret to enable model verification. Optional `AI_ANSWER_MODEL` overrides the provider default. The server sends the question and answer text, caches the verdict, and shows a short explanation in both languages. New answers accepted by the model start at +55, with player frequency displayed separately when there are enough finished daily games. `AI_CHECKS_PER_DAY` controls the number of uncached model checks per UTC day (default 200). The solo timer pauses during verification. Multiplayer keeps its shared clock.
 
 ## Deployment
 

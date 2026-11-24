@@ -68,7 +68,6 @@ function bindSuggestions(model) {
   const field=get("answer");
   const container=get("suggestions");
   const render=()=>{
-    get("review-answer").hidden=true;
     const items=field.disabled ? [] : suggestAnswers(model,field.value);
     container.replaceChildren();
     container.hidden=!items.length;
@@ -88,22 +87,4 @@ function bindSuggestions(model) {
   };
   field.addEventListener("input",render);
   render();
-}
-function offerAnswerReview(model,text) {
-  const button=get("review-answer");
-  if (!button || !text || model.aliases.has(answerKey(text))) return;
-  button.hidden=false;
-  button.disabled=false;
-  button.onclick=async()=>{
-    const status=get("check-status");
-    const input=get("answer");
-    button.disabled=true;
-    let notice="reviewSent";
-    try { await request("answer-review",{id:model.id,text,language:lang}); }
-    catch(error) { notice=["reviewBusy","reviewInvalid"].includes(error.code) ? error.code : "reviewError"; }
-    if (!button.isConnected || button.hidden || input.value.trim()!==text) return;
-    if (notice==="reviewSent") button.hidden=true;
-    else button.disabled=false;
-    status.textContent=words()[notice];
-  };
 }

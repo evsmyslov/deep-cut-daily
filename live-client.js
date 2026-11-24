@@ -236,7 +236,6 @@ async function liveAction(view,action,values) {
       if (action==="submit" && view.state?.phase==="question" && !view.state.locked && !get("answer").disabled) {
         get("answer").focus({preventScroll:true});
         if (view.feedback) get("answer").select();
-        if (view.feedback?.message==="wrongRetry") offerAnswerReview(mineQuestion(view.state.prompt),get("answer").value.trim());
       }
     }
   }
