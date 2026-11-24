@@ -1154,23 +1154,26 @@ const everydayGroups = [
   ["films","video-games","board-games","space-trip-films","animated-dogs","winged-characters","animation","fictional-places","fictional-vehicles","fictional-robots","myth","racket-sports","instruments","blown-instruments","plucked-strings","card-games","school-shows","weapons"]
 ];
 mineDecks[6]=everydayGroups.flat();
-const REPLAY_DAY = MINE_DAY;
-const replayQuestions = {
-  2:["long-films","trees","constellations","fictional-places","breads","animation","water-machines","herbs"],
-  3:["carry-light","citrus","swimming-birds","zippers","elements","blown-instruments","animated-dogs","potato-dishes"]
-};
+const launchRevisions = [
+  ["long-films","trees","constellations","fictional-places","breads","animation","water-machines","herbs"],
+  ["carry-light","citrus","swimming-birds","zippers","elements","blown-instruments","animated-dogs","potato-dishes"]
+];
 const [upcoming,repeatAfterLaunch] = [[],[]];
 for (const id of interleaveQuestionGroups(everydayGroups,20261124)) {
-  (replayQuestions[3].includes(id) ? repeatAfterLaunch : upcoming).push(id);
+  (launchRevisions[1].includes(id) ? repeatAfterLaunch : upcoming).push(id);
 }
 mineCalendars.push({from:MINE_DAY+1,order:[...upcoming,...repeatAfterLaunch]});
-const latestEditionRevision = day => day === REPLAY_DAY ? 3 : 1;
+for (const card of dailySpecialCards) add(...card);
+const dailyRevisions = new Map([
+  [MINE_DAY,launchRevisions],
+  [MINE_DAY+1,[dailySpecialCards.map(([id])=>id)]]
+]);
+const latestEditionRevision = day => (dailyRevisions.get(day)?.length ?? 0)+1;
 function validDailyRevision(day,revision) {
-  return revision===1 || (day===REPLAY_DAY && Number.isInteger(revision) && Object.hasOwn(replayQuestions,revision));
+  return Number.isInteger(revision) && revision>=1 && revision<=latestEditionRevision(day);
 }
 function dailyIds(day,revision=1) {
-  if (day===REPLAY_DAY && replayQuestions[revision]) return replayQuestions[revision];
-  return mineIds(day,"daily");
+  return dailyRevisions.get(day)?.[revision-2] ?? mineIds(day,"daily");
 }
 
 for (const card of themeCards) add(...card);

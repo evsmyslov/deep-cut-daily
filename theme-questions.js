@@ -624,3 +624,214 @@ const rotationCards = [
 3;Sachsenring;Заксенринг
 `]
 ];
+
+const dailySpecialCards = [
+["daily-heist-films","Name a film about a heist.","Назовите фильм об ограблении.",`
+4;Ocean's Eleven|Ocean's 11;Одиннадцать друзей Оушена|11 друзей Оушена
+4;Now You See Me;Иллюзия обмана
+0;Inside Man;Не пойман — не вор
+0;Heat;Схватка
+0;Baby Driver;Малыш на драйве
+0;The Italian Job;Ограбление по-итальянски
+0;Reservoir Dogs;Бешеные псы
+0;Ocean's Eight|Ocean's 8;Восемь подруг Оушена|8 подруг Оушена
+0;Inception;Начало
+1;The Town;Город воров
+1;Logan Lucky;Удача Логана
+1;Widows;Вдовы
+1;The Bank Job;Ограбление на Бейкер-стрит
+1;The Bad Guys;Плохие парни
+1;Fast Five|Fast and Furious 5;Форсаж 5
+1;Dog Day Afternoon;Собачий полдень
+1;Army of the Dead;Армия мертвецов
+2;Rififi;Рифифи|Мужские разборки
+2;The Killing|Kubrick's The Killing;Убийство Кубрика|Убийство
+2;The Asphalt Jungle;Асфальтовые джунгли
+2;The Lavender Hill Mob;Банда с Лавендер-Хилл
+2;Le Cercle Rouge|The Red Circle;Красный круг
+3;Topkapi;Топкапи
+`],
+["daily-metropolitan-capitals","Name a capital city with an underground metro.","Назовите столицу с подземным метро.",`
+4;London;Лондон
+4;Paris;Париж
+4;Moscow;Москва
+0;Tokyo;Токио
+0;Berlin;Берлин
+0;Madrid;Мадрид
+0;Rome;Рим
+0;Beijing;Пекин
+0;Seoul;Сеул
+0;Washington, D.C.|Washington DC|Washington;Вашингтон
+1;Vienna;Вена
+1;Prague;Прага
+1;Stockholm;Стокгольм
+1;Athens;Афины
+1;Cairo;Каир
+1;New Delhi|Delhi;Нью-Дели|Дели
+1;Mexico City;Мехико
+1;Buenos Aires;Буэнос-Айрес
+1;Budapest;Будапешт
+1;Lisbon;Лиссабон
+1;Helsinki;Хельсинки
+1;Copenhagen;Копенгаген
+1;Warsaw;Варшава
+2;Kyiv|Kiev;Киев
+2;Tashkent;Ташкент
+2;Minsk;Минск
+2;Baku;Баку
+2;Tbilisi;Тбилиси
+2;Sofia;София
+2;Bucharest;Бухарест
+2;Tehran;Тегеран
+2;Santiago;Сантьяго
+3;Yerevan;Ереван
+`],
+["daily-cooking-anime","Name an anime where cooking is a major part of the story.","Назовите аниме, в котором готовка — важная часть сюжета.",`
+4;Food Wars!|Food Wars|Shokugeki no Soma|Shokugeki no Souma;Повар-боец Сома|Повар боец Сома
+4;Delicious in Dungeon|Dungeon Meshi;Подземелье вкусностей
+0;Campfire Cooking in Another World with My Absurd Skill|Campfire Cooking in Another World|Tondemo Skill de Isekai Hourou Meshi;Кулинарные скитания в параллельном мире
+0;Restaurant to Another World|Isekai Shokudou|Isekai Shokudo;Кафе из другого мира|Ресторан из другого мира
+0;Yakitate!! Japan|Yakitate Japan;Японская свежая выпечка
+0;Sweetness & Lightning|Amaama to Inazuma;Дуэт и вспышка молнии
+1;Isekai Izakaya|Isekai Izakaya Nobu|Isekai Izakaya Koto Aitheria no Izakaya Nobu;Таверна из другого мира|Исекай Идзакая Нобу|Нобу — закусочная из другого мира
+1;Today's Menu for the Emiya Family|Emiya-san Chi no Kyou no Gohan|Emiya Family;Сегодняшнее меню для Эмии|Сегодняшнее меню семьи Эмия
+1;Cooking Master Boy|Chuuka Ichiban|Chuka Ichiban;Мастер кулинарии
+1;Yumeiro Patissiere|Yume-iro Pâtissière|Yumeiro Pâtissière;Великолепный кондитер
+1;Gourmet Girl Graffiti|Koufuku Graffiti;Граффити счастливой кухни
+2;Ristorante Paradiso;Ристоранте Парадизо|Ресторан Парадизо
+2;JK Meshi!|JK Meshi;Готовка школьниц
+2;Piace: Watashi no Italian|Piacevole|Piace my Italian;Пьяче: Моя итальянская кухня
+2;Fighting Foodons|Kakutou Ryouri Densetsu Bistro Recipe;Боевые блюда|Файтинг Фудонс
+2;Cooking Papa;Папа-повар|Папа повар
+3;Mister Ajikko|Mr. Ajikko;Мистер Аджикко
+`],
+["daily-rain-titles","Name a song that mentions rain in its English title.","Назовите песню, в английском названии которой упоминается дождь.",`
+4;Purple Rain|Purple Rain Prince;Purple Rain|Пёрпл Рейн
+4;November Rain|November Rain Guns N Roses;November Rain|Новембер Рейн
+4;Set Fire to the Rain|Set Fire to the Rain Adele;Set Fire to the Rain
+0;It's Raining Men;It's Raining Men
+0;A Hard Rain's a-Gonna Fall|A Hard Rains a Gonna Fall;A Hard Rain's a-Gonna Fall
+0;Have You Ever Seen the Rain?|Have You Ever Seen the Rain;Have You Ever Seen the Rain?|Have You Ever Seen the Rain
+0;Singin' in the Rain|Singing in the Rain;Singin' in the Rain|Поющие под дождём
+0;Rain on Me|Rain on Me Lady Gaga|Rain on Me Ashanti;Rain on Me
+0;It Will Rain|It Will Rain Bruno Mars;It Will Rain
+0;Here Comes the Rain Again|Here Comes the Rain Again Eurythmics;Here Comes the Rain Again
+1;Who'll Stop the Rain|Who Will Stop the Rain;Who'll Stop the Rain
+1;Blame It on the Rain;Blame It on the Rain
+1;Rain|Rain The Beatles|Rain Madonna;Rain|Дождь The Beatles|Дождь Madonna
+1;Kiss the Rain;Kiss the Rain
+1;Fire and Rain;Fire and Rain
+1;Candy Rain;Candy Rain
+1;Laughter in the Rain;Laughter in the Rain
+2;Mandolin Rain;Mandolin Rain
+2;Rhythm of the Rain;Rhythm of the Rain
+2;I Wish It Would Rain Down;I Wish It Would Rain Down
+2;Box of Rain;Box of Rain
+2;Rain King;Rain King
+2;Only Happy When It Rains;Only Happy When It Rains
+2;Rainy Day, Dream Away;Rainy Day, Dream Away
+3;Cold Rain and Snow|Rain and Snow;Cold Rain and Snow
+`],
+["daily-fishing-games","Name a video game where the player can fish.","Назовите видеоигру, в которой можно ловить рыбу.",`
+4;Minecraft;Minecraft|Майнкрафт
+4;Stardew Valley|Stardew;Stardew Valley|Стардью Вэлли
+0;Animal Crossing: New Horizons|Animal Crossing New Horizons|ACNH;Animal Crossing: New Horizons
+0;Terraria;Terraria|Террария
+0;Red Dead Redemption 2|RDR2|RDR 2;Red Dead Redemption 2
+0;Genshin Impact|Genshin;Genshin Impact|Геншин Импакт|Геншин
+0;Sea of Thieves|SOT;Sea of Thieves
+0;The Legend of Zelda: Ocarina of Time|Ocarina of Time|Zelda Ocarina of Time;The Legend of Zelda: Ocarina of Time|Легенда о Зельде: Окарина времени
+1;Far Cry 5|FC5;Far Cry 5
+1;Pokémon Red and Blue|Pokemon Red|Pokemon Blue|Pokémon Red and Pokémon Blue;Pokémon Red and Blue|Покемон Ред|Покемон Блю
+1;Final Fantasy XV|Final Fantasy 15|FFXV;Final Fantasy XV|Последняя фантазия 15
+1;World of Warcraft|WoW;World of Warcraft|Ворлд оф Варкрафт
+1;Final Fantasy XIV|Final Fantasy 14|FFXIV;Final Fantasy XIV|Последняя фантазия 14
+1;Dredge;Dredge|Дредж
+1;Fishing Planet;Fishing Planet
+1;Dave the Diver;Dave the Diver|Дейв-дайвер
+1;Fortnite;Fortnite|Фортнайт
+2;Hades;Hades|Аид
+2;NieR: Automata|Nier Automata;NieR: Automata|Нир Автомата
+2;Spiritfarer;Spiritfarer|Спиритфарер
+2;The Legend of Zelda: Twilight Princess|Twilight Princess;The Legend of Zelda: Twilight Princess|Сумеречная принцесса
+2;Rune Factory 4|RF4;Rune Factory 4
+2;Monster Hunter: World|Monster Hunter World|MHW;Monster Hunter: World
+3;Legend of the River King|River King;Legend of the River King
+`],
+["daily-seventies-guitarists","Name a guitarist who played rock in the 1970s.","Назовите гитариста, игравшего рок в 1970-х.",`
+4;Jimmy Page|Page;Джимми Пейдж|Пейдж
+4;Brian May;Брайан Мэй
+4;David Gilmour|Dave Gilmour;Дэвид Гилмор
+0;Ritchie Blackmore;Ричи Блэкмор
+0;Tony Iommi;Тони Айомми|Тони Айоми
+0;Eddie Van Halen;Эдди Ван Хален
+0;Angus Young;Ангус Янг
+0;Eric Clapton;Эрик Клэптон
+0;Keith Richards;Кит Ричардс
+0;Mark Knopfler;Марк Нопфлер
+0;Carlos Santana;Карлос Сантана
+0;Peter Frampton;Питер Фрэмптон
+1;Mick Ronson;Мик Ронсон
+1;Steve Hackett;Стив Хакетт
+1;Alex Lifeson;Алекс Лайфсон
+1;Uli Jon Roth|Ulrich Roth;Ули Йон Рот|Ульрих Рот
+1;Rory Gallagher;Рори Галлахер
+1;Duane Allman;Дуэйн Оллмен|Дуэйн Оллман
+1;Jeff Beck;Джефф Бек
+1;Pete Townshend;Пит Таунсенд|Пит Тауншенд
+1;Steve Howe;Стив Хау
+2;Tom Verlaine;Том Верлен|Том Верлайн
+2;Robert Fripp;Роберт Фрипп
+2;Hugh Cornwell;Хью Корнуэлл
+2;Mick Taylor;Мик Тейлор
+2;Michael Schenker;Михаэль Шенкер|Майкл Шенкер
+2;John McLaughlin;Джон Маклафлин|Джон Маклоглин
+2;Wilko Johnson;Уилко Джонсон
+3;Mick Box;Мик Бокс
+`],
+["daily-dipping-foods","Name a food people often dip in sauce.","Назовите еду, которую часто макают в соус.",`
+4;French fries|fries|chips;картошка фри|картофель фри|фри
+4;nuggets|chicken nuggets;наггетсы|нагетсы
+0;spring rolls|spring roll;спринг-роллы|спринг ролл
+0;pelmeni|Russian dumplings|dumplings;пельмени
+0;nachos|tortilla chips;начос|кукурузные чипсы
+0;sushi;суши
+0;breadsticks|grissini;хлебные палочки|гриссини
+0;tempura;тэмпура|темпура
+0;chicken wings|wings;куриные крылышки|крылышки
+1;samosa|samosas;самоса|самосы
+1;onion rings;луковые кольца
+1;churros;чуррос
+1;falafel;фалафель
+1;mozzarella sticks|cheese sticks;палочки моцареллы|сырные палочки
+1;fried calamari|calamari rings;кольца кальмара|жареные кальмары
+1;gyoza|potstickers;гёдза|гедза
+1;pretzel|pretzels;крендель|брецель
+2;saté|satay;сатай|сате
+2;fish fingers|fish sticks;рыбные палочки
+2;fried shrimp;жареные креветки
+2;apple slices;дольки яблока
+2;crudités|crudites;крудите|овощные палочки
+2;artichoke leaves;листья артишока
+3;Fried pickles|fried pickle chips;жареные солёные огурцы|жареные огурцы в кляре
+`],
+["daily-without-hands","Name something you can open and close without using your hands.","Назовите то, что можно открывать и закрывать без рук.",`
+4;mouth|lips;рот|губы
+4;eyes|eyelids|eye;глаза|веко|веки|глаз
+0;automatic door|door;автоматическая дверь|дверь
+0;elevator door|lift door;дверь лифта|лифт
+0;remote-controlled garage door|smart garage door;автоматические гаражные ворота|ворота гаража
+0;foot-pedal bin|pedal bin|garbage can with a pedal;мусорное ведро с педалью|педальное ведро
+1;automatic window|electric window|window;автоматическое окно|окно с приводом|окно
+1;motion-sensor trash can|sensor bin;мусорное ведро с датчиком|сенсорное ведро
+1;voice-controlled app|an app|app;приложение с голосовым управлением|приложение
+1;automatic curtains|motorized curtains;автоматические шторы|шторы с электроприводом
+1;automatic blinds|motorized blinds;автоматические жалюзи|жалюзи с электроприводом
+1;hands-free car trunk|kick-sensor trunk;багажник с датчиком ноги|автоматический багажник
+2;bivalve shell|clam shell|oyster shell;раковина моллюска|раковина устрицы|раковина
+2;Venus flytrap|flytrap;венерина мухоловка|мухоловка
+2;flower|flower bud;цветок|бутон
+2;automatic greenhouse vent;автоматическая форточка теплицы|форточка теплицы
+3;Oxalis leaves|wood sorrel leaves;листья кислицы|кислица
+`]
+];

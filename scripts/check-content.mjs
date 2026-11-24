@@ -5,8 +5,8 @@ import {runInNewContext} from "node:vm";
 const scripts = ["catalog-data.js","question-bank.js","everyday-questions.js","theme-questions.js","open-questions.js","answer-notes.js"];
 const source = scripts.map(file => readFileSync(new URL(`../${file}`,import.meta.url),"utf8")).join("\n");
 const {cards,decks,packs,models,retired} = runInNewContext(source + `
-  ({cards:[...themeCards,...rotationCards], decks:[mineDecks[6],mineDecks[MINE_DECK_VERSION]], packs:minePacks,
-    retired:Object.keys(rotationReplacements), models:Object.fromEntries([...new Set([...themeCards.map(([id])=>id),
+  ({cards:[...themeCards,...rotationCards,...dailySpecialCards], decks:[mineDecks[6],mineDecks[MINE_DECK_VERSION]], packs:minePacks,
+    retired:Object.keys(rotationReplacements), models:Object.fromEntries([...new Set([...themeCards.map(([id])=>id),...dailySpecialCards.map(([id])=>id),
       ...mineDecks[MINE_DECK_VERSION],...Object.values(minePacks).flatMap(pack=>pack.ids)])]
       .map(id=>[id,mineQuestion(id)]))})
 `);
@@ -24,11 +24,18 @@ for (const id of ids) {
   }
 }
 runInNewContext(source + `
-  for (const [id] of [...themeCards,...rotationCards]) {
+  for (const [id] of [...themeCards,...rotationCards,...dailySpecialCards]) {
     const model=mineQuestion(id);
     for (const [i,[tier,en,ru]] of catalog[id][2].entries()) {
       for (const name of [...en.split("|"),...ru.split("|")]) {
         if (model.aliases.get(answerKey(name))?.id!==i) throw new Error(id+" has an ambiguous alias: "+name);
+      }
+    }
+  }
+  for (const [day,revisions] of dailyRevisions) {
+    for (const [index,ids] of revisions.entries()) {
+      if (!validDailyRevision(day,index+2) || ids.length!==8 || new Set(ids).size!==8 || ids.some(id=>!hasMineQuestion(id))) {
+        throw new Error("Invalid special daily revision for "+day);
       }
     }
   }
@@ -57,7 +64,7 @@ const noteCount=runInNewContext(source + `
       }
     }
   }
-  for (const id of mineDecks[MINE_DECK_VERSION]) {
+  for (const id of [...mineDecks[MINE_DECK_VERSION],...dailySpecialCards.map(([id])=>id)]) {
     const best=mineQuestion(id).entries.find(entry=>entry.tier===3);
     if (!mineAnswerNotes[id]?.[best?.en]) throw new Error(id+" is missing a +120 answer note");
   }

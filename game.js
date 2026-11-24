@@ -1046,13 +1046,14 @@ function launch() {
       };
       list.append(button);
     }
-    for (let day = today(); day >= Math.max(START, today() - 14); day--) {
-      const label=day===today() ? `${displayDate(day)} · ${ui.today}` : displayDate(day);
-      addEdition(day,latestEditionRevision(day),label);
-    }
-    if (today()-REPLAY_DAY<=14) {
-      for (const [revision,label] of [[2,ui.secondEdition],[1,ui.originalEdition]]) {
-        addEdition(REPLAY_DAY,revision,`${displayDate(REPLAY_DAY)} · ${label}`);
+    const currentDay=today();
+    const previousLabels=[ui.originalEdition,ui.secondEdition];
+    for (let day = currentDay; day >= Math.max(START,currentDay-14); day--) {
+      const date=displayDate(day);
+      const latest=latestEditionRevision(day);
+      addEdition(day,latest,day===currentDay ? `${date} · ${ui.today}` : date);
+      for (let revision=latest-1;revision>=1;revision--) {
+        addEdition(day,revision,`${date} · ${previousLabels[revision-1] ?? `#${revision}`}`);
       }
     }
     const classic = element("a", ui.classic);

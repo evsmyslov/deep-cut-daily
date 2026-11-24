@@ -286,3 +286,35 @@ const mineAnswerNotes = {
     "Škoda":["The Czech name uses Š, the marked form of S explicitly allowed in the question.","В чешском названии стоит Š, вариант S с гачеком. Условие включает обе буквы."]
   }
 };
+
+Object.assign(mineAnswerNotes,{
+  "daily-heist-films":{
+    "Topkapi":["A crew sets out to steal a jeweled dagger from Istanbul's Topkapı Palace.","Команда пытается похитить драгоценный кинжал из дворца Топкапы в Стамбуле."],
+    "The Bad Guys":["The animal gang specializes in elaborate robberies.","Команда зверей промышляет хитрыми ограблениями."]
+  },
+  "daily-metropolitan-capitals":{
+    "Yerevan":["The Armenian capital's first metro line opened in 1981.","Первая линия метро в столице Армении открылась в 1981 году."]
+  },
+  "daily-cooking-anime":{
+    "Mister Ajikko":["The young cook Yōichi takes part in cooking contests.","Юный повар Ёити участвует в кулинарных поединках."],
+    "Delicious in Dungeon":["The adventurers make meals out of the monsters they encounter.","Герои готовят блюда из монстров, встреченных в подземелье."]
+  },
+  "daily-rain-titles":{
+    "Cold Rain and Snow":["The Grateful Dead recorded a version of this folk song for their debut album.","Grateful Dead записали свою версию этой народной песни для дебютного альбома."]
+  },
+  "daily-fishing-games":{
+    "Legend of the River King":["Catching fish is the main activity in this Game Boy role-playing game.","Ловля рыбы — основное занятие в этой ролевой игре для Game Boy."],
+    "Hades":["Zagreus can catch fish at spots he finds during his escape attempts.","Загрей может ловить рыбу в водоёмах, которые встречает на пути во время побегов."]
+  },
+  "daily-seventies-guitarists":{
+    "Mick Box":["He played guitar on Uriah Heep's classic 1970s albums, including Demons and Wizards.","Он играл на гитаре на классических альбомах Uriah Heep 1970-х, включая Demons and Wizards."]
+  },
+  "daily-dipping-foods":{
+    "Fried pickles":["The breaded slices are often served with ranch dressing for dipping.","Обжаренные ломтики огурцов в панировке часто подают с соусом ранч."]
+  },
+  "daily-without-hands":{
+    "Oxalis leaves":["Oxalis leaflets fold together in the dark and spread again in the light.","Листочки кислицы складываются в темноте и снова раскрываются на свету."],
+    "mouth":["It opens and closes when you talk.","Рот открывается и закрывается, когда вы говорите."],
+    "Venus flytrap":["Its trap closes when its trigger hairs are touched and can reopen later.","Ловушка захлопывается при прикосновении к чувствительным волоскам, а затем может снова раскрыться."]
+  }
+});
