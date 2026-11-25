@@ -16,13 +16,13 @@
 <script defer src="answer-expansions.js?v=20261125b"></script>
 <script defer src="open-questions.js?v=expedition-scores"></script>
 <script defer src="answer-notes.js?v=expedition-scores"></script>
-<script defer src="suggestions.js?v=expanded-answers"></script>
-<script defer src="live-client.js?v=live-answer-check"></script>
+<script defer src="suggestions.js?v=submit-correction"></script>
+<script defer src="live-client.js?v=submit-correction"></script>
 <script defer src="company.js?v=round-chart"></script>
 <script defer src="audio.js?v=expedition-scores"></script>
 <script defer src="friends.js?v=round-chart"></script>
 <script defer src="mine-scene.js?v=round-chart"></script>
-<script defer src="game.js?v=expedition-scores"></script>
+<script defer src="game.js?v=submit-correction"></script>
 </head>
 <body>
 <header class="top"><div class="shell top-inner">
@@ -82,7 +82,7 @@
     <p class="category label" id="category"></p>
     <h1 id="prompt"></h1>
     <form id="answer-form"><label class="sr-only" for="answer" data-text="answerLabel"></label><div class="timer" id="timer" aria-hidden="true"></div><input id="answer" maxlength="100" autocomplete="off" required><button class="primary" data-text="submit"></button></form>
-    <div class="answer-suggestions" id="suggestions" hidden></div>
+    <div class="answer-suggestions" id="suggestions" role="group" hidden></div>
     <div class="actions question-actions"><button class="quiet" id="skip" data-text="skip"></button><button class="quiet" id="finish-endless" data-text="stopRun" hidden></button><span id="check-status" role="status"></span><a class="direct-duel" id="match-direct" data-text="directDuel" target="_blank" rel="noopener noreferrer" hidden></a></div>
     <div id="feedback" hidden><p id="verdict" role="status"></p><p id="answer-note" class="answer-note" hidden></p><p id="rival-verdict" class="rival-answer" hidden></p><p id="sample"></p><p class="arrival" id="arrival"></p><div id="company-board" hidden></div><button class="primary" id="next"></button></div>
   </section>

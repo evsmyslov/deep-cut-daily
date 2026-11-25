@@ -360,11 +360,6 @@ function paintLive(view,force=false) {
     get("answer").placeholder=ui.placeholder;
     get("answer").value=draft;
     get("skip").onclick=()=>submitLive(view,"");
-    get("answer-form").onsubmit=event=>{
-      event.preventDefault();
-      const text=get("answer").value.trim();
-      if (answerKey(text)) submitLive(view,text);
-    };
     const locked=state.locked || phase==="reveal";
     get("answer-form").hidden=locked;
     get("skip").hidden=locked;
@@ -379,7 +374,17 @@ function paintLive(view,force=false) {
       get("rival-verdict").hidden=!state.rivalPick;
       if (view.route.company) paintCompanyBoard(get("company-board"),state.standings,"reveal");
     } else if (!locked) {
-      bindSuggestions(question);
+      const resolveAnswer=bindAnswerCorrection(question);
+      get("answer-form").onsubmit=event=>{
+        event.preventDefault();
+        if (view.busy || Date.now()+view.offset>=view.state.deadline) return;
+        const text=get("answer").value.trim();
+        if (!answerKey(text)) return;
+        view.feedback=null;
+        updateLiveNotice(view);
+        const resolved=resolveAnswer(text);
+        if (resolved) submitLive(view,resolved.text);
+      };
       get("answer").addEventListener("input",()=>{
         view.feedback=null;
         updateLiveNotice(view);

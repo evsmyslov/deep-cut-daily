@@ -1,4 +1,4 @@
-// Score only submitted answers. Suggestions are optional spelling changes.
+// Match spelling only when an answer is submitted.
 function spellingDistance(left,right,limit) {
   if (Math.abs(left.length-right.length)>limit) return limit+1;
   let row=Array.from({length:right.length+1},(_,index)=>index);
@@ -52,11 +52,12 @@ function indexSuggestions(model) {
 }
 function suggestAnswers(model,value) {
   const key=answerKey(value);
-  if (model.aliases.has(key)) return [];
-  const retyped=model.aliases.get(answerKey(alternateLayout(value)));
-  if (retyped && key.length>=3) return [retyped];
+  if (model.aliases.has(key) || model.inactiveKeys?.has(key)) return [];
+  const retyped=alternateLayout(value);
+  const layoutMatch=model.aliases.get(answerKey(retyped));
+  if (layoutMatch && key.length>=3) return [{entry:layoutMatch,text:retyped}];
   if (model.id==="long-films" && ["lotr","l o t r","lord of the rings","the lord of the rings","властелин колец","вк"].includes(key)) {
-    return model.entries.slice(0,3);
+    return model.entries.slice(0,3).map(entry=>({entry,text:entry.en}));
   }
   if (key.length<4) return [];
   const limit=key.length<8 ? 1 : key.length<16 ? 2 : 3;
@@ -69,7 +70,7 @@ function suggestAnswers(model,value) {
   const record=({alias,entry,digits:aliasDigits},distance)=>{
     if (distance>limit || (digits && digits!==aliasDigits)) return;
     const rank=distance+Number(alias[0]!==key[0])*.22+Math.abs(alias.length-key.length)*.04;
-    if (rank<(candidates.get(entry)??Infinity)) candidates.set(entry,rank);
+    if (rank<(candidates.get(entry)?.rank??Infinity)) candidates.set(entry,{entry,text:alias,rank});
   };
   for (const item of index.compact.get(compact) ?? []) record(item,.15);
   if (sound.length>=4) {
@@ -86,31 +87,39 @@ function suggestAnswers(model,value) {
       }
     }
   }
-  const ranked=[...candidates].sort((a,b)=>a[1]-b[1]);
-  const best=ranked[0]?.[1];
-  return ranked.filter(([,rank])=>rank<=best+.35).slice(0,3).map(([entry])=>entry);
+  const ranked=[...candidates.values()].sort((a,b)=>a.rank-b.rank);
+  const best=ranked[0]?.rank;
+  return ranked.filter(({rank})=>rank<=best+.35).slice(0,3);
 }
-function bindSuggestions(model) {
+function bindAnswerCorrection(model) {
   const field=get("answer");
+  const form=get("answer-form");
   const container=get("suggestions");
-  const render=()=>{
-    const items=field.disabled ? [] : suggestAnswers(model,field.value);
+  const clear=()=>{
     container.replaceChildren();
-    container.hidden=!items.length;
-    if (!items.length) return;
+    container.hidden=true;
+  };
+  field.addEventListener("input",clear);
+  return text=>{
+    clear();
+    const entry=model.aliases.get(answerKey(text));
+    if (entry) return {entry,text};
+    const items=suggestAnswers(model,text);
+    if (items.length<2) return items[0] ?? {text};
+    container.setAttribute("aria-label",words().suggestion);
+    container.hidden=false;
     container.append(element("span",words().suggestion));
-    items.forEach(entry=>{
+    for (const {entry,text:choiceText} of items) {
       const choice=element("button",entry[lang]);
       choice.type="button";
       choice.className="quiet";
       choice.onclick=()=>{
-        field.value=entry[lang];
-        render();
-        field.focus({preventScroll:true});
+        field.value=choiceText;
+        form.requestSubmit();
       };
       container.append(choice);
-    });
+    }
+    container.querySelector("button").focus({preventScroll:true});
+    return null;
   };
-  field.addEventListener("input",render);
-  render();
 }

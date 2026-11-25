@@ -101,7 +101,7 @@ Object.assign(strings.en, {
   getReady:"Get ready", answerLocked:"Answer locked. Waiting for your friend.", rush:"Your friend answered. You have up to 10 seconds.",
   autoNext:"Next question starts automatically.",
   roomExpired:"This invite has expired. Create a new duel.", roomFull:"This room already has two players.",
-  suggestion:"Did you mean?", joinCode:"Join by code", roomCode:"Room code", badCode:"Enter the six-character room code.", originalEdition:"Original edition", secondEdition:"Second edition",
+  suggestion:"Which answer did you mean?", joinCode:"Join by code", roomCode:"Room code", badCode:"Enter the six-character room code.", originalEdition:"Original edition", secondEdition:"Second edition",
   createRoom:"Create a room", retryLive:"Retry connection", duelMenu:"Duel menu",
   wrongRetry:"That answer doesn’t fit. Try again.", lookupRetry:"Answer check unavailable. Try again or enter another answer.",
   retryRule:"If an answer doesn’t fit, you can try again until time runs out.",
@@ -131,7 +131,7 @@ Object.assign(strings.ru, {
   getReady:"Приготовьтесь", answerLocked:"Ответ принят. Ждём друга.", rush:"Друг ответил. У вас до 10 секунд.",
   autoNext:"Следующий вопрос начнётся автоматически.",
   roomExpired:"Срок действия ссылки истёк. Создайте новую дуэль.", roomFull:"В этой комнате уже два игрока.",
-  suggestion:"Имели в виду?", joinCode:"Войти по коду", roomCode:"Код комнаты", badCode:"Введите код комнаты из шести символов.", originalEdition:"Первый выпуск", secondEdition:"Второй выпуск",
+  suggestion:"Какой ответ вы имели в виду?", joinCode:"Войти по коду", roomCode:"Код комнаты", badCode:"Введите код комнаты из шести символов.", originalEdition:"Первый выпуск", secondEdition:"Второй выпуск",
   createRoom:"Создать комнату", retryLive:"Повторить подключение", duelMenu:"Меню дуэли",
   wrongRetry:"Ответ не подходит. Попробуйте ещё раз.", lookupRetry:"Проверка недоступна. Повторите попытку или введите другой ответ.",
   retryRule:"Если ответ не подходит, можно попробовать снова, пока есть время.",
@@ -471,7 +471,7 @@ function question(draft = "", focus = true) {
   const form=get("answer-form");
   const submit=form.querySelector("button");
   const status=get("check-status");
-  bindSuggestions(model);
+  const resolveAnswer=bindAnswerCorrection(model);
   input.addEventListener("input", () => { status.textContent = ""; });
   get("finish-endless").hidden = route.mode !== "endless";
   get("finish-endless").onclick = complete;
@@ -496,11 +496,13 @@ function question(draft = "", focus = true) {
     const key = answerKey(text);
     if (!key || round.feedback || round.pending) return;
     if (Date.now() >= round.deadline) { settle("", null, "timeout"); return; }
-    let entry = model.aliases.get(key);
-    if (entry) { settle(text, entry, "answer"); return; }
-    if (model.id === "weapons" && /^(weapon|fictional weapon|оружие|вымышленное оружие)$/.test(key)) {
+    if (model.id === "weapons" && /^(weapon|fictional weapon|оружие|вымышленное оружие)$/.test(key) && !model.aliases.has(key)) {
       reject("wrongRetry"); return;
     }
+    status.textContent="";
+    const resolved=resolveAnswer(text);
+    if (!resolved) return;
+    if (resolved.entry) { settle(text,resolved.entry,"answer"); return; }
     const checkedAt = Date.now();
     const pending = {text};
     round.pending = pending;
@@ -510,6 +512,7 @@ function question(draft = "", focus = true) {
     get("suggestions").hidden=true;
     status.textContent=words().checking;
     let failure="wrongRetry";
+    let entry;
     try { entry = (await request("verify", { id:model.id, text, language:lang }, 6500)).answer; }
     catch { failure="lookupRetry"; }
     if (!form.isConnected || round.pending!==pending) return;
