@@ -54,6 +54,7 @@ runInNewContext(source + `
     for (const [i,[tier,en,ru]] of (expansion.rows ?? []).entries()) {
       const entry=model.answerById.get(base+i);
       if (entry.tier!==tier) throw new Error(id+" changed tier for "+en);
+      if (expansion.inactive?.includes(base+i)) continue;
       for (const name of [...en.split("|"),...ru.split("|")]) {
         if (name && model.aliases.get(answerKey(name))!==entry) throw new Error(id+" has an ambiguous addition: "+name);
       }
@@ -72,11 +73,17 @@ runInNewContext(source + `
     ["capitals","Bandar Seri Begawan","Бандар-Сери-Бегаван"],
     ["constellations","Puppis","Корма"],
     ["rivers","Douro","Дору"],
-    ["films","Titanic (1997)","Титаник"]
+    ["films","Titanic (1997)","Титаник"],
+    ["long-films","Doctor Zhivago (1965)","Доктор Живаго"],
+    ["long-films","Kingdom of Heaven (Director’s Cut)","Царство небесное (режиссёрская версия)"]
   ]) {
     const {aliases}=mineQuestion(id);
     const answer=aliases.get(answerKey(english));
     if (!answer || aliases.get(answerKey(russian))!==answer) throw new Error(id+" has separate language variants: "+english);
+  }
+  const longMovies=mineQuestion("long-films");
+  if (longMovies.aliases.has("avengers infinity war") || longMovies.aliases.has("kingdom of heaven")) {
+    throw new Error("A theatrical cut below the stated runtime is still eligible");
   }
 `);
 for (const [id,pack] of Object.entries(packs)) {
