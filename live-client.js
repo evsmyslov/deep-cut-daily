@@ -261,7 +261,7 @@ function updateLiveNotice(view) {
   if (view.error) {
     message=duelError(view.error);
   } else if (view.state?.phase==="question") {
-    message=view.state.locked ? words().answerLocked
+    message=view.state.locked ? ""
       : view.busy ? words().checking
       : view.feedback?.index===view.state.index ? words()[view.feedback.message]
       : view.state.rushed ? words().rush : "";
@@ -373,6 +373,8 @@ function paintLive(view,force=false) {
       get("rival-verdict").textContent=duelAnswerText(state.rivalPick);
       get("rival-verdict").hidden=!state.rivalPick;
       if (view.route.company) paintCompanyBoard(get("company-board"),state.standings,"reveal");
+    } else if (locked) {
+      renderAnswerVerdict(question,null,ui.answerLocked);
     } else if (!locked) {
       const resolveAnswer=bindAnswerCorrection(question);
       get("answer-form").onsubmit=event=>{
@@ -415,9 +417,7 @@ function tickLive(view) {
     const ready=get("live-ready");
     if (ready && now>=state.opens) ready.disabled=true;
   } else if (state.phase==="question" && !state.locked) {
-    const seconds=Math.max(0,Math.ceil((state.deadline-now)/1000));
-    get("timer").textContent=seconds;
-    get("timer").classList.toggle("urgent",seconds<=10);
+    const seconds=renderAnswerTimer(state.deadline-now,10);
     const disabled=seconds===0 || view.busy;
     get("answer").disabled=disabled;
     get("answer-form").querySelector("button").disabled=disabled;

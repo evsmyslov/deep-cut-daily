@@ -7,7 +7,7 @@
 <meta name="description" content="A daily open-answer quiz. Find the facts that others overlook. Play in English or Russian.">
 <title>Rare Below</title>
 <link rel="icon" href="art/mark.png">
-<link rel="stylesheet" href="style.css?v=expedition-scores">
+<link rel="stylesheet" href="style.css?v=round-reward">
 <script defer src="catalog-data.js"></script>
 <script defer src="question-bank.js?v=full-recap"></script>
 <script defer src="everyday-questions.js?v=everyday"></script>
@@ -17,12 +17,12 @@
 <script defer src="open-questions.js?v=expedition-scores"></script>
 <script defer src="answer-notes.js?v=expedition-scores"></script>
 <script defer src="suggestions.js?v=submit-correction"></script>
-<script defer src="live-client.js?v=submit-correction"></script>
+<script defer src="live-client.js?v=round-reward"></script>
 <script defer src="company.js?v=round-chart"></script>
 <script defer src="audio.js?v=expedition-scores"></script>
 <script defer src="friends.js?v=round-chart"></script>
-<script defer src="mine-scene.js?v=round-chart"></script>
-<script defer src="game.js?v=submit-correction"></script>
+<script defer src="mine-scene.js?v=round-reward"></script>
+<script defer src="game.js?v=round-reward"></script>
 </head>
 <body>
 <header class="top"><div class="shell top-inner">
@@ -81,10 +81,21 @@
   <section class="round">
     <p class="category label" id="category"></p>
     <h1 id="prompt"></h1>
-    <form id="answer-form"><label class="sr-only" for="answer" data-text="answerLabel"></label><div class="timer" id="timer" aria-hidden="true"></div><input id="answer" maxlength="100" autocomplete="off" required><button class="primary" data-text="submit"></button></form>
+    <div class="answer-slot">
+      <form id="answer-form">
+        <label class="sr-only" for="answer" data-text="answerLabel"></label>
+        <input id="answer" maxlength="100" autocomplete="off" required>
+        <button class="primary" data-text="submit"></button>
+        <div class="answer-timer" id="answer-timer" role="timer">
+          <span class="timer-track" aria-hidden="true"></span>
+          <span class="timer-readout"><span class="sr-only" data-text="remaining"></span><span id="timer"></span><span class="timer-unit" data-text="secondUnit" aria-hidden="true"></span></span>
+        </div>
+      </form>
+      <p id="verdict" role="status" hidden></p>
+    </div>
     <div class="answer-suggestions" id="suggestions" role="group" hidden></div>
     <div class="actions question-actions"><button class="quiet" id="skip" data-text="skip"></button><button class="quiet" id="finish-endless" data-text="stopRun" hidden></button><span id="check-status" role="status"></span><a class="direct-duel" id="match-direct" data-text="directDuel" target="_blank" rel="noopener noreferrer" hidden></a></div>
-    <div id="feedback" hidden><p id="verdict" role="status"></p><p id="answer-note" class="answer-note" hidden></p><p id="rival-verdict" class="rival-answer" hidden></p><p id="sample"></p><p class="arrival" id="arrival"></p><div id="company-board" hidden></div><button class="primary" id="next"></button></div>
+    <div id="feedback" hidden><p id="answer-note" class="answer-note" hidden></p><p id="rival-verdict" class="rival-answer" hidden></p><p id="sample"></p><p class="arrival" id="arrival"></p><div id="company-board" hidden></div><button class="primary" id="next"></button></div>
   </section>
 </template>
 <template id="results">

@@ -29,7 +29,7 @@ const depthThresholds = [0,25,65,130,240,410,620,800,maximum];
 const strings = {
   en: {
     endless:"Endless", duel:"Friend duel", invite:"Copy invite link", solo:"Daily", refresh:"Refresh duel", stopRun:"Finish run",
-    remaining:"Seconds left", timeUp:"Time’s up", checking:"Checking that answer…", unverifiable:"Could not verify that specific answer",
+    remaining:"Seconds left. ", secondUnit:"s", timeUp:"Time’s up", checking:"Checking that answer…", unverifiable:"Could not verify that specific answer",
     openRules:"Each prompt accepts several answers. A broad answer that fits can earn 10 points. More specific finds can earn more.",
     moreRules:"You get 30 seconds per question. Some categories can check unfamiliar names in Wikidata.",
     matchIntro:"Play the same eight questions as your friend. Scores appear when both players finish.",
@@ -41,7 +41,7 @@ const strings = {
     challenge:"A friend sent you this expedition.", answerLabel:"Your answer", submit:"Submit", skip:"Skip", finished:"Expedition complete",
     share:"Challenge a friend", todayButton:"Today’s expedition", today:"Today", past:"Archive", nextIn:"Next in", next:"Next question", result:"See result",
     play:"Begin descent", resume:"Resume descent", replay:"See my result", active:"8 questions · Answers in EN or RU",
-    versus:"Friend challenge · Same eight questions", placeholder:"Answer in English or Russian…", question:"Question",
+    versus:"Friend challenge · Same eight questions", placeholder:"Enter an answer…", question:"Question",
     wrong:"That answer doesn’t fit", skipped:"Skipped", sample:"An answer that fits", points:"points", target:"Friend’s score",
     won:"You beat their score.", tied:"You tied.", lost:"Your friend wins this one.", copied:"Challenge copied.",
     copy:"Copy your challenge", dare:"Can you find rarer answers?", noPast:"Past expeditions appear here after their daily release.",
@@ -62,7 +62,7 @@ const strings = {
   },
   ru: {
     endless:"Бесконечный", duel:"Дуэль", invite:"Скопировать приглашение", solo:"Выпуск дня", refresh:"Обновить дуэль", stopRun:"Завершить забег",
-    remaining:"Секунд осталось", timeUp:"Время вышло", checking:"Проверяем ответ…", unverifiable:"Не удалось подтвердить конкретный ответ",
+    remaining:"Секунд осталось. ", secondUnit:"с", timeUp:"Время вышло", checking:"Проверяем ответ…", unverifiable:"Не удалось подтвердить конкретный ответ",
     openRules:"У каждого вопроса много подходящих ответов. Общий вариант может принести 10 очков, а за более конкретную находку можно получить больше.",
     moreRules:"На вопрос даётся 30 секунд. Для части тем незнакомые названия проверяются по Викиданным.",
     matchIntro:"У вас и друга восемь одинаковых вопросов. Счёт соперника откроется, когда оба завершат дуэль.",
@@ -74,7 +74,7 @@ const strings = {
     challenge:"Друг отправил вам эту экспедицию.", answerLabel:"Ваш ответ", submit:"Ответить", skip:"Пропустить", finished:"Экспедиция завершена",
     share:"Бросить вызов другу", todayButton:"Сегодняшний выпуск", today:"Сегодня", past:"Архив", nextIn:"До нового", next:"Следующий вопрос", result:"Посмотреть итог",
     play:"Начать спуск", resume:"Продолжить спуск", replay:"Мой результат", active:"8 вопросов · Ответы на EN или RU",
-    versus:"Вызов друга · Те же восемь вопросов", placeholder:"Ответ на русском или английском…", question:"Вопрос",
+    versus:"Вызов друга · Те же восемь вопросов", placeholder:"Введите ответ…", question:"Вопрос",
     wrong:"Ответ не подходит", skipped:"Пропуск", sample:"Подходящий пример", points:"очков", target:"Счёт друга",
     won:"Вы набрали больше.", tied:"У вас ничья.", lost:"Друг набрал больше.", copied:"Вызов скопирован.",
     copy:"Скопируйте вызов", dare:"Сможешь найти ответы пореже?", noPast:"Здесь появятся выпуски, которые уже вышли.",
@@ -335,8 +335,20 @@ function answerNote(model, answer) {
   return mineAnswerNotes[model.id]?.[english]?.[lang==="ru" ? 1 : 0] ?? (lang==="ru" ? answer.noteRu : answer.noteEn) ?? "";
 }
 
+function renderAnswerTimer(milliseconds, urgentAt = 8) {
+  const remaining = Math.max(0, milliseconds);
+  const seconds = Math.ceil(remaining / 1000);
+  const timer = get("answer-timer");
+  const readout = get("timer");
+  if (readout.textContent !== String(seconds)) readout.textContent = seconds;
+  timer.style.setProperty("--time-left", Math.min(1, remaining / (LIMIT * 1000)));
+  timer.classList.toggle("urgent", seconds <= urgentAt);
+  return seconds;
+}
+
 function renderAnswerVerdict(model, answer, fallback, animate = false) {
   const verdict = get("verdict");
+  verdict.hidden = false;
   const note = get("answer-note");
   note.textContent = answerNote(model, answer);
   note.hidden = !note.textContent;
@@ -347,11 +359,15 @@ function renderAnswerVerdict(model, answer, fallback, animate = false) {
     return;
   }
   const points = pointsFor(answer);
-  const label = element("span",answer[lang]);
-  label.append(element("small",words().tiers[answer.tier]));
+  const gem = element("span","");
+  gem.className = "verdict-gem";
+  gem.setAttribute("aria-hidden","true");
+  const label = element("span","");
+  label.className = "verdict-label";
+  label.append(element("span",answer[lang]),element("small",words().tiers[answer.tier]));
   verdict.dataset.points = points;
   verdict.classList.toggle("is-celebrating",animate && points>=55);
-  verdict.replaceChildren(label,element("strong",`+${points}`));
+  verdict.replaceChildren(gem,label,element("strong",`+${points}`));
 }
 function element(name, text) {
   const el = document.createElement(name);
@@ -571,10 +587,7 @@ function question(draft = "", focus = true) {
     save();
   }
   function tick() {
-    const seconds = Math.max(0,Math.ceil((round.deadline - Date.now())/1000));
-    const timer = get("timer");
-    if (timer.textContent !== String(seconds)) timer.textContent = seconds;
-    timer.classList.toggle("urgent", seconds <= 8);
+    const seconds = renderAnswerTimer(round.deadline - Date.now());
     if (seconds === 0) settle("",null,"timeout");
   }
   questionTimer = setInterval(tick,120);

@@ -74,7 +74,9 @@ class MineScene {
     if (animate && distance>0 && !this.motion.matches) {
       const find = MineScene.finds.findLast(tier => gained >= tier.minimum);
       const duration = Math.min(3740,1130+Math.sqrt(distance)*75+(find?.inset ? 580 : 0));
-      this.startJourney(now,duration,find);
+      // Keep the reward pause inside the existing animation window for live rounds.
+      const hold = gained >= 55 ? 460 : 240;
+      this.startJourney(now+hold,duration-hold,find);
     } else {
       this.journey = null;
       this.position = target;
@@ -623,7 +625,7 @@ class MineScene {
 
   miningFrame(time) {
     const find = this.journey?.find;
-    if (!find) return null;
+    if (!find || time < this.journey.started) return null;
     const phase = (time-this.journey.started)/this.journey.duration;
     return {find,phase,x:this.center+72,y:this.screenY(this.target)-5};
   }
