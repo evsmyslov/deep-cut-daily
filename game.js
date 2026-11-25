@@ -51,6 +51,7 @@ const strings = {
     surveyError:"Community counts are unavailable. The list shows the quiz’s rarity tiers.",
     surveyData:"Community picks, from least to most selected.",
     community:"Player counts and known answers", dictionary:"All known answers", early:"Previous four-question expedition",
+    answerSearch:"Search answers", moreAnswers:"Next answers", previousAnswers:"Previous answers", noAnswers:"No matching answers",
     language:"Switch to Russian", menu:"Game menu", tiers:["Shard","Crystal","Relic","Core Heart","Trace"],
     categories:{science:"Science",places:"Geography",culture:"Pop culture",variety:"General knowledge"},
     rulesText:["Answer eight questions in English or Russian. Your score determines how far the cart descends. A zero-point answer leaves you at the same depth.",
@@ -83,6 +84,7 @@ const strings = {
     surveyError:"Сводка игроков недоступна. Ниже — ответы по уровням редкости в игре.",
     surveyData:"Выбор игроков, от самых редких до самых частых.",
     community:"Известные ответы и выбор игроков", dictionary:"Все известные ответы", early:"Прошлая экспедиция из четырёх вопросов",
+    answerSearch:"Поиск по ответам", moreAnswers:"Следующие ответы", previousAnswers:"Предыдущие ответы", noAnswers:"Подходящих ответов нет",
     language:"Переключить на английский", menu:"Меню игры", tiers:["Осколок","Кристалл","Реликт","Сердце ядра","След"],
     categories:{science:"Наука",places:"География",culture:"Поп-культура",variety:"Общие знания"},
     rulesText:["Ответьте на восемь вопросов по-русски или по-английски. Очки определяют, как далеко спустится вагонетка. При нуле за ответ она остаётся на месте.",
@@ -818,29 +820,63 @@ async function request(path,data,timeout=8000,transport=undefined,lifetime) {
 }
 
 function bindRecap(details,root,model,answer,rival) {
-  let counts=[], rounds=0, verified=[], loading=false;
-  function render() {
-    const ui=words();
+  const pageSize=60;
+  let counts=[], rounds=0, verified=[], loading=false, page=0;
+  let choices=[], names, search, status, list, navigation;
+  const canonicalId=entry=>typeof entry.id==="string"
+    ? (model.aliases.get(answerKey(entry.en)) ?? model.aliases.get(answerKey(entry.ru)))?.id ?? entry.id
+    : entry.id;
+  const played=new Map();
+  function refreshChoices() {
     const known=new Map(model.entries.map(entry=>[entry.id,entry]));
-    for (const entry of [answer,rival,...verified,...counts]) {
-      if (entry?.id!=null && !known.has(entry.id)) known.set(entry.id,entry);
+    for (const item of [answer,rival,...verified,...counts]) {
+      if (item?.id!=null && !known.has(canonicalId(item))) known.set(item.id,item);
     }
-    const played=new Map(counts.map(entry=>[entry.id,entry.count]));
-    const choices=[...known.values()].sort((a,b)=>
+    played.clear();
+    for (const item of counts) {
+      const id=canonicalId(item);
+      played.set(id,(played.get(id) ?? 0)+item.count);
+    }
+    choices=[...known.values()].sort((a,b)=>
       (played.get(a.id) ?? 0)-(played.get(b.id) ?? 0) || pointsFor(b)-pointsFor(a) || a[lang].localeCompare(b[lang],lang));
-    const list=element("ul","");
-    if (choices.length>15) list.tabIndex=0;
-    choices.forEach(entry=>{
+    if (!names) {
+      names=new Map();
+      for (const [key,entry] of model.aliases) {
+        if (!names.has(entry.id)) names.set(entry.id,[]);
+        names.get(entry.id).push(key);
+      }
+    }
+  }
+  function renderPage() {
+    const ui=words();
+    const key=answerKey(search.value);
+    const matching=key ? choices.filter(entry=>(names.get(entry.id) ?? [answerKey(entry.en),answerKey(entry.ru)])
+      .some(name=>name.includes(key))) : choices;
+    page=Math.min(page,Math.max(0,Math.ceil(matching.length/pageSize)-1));
+    const start=page*pageSize;
+    const items=matching.slice(start,start+pageSize).map(entry=>{
       const frequency=rounds ? ` · ${played.get(entry.id) ?? 0} / ${rounds}` : "";
       const item=element("li",`${entry[lang]} · ${ui.tiers[entry.tier]} · +${pointsFor(entry)}${frequency}`);
-      const note=entry.id!==answer.id && answerNote(model,entry);
+      const note=entry.id!==canonicalId(answer) && answerNote(model,entry);
       if (note) {
         const explanation=element("small",note);
         explanation.className="answer-note";
         item.append(explanation);
       }
-      list.append(item);
+      return item;
     });
+    status.textContent=items.length
+      ? `${rounds ? ui.community : ui.dictionary} · ${start+1}–${start+items.length} / ${matching.length}`
+      : ui.noAnswers;
+    list.replaceChildren(...items);
+    list.hidden=!items.length;
+    list.scrollTop=0;
+    navigation.hidden=matching.length<=pageSize;
+    navigation.firstElementChild.disabled=page===0;
+    navigation.lastElementChild.disabled=start+pageSize>=matching.length;
+  }
+  function createControls() {
+    const ui=words();
     const items=[];
     const note=answerNote(model,answer);
     if (note) {
@@ -849,13 +885,37 @@ function bindRecap(details,root,model,answer,rival) {
       items.push(explanation);
     }
     if (rival) items.push(element("p",duelAnswerText(rival)));
-    items.push(element("small",`${rounds ? ui.community : ui.dictionary} · ${choices.length}`),list);
+    search=element("input","");
+    search.type="search";
+    search.placeholder=ui.answerSearch;
+    search.setAttribute("aria-label",ui.answerSearch);
+    search.className="recap-search";
+    search.oninput=()=>{ page=0; renderPage(); };
+    status=element("small","");
+    status.setAttribute("aria-live","polite");
+    list=element("ul","");
+    list.tabIndex=0;
+    navigation=element("div","");
+    navigation.className="recap-pages";
+    for (const [label,step] of [[ui.previousAnswers,-1],[ui.moreAnswers,1]]) {
+      const button=element("button",label);
+      button.className="quiet";
+      button.type="button";
+      button.onclick=()=>{ page+=step; renderPage(); };
+      navigation.append(button);
+    }
+    items.push(search,status,list,navigation);
     root.replaceChildren(...items);
+  }
+  function render() {
+    if (!search) createControls();
+    refreshChoices();
+    renderPage();
   }
   details.ontoggle=async()=>{
     if (!details.open) return;
     render();
-      if (loading) return;
+    if (loading) return;
     loading=true;
     try {
       verified=(await request("answer-list",{id:model.id})).answers;

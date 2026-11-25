@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {runInNewContext} from "node:vm";
 
-const scripts = ["catalog-data.js","question-bank.js","everyday-questions.js","theme-questions.js","open-questions.js","answer-notes.js"];
+const scripts = ["catalog-data.js","question-bank.js","everyday-questions.js","theme-questions.js","answer-expansions.js","open-questions.js","answer-notes.js"];
 const source = scripts.map(file => readFileSync(new URL(`../${file}`,import.meta.url),"utf8")).join("\n");
 const {cards,decks,packs,models,retired} = runInNewContext(source + `
   ({cards:[...themeCards,...rotationCards,...dailySpecialCards], decks:[mineDecks[6],mineDecks[MINE_DECK_VERSION]], packs:minePacks,
@@ -42,6 +42,41 @@ runInNewContext(source + `
   for (let offset=0;offset<90;offset++) {
     const ids=dailyIds(MINE_DAY+2+offset);
     if (new Set(ids).size!==8 || ids.some(id=>!mineDecks[MINE_DECK_VERSION].includes(id))) throw new Error("Invalid daily pack");
+  }
+  for (const [id,expansion] of Object.entries(mineAnswerExpansions)) {
+    if (!Object.hasOwn(catalog,id)) throw new Error("Unknown expanded question: "+id);
+    const model=mineQuestion(id);
+    const base=catalog[id][2].length;
+    if (model.entries.length!==base+(expansion.rows?.length ?? 0)-(expansion.inactive?.length ?? 0)) {
+      throw new Error("Invalid answer count for "+id);
+    }
+    if (model.entries.filter(entry=>entry.tier===3).length!==1) throw new Error("Invalid top rarity for "+id);
+    for (const [i,[tier,en,ru]] of (expansion.rows ?? []).entries()) {
+      const entry=model.answerById.get(base+i);
+      if (entry.tier!==tier) throw new Error(id+" changed tier for "+en);
+      for (const name of [...en.split("|"),...ru.split("|")]) {
+        if (name && model.aliases.get(answerKey(name))!==entry) throw new Error(id+" has an ambiguous addition: "+name);
+      }
+    }
+    for (const [i,aliases] of Object.entries(expansion.aliases ?? {})) {
+      for (const alias of aliases) {
+        if (model.aliases.get(answerKey(alias))?.id!==Number(i)) throw new Error(id+" has an ambiguous alias: "+alias);
+      }
+    }
+  }
+  for (const [id,count] of [["constellations",88],["countries",193],["elements",118]]) {
+    if (mineQuestion(id).entries.length!==count) throw new Error("Incomplete reference list: "+id);
+  }
+  for (const [id,english,russian] of [
+    ["birds","Struthio molybdophanes","Сомалийский страус"],
+    ["capitals","Bandar Seri Begawan","Бандар-Сери-Бегаван"],
+    ["constellations","Puppis","Корма"],
+    ["rivers","Douro","Дору"],
+    ["films","Titanic (1997)","Титаник"]
+  ]) {
+    const {aliases}=mineQuestion(id);
+    const answer=aliases.get(answerKey(english));
+    if (!answer || aliases.get(answerKey(russian))!==answer) throw new Error(id+" has separate language variants: "+english);
   }
 `);
 for (const [id,pack] of Object.entries(packs)) {

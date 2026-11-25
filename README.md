@@ -14,6 +14,8 @@ The game checks answers when they are submitted. Catalog matches are instant. Th
 
 New editorial questions live in `theme-questions.js`. Each question has a stable ID, both prompt languages, and bilingual answer rows with aliases and a rarity tier. Use `node scripts/check-content.mjs` to check new entries and pack coverage. Append answers to keep their existing numeric IDs stable in saved rounds.
 
+Bulk reference answers and aliases live in `answer-expansions.js`, grouped by question ID. Append entries within each group, since their numeric IDs follow the original answers. Imported answers start at +55 until their tiers are reviewed with play data. Round review offers bilingual search and pagination for the full catalog.
+
 ### Writing questions and answers
 
 1. Start with a familiar category and one clear condition. Try the question in both languages. Each should offer an obvious answer within a few seconds and leave multiple directions for rarer answers. As a practical target, prepare at least 15 distinct answers before releasing a question.
@@ -34,7 +36,15 @@ The front end is static GitHub Pages, served from `main` at the repository root.
 ## Data sources
 
 - [Country and regional data](https://github.com/mledoze/countries)
+- [UN member states](https://www.un.org/en/about-us/member-states)
 - [Periodic table facts](https://github.com/Bowserinator/Periodic-Table-JSON)
+- [IAU constellation names](https://iauarchive.eso.org/public/themes/constellations/)
+- [IOC World Bird List, edition 15.2](https://www.worldbirdnames.org/new/ioc-lists/master-list-2/)
+- [Natural Earth, 1:10m cultural and physical data](https://www.naturalearthdata.com/downloads/10m-physical-vectors/)
+- [Film title and release metadata](https://github.com/prust/wikipedia-movie-data)
+- [Anime Offline Database (ODbL), including feature length and title data](https://github.com/manami-project/anime-offline-database)
+- [Shikimori title metadata where available](https://shikimori.one/api/doc)
+- [Billboard Hot 100 chart archive](https://github.com/mhollingshead/billboard-hot-100)
 - [Wikidata entity search](https://www.mediawiki.org/wiki/Wikibase/API)
 
 [BBFC: The Fellowship of the Ring and its runtime](https://www.bbfc.co.uk/release/the-lord-of-the-rings-the-fellowship-of-the-ring-q29sbgvjdglvbjpwwc0zntaxmda)

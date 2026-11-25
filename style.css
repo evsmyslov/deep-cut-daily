@@ -256,6 +256,8 @@ main.shell{width:100%;padding-top:14px}
 .recap-detail{padding:9px 10px;border-top:1px solid #48605d}
 .recap-detail p{margin:0 0 5px;font-weight:600}
 .recap-detail small,.answer-source{color:var(--muted)}
+.recap-search{display:block;margin:5px 0 8px;background:#112027}
+.recap-pages{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px;margin-top:9px}
 .recap-detail ul{margin:4px 0 0;padding-left:17px;max-height:min(42svh,340px);overflow:auto}
 .rival-answer{color:var(--green);margin:8px 0}
 #recap .recap-detail li{padding:2px 0;display:list-item}

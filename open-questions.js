@@ -781,17 +781,45 @@ function hasMineQuestion(id) {
 function mineQuestion(id) {
   if (prepared.has(id)) return prepared.get(id);
   const [en, ru, rows, lookup] = catalog[id] ?? generatedModel(id);
+  const extra = Object.hasOwn(mineAnswerExpansions,id) ? mineAnswerExpansions[id] : null;
   const aliases = new Map();
-  const best=Math.max(...rows.map(row=>MINE_SCORES[row[0]]));
-  const highest=rows.findLastIndex(row=>MINE_SCORES[row[0]]===best);
-  const entries = rows.map(([tier,en,ru,entryId], index) => {
-    const rank=index===highest ? 3 : tier===3 ? 2 : tier;
-    const entry = {id:entryId??index,tier:rank,en:en.split("|")[0],ru:ru.split("|")[0] || en.split("|")[0]};
-    for (const name of [...en.split("|"), ...ru.split("|")]) if (name) aliases.set(answerKey(name), entry);
-    return entry;
-  });
-  const answerById=new Map(entries.map(entry=>[entry.id,entry]));
-  const question = {id,en,ru,entries,answerById,aliases,lookup};
+  const answerById = new Map();
+  const entries = [];
+  const inactive = new Set(extra?.inactive);
+  const inactiveKeys = new Set();
+  const best=rows.reduce((score,row)=>Math.max(score,MINE_SCORES[row[0]]),0);
+  const legacyHighest=rows.findLastIndex(row=>MINE_SCORES[row[0]]===best);
+  const activeBest=rows.reduce((score,row,index)=>inactive.has(index) ? score : Math.max(score,MINE_SCORES[row[0]]),0);
+  const highest=rows.findLastIndex((row,index)=>!inactive.has(index)&&MINE_SCORES[row[0]]===activeBest);
+  const register = ([tier,en,ru,entryId], index) => {
+    const rank=index===(inactive.has(index) ? legacyHighest : highest) ? 3 : tier===3 ? 2 : tier;
+    const [english,...enAliases] = en.split("|");
+    const [russian,...ruAliases] = ru.split("|");
+    const entry = {id:entryId??index,tier:rank,en:english,ru:extra?.ru?.[index] ?? (russian || english)};
+    answerById.set(entry.id,entry);
+    const names=[english,...enAliases,russian,...ruAliases,entry.ru];
+    if (inactive.has(index)) {
+      for (const name of names) if (name) inactiveKeys.add(answerKey(name));
+    } else {
+      entries.push(entry);
+      for (const name of names) if (name) aliases.set(answerKey(name),entry);
+    }
+  };
+  rows.forEach(register);
+  extra?.rows?.forEach((row,index)=>register(row,rows.length+index));
+  if (extra) {
+    const registerAlias = (index,name) => {
+      const key=answerKey(name);
+      if (!aliases.has(key)) aliases.set(key,answerById.get(index));
+    };
+    for (const [index,name] of Object.entries(extra.ru ?? {})) {
+      if (!inactive.has(Number(index))) registerAlias(Number(index),name);
+    }
+    for (const [index,names] of Object.entries(extra.aliases ?? {})) {
+      if (!inactive.has(Number(index))) names.forEach(name=>registerAlias(Number(index),name));
+    }
+  }
+  const question = {id,en,ru,entries,answerById,aliases,inactiveKeys,lookup};
   if (prepared.size>=128) prepared.delete(prepared.keys().next().value);
   prepared.set(id,question);
   return question;

@@ -34,6 +34,22 @@ function alternateLayout(value) {
   const to=cyrillic ? keyboardLatin : keyboardCyrillic;
   return [...value.toLowerCase()].map(char=>to[from.indexOf(char)] ?? char).join("");
 }
+const suggestionIndexes=new WeakMap();
+const cyrillicText=/\p{Script=Cyrillic}/u;
+function indexSuggestions(model) {
+  if (suggestionIndexes.has(model)) return suggestionIndexes.get(model);
+  const lengths=new Map(), compact=new Map(), sounds=new Map();
+  for (const [alias,entry] of model.aliases) {
+    const candidate={alias,entry,digits:alias.match(/\d+/g)?.join(","),cyrillic:cyrillicText.test(alias)};
+    for (const [map,key] of [[lengths,alias.length],[compact,alias.replaceAll(" ","")],[sounds,phoneticKey(alias)]]) {
+      if (!map.has(key)) map.set(key,[]);
+      map.get(key).push(candidate);
+    }
+  }
+  const index={lengths,compact,sounds};
+  suggestionIndexes.set(model,index);
+  return index;
+}
 function suggestAnswers(model,value) {
   const key=answerKey(value);
   if (model.aliases.has(key)) return [];
@@ -47,18 +63,28 @@ function suggestAnswers(model,value) {
   const digits=key.match(/\d+/g)?.join(",");
   const compact=key.replaceAll(" ","");
   const sound=phoneticKey(key);
-  const isCyrillic=/\p{Script=Cyrillic}/u;
-  const cyrillic=isCyrillic.test(key);
+  const cyrillic=cyrillicText.test(key);
+  const index=indexSuggestions(model);
   const candidates=new Map();
-  for(const [alias,entry] of model.aliases) {
-    if (!alias || (digits && digits!==alias.match(/\d+/g)?.join(","))) continue;
-    const tight=alias.replaceAll(" ","");
-    const sameLetters=compact===tight;
-    const sameSound=sound.length>=4 && cyrillic!==isCyrillic.test(alias) && phoneticKey(alias)===sound;
-    const distance=sameLetters ? .15 : sameSound ? .3 : spellingDistance(key,alias,limit);
-    if (distance>limit) continue;
+  const record=({alias,entry,digits:aliasDigits},distance)=>{
+    if (distance>limit || (digits && digits!==aliasDigits)) return;
     const rank=distance+Number(alias[0]!==key[0])*.22+Math.abs(alias.length-key.length)*.04;
     if (rank<(candidates.get(entry)??Infinity)) candidates.set(entry,rank);
+  };
+  for (const item of index.compact.get(compact) ?? []) record(item,.15);
+  if (sound.length>=4) {
+    for (const item of index.sounds.get(sound) ?? []) {
+      if (item.cyrillic!==cyrillic) record(item,.3);
+    }
+  }
+  if (!candidates.size) {
+    for (let length=key.length-limit; length<=key.length+limit; length++) {
+      for (const item of index.lengths.get(length) ?? []) {
+        if (item.cyrillic!==cyrillic || (digits && digits!==item.digits)) continue;
+        if (model.aliases.size>5000 && item.alias[0]!==key[0] && item.alias.at(-1)!==key.at(-1)) continue;
+        record(item,spellingDistance(key,item.alias,limit));
+      }
+    }
   }
   const ranked=[...candidates].sort((a,b)=>a[1]-b[1]);
   const best=ranked[0]?.[1];
