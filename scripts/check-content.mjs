@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {runInNewContext} from "node:vm";
 
-const scripts = ["catalog-data.js","question-bank.js","everyday-questions.js","theme-questions.js","answer-expansions.js","open-questions.js","answer-notes.js"];
+const scripts = ["catalog-data.js","question-bank.js","everyday-questions.js","theme-questions.js","pack-questions.js","answer-expansions.js","open-questions.js","answer-notes.js"];
 const source = scripts.map(file => readFileSync(new URL(`../${file}`,import.meta.url),"utf8")).join("\n");
-const {cards,decks,packs,models,retired} = runInNewContext(source + `
-  ({cards:[...themeCards,...rotationCards,...dailySpecialCards], decks:[mineDecks[6],mineDecks[MINE_DECK_VERSION]], packs:minePacks,
+const {cards,decks,packs,models,retired,maxPackLength} = runInNewContext(source + `
+  ({cards:[...themeCards,...rotationCards,...dailySpecialCards,...packQuestionCards], decks:[mineDecks[6],mineDecks[MINE_DECK_VERSION]], packs:minePacks,
+    maxPackLength:Math.max(...minePackLengths),
     retired:Object.keys(rotationReplacements), models:Object.fromEntries([...new Set([...themeCards.map(([id])=>id),...dailySpecialCards.map(([id])=>id),
       ...mineDecks[MINE_DECK_VERSION],...Object.values(minePacks).flatMap(pack=>pack.ids)])]
       .map(id=>[id,mineQuestion(id)]))})
@@ -24,7 +25,7 @@ for (const id of ids) {
   }
 }
 runInNewContext(source + `
-  for (const [id] of [...themeCards,...rotationCards,...dailySpecialCards]) {
+  for (const [id] of [...themeCards,...rotationCards,...dailySpecialCards,...packQuestionCards]) {
     const model=mineQuestion(id);
     for (const [i,[tier,en,ru]] of catalog[id][2].entries()) {
       for (const name of [...en.split("|"),...ru.split("|")]) {
@@ -88,7 +89,7 @@ runInNewContext(source + `
 `);
 for (const [id,pack] of Object.entries(packs)) {
   assert.ok(pack.en && pack.ru,`${id} needs both titles`);
-  assert.ok(pack.ids.length>=10,`${id} needs enough questions for a ten-round room`);
+  assert.ok(pack.ids.length>=maxPackLength,`${id} needs enough questions for the longest expedition`);
   assert.equal(new Set(pack.ids).size,pack.ids.length,`${id} contains repeated questions`);
 }
 assert.equal(new Set(decks[1]).size,decks[1].length,"The current deck contains repeated questions");
@@ -106,7 +107,7 @@ const noteCount=runInNewContext(source + `
       }
     }
   }
-  for (const id of [...mineDecks[MINE_DECK_VERSION],...dailySpecialCards.map(([id])=>id)]) {
+  for (const id of [...mineDecks[MINE_DECK_VERSION],...[...dailySpecialCards,...packQuestionCards].map(([id])=>id)]) {
     const best=mineQuestion(id).entries.find(entry=>entry.tier===3);
     if (!mineAnswerNotes[id]?.[best?.en]) throw new Error(id+" is missing a +120 answer note");
   }

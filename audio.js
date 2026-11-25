@@ -1,15 +1,17 @@
 "use strict";
 
 const audioStorage="rare-below-audio";
+const audioVersion=2;
 const audioOptions={music:true,effects:true};
-const audioVolume={music:75,effects:75};
+const audioVolume={music:20,effects:20};
 try {
   const saved=JSON.parse(localStorage.getItem(audioStorage));
   for (const key of Object.keys(audioOptions)) {
     if (typeof saved?.[key]==="boolean") audioOptions[key]=saved[key];
     const volume=saved?.volume?.[key];
-    if (Number.isFinite(volume)) audioVolume[key]=Math.min(100,Math.max(0,Math.round(volume)));
+    if (saved?.version===audioVersion && Number.isFinite(volume)) audioVolume[key]=Math.min(100,Math.max(0,Math.round(volume)));
   }
+  if (saved && saved.version!==audioVersion) saveAudio();
 } catch { /* Audio can run without saved settings. */ }
 
 let gameAudio, musicChannel, effectsChannel, musicBuffer, musicSource;
@@ -133,7 +135,7 @@ function playCue(kind,tier) {
   }
 }
 function saveAudio() {
-  try { localStorage.setItem(audioStorage,JSON.stringify({...audioOptions,volume:audioVolume})); }
+  try { localStorage.setItem(audioStorage,JSON.stringify({version:audioVersion,...audioOptions,volume:audioVolume})); }
   catch { /* Use current settings if storage is unavailable. */ }
 }
 function showAudioMenu() {

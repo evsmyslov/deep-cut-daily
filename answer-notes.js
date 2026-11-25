@@ -318,3 +318,29 @@ Object.assign(mineAnswerNotes,{
     "Venus flytrap":["Its trap closes when its trigger hairs are touched and can reopen later.","Ловушка захлопывается при прикосновении к чувствительным волоскам, а затем может снова раскрыться."]
   }
 });
+
+Object.assign(mineAnswerNotes, {
+  "films-with-submarines":{"Destination Tokyo":["A US submarine enters Tokyo Bay on a secret mission in this 1943 film.","В этом фильме 1943 года американская подлодка отправляется с секретным заданием в Токийский залив."]},
+  "films-with-storms":{"The Hurricane (1937)":["A tropical cyclone strikes the island where the story takes place.","Тропический циклон обрушивается на остров, где разворачивается действие фильма."]},
+  "instruments-with-hammers":{"khim":["The Thai khim has metal strings struck with light bamboo beaters.","Струны тайского кхима звучат от ударов лёгких бамбуковых колотушек."]},
+  "albums-with-animals":{"The Fox (Elton John)":["The title of Elton John's 1981 album names a fox.","В названии альбома Элтона Джона 1981 года упоминается лиса."]},
+  "things-with-hand-cranks":{"hurdy-gurdy":["Turning the handle makes a rosined wheel rub against the strings.","Ручка вращает натёртое канифолью колесо, которое трётся о струны."]},
+  "things-that-squeak":{"curd cheese":["Fresh cheese curds can squeak against your teeth when you bite into them.","Свежие сырные зёрна могут скрипеть на зубах."]},
+  "foods-on-skewers":{"shishito kushiyaki":["The peppers are threaded onto skewers and grilled.","Перцы сисито нанизывают на шпажки и жарят на гриле."]},
+  "foods-in-edible-wraps":{"inari sushi":["The rice sits in a fried tofu pouch that you eat with the filling.","Рис кладут в мешочек из жареного тофу, который едят вместе с начинкой."]},
+  "marsupials":{"monito del monte":["It lives in the temperate forests of Chile and Argentina.","Этот сумчатый зверёк живёт в умеренных лесах Чили и Аргентины."]},
+  "animals-that-build-nests":{"Betta splendens":["The male builds a nest of bubbles at the surface and guards the eggs there.","Самец строит гнездо из пузырьков у поверхности воды и охраняет в нём икру."]},
+  "plants-with-thorns":{"sandbox tree":["The trunk is covered with stout conical prickles.","Ствол хуры покрыт крупными коническими шипами."]},
+  "animals-that-change-color":{"mimic octopus":["It can change the color and pattern of its skin as it imitates other sea animals.","Этот осьминог меняет цвет и рисунок кожи, подражая другим морским животным."]},
+  "lake-countries":{"Zambia":["Lake Tanganyika borders Zambia, Tanzania, Burundi and the Democratic Republic of the Congo.","Озеро Танганьика омывает берега Замбии, Танзании, Бурунди и Демократической Республики Конго."]},
+  "volcanic-islands":{"Surtsey":["An eruption off Iceland created the island in the 1960s.","Остров возник у берегов Исландии в результате извержения в 1960-х."]},
+  "rivers-through-capitals":{"Rímac":["It flows from the Andes through Lima to the Pacific.","Римак течёт с Анд через Лиму и впадает в Тихий океан."]},
+  "bridge-cities":{"Višegrad":["The Mehmed Paša Sokolović Bridge crosses the Drina in Višegrad.","В Вишеграде мост Мехмеда-паши Соколовича перекинут через Дрину."]},
+  "solar-system-moons":{"Namaka":["Namaka is the smaller of the two known moons of the dwarf planet Haumea.","Намака — меньший из двух известных спутников карликовой планеты Хаумеа."]},
+  "goal-sports":{"goalball":["Players roll a ball with bells inside into the opposing goal.","Игроки катят мяч с колокольчиками внутри, стараясь забить гол сопернику."]},
+  "ice-sports":{"ice golf":["Some tournaments lay out their courses directly on the ice of a frozen lake.","На некоторых турнирах поле размечают прямо на льду замёрзшего озера."]},
+  "tile-laying-games":{"Aquaretto":["Players lay tiles to expand their aquatic parks and add animals.","Игроки выкладывают тайлы, расширяя свой водный парк и заселяя его животными."]},
+  "games-with-a-glider":{"Superflight":["You steer a wingsuit close to cliffs to earn points.","Вы управляете полётом в вингсьюте и набираете очки, пролетая рядом со скалами."]},
+  "races-with-wheels":{"cycle speedway":["Riders race lightweight bicycles on a short oval dirt track.","Гонщики на лёгких велосипедах едут по короткому овальному треку с грунтовым покрытием."]},
+  "dice-games":{"Sagrada":["Colored dice are drafted, rolled as a shared pool, and placed into stained-glass windows.","Игроки бросают цветные кубики, выбирают их из общего запаса и собирают витражи."]}
+});

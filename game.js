@@ -155,7 +155,8 @@ Object.assign(strings.ru, {
   contactCode:"Введите код друга из восьми символов.", contactMissing:"Друг не найден.", contactSelf:"Это ваш собственный код."
 });
 Object.assign(strings.en, {
-  pack:"Themed expeditions", pickPack:"Choose an expedition", packIntro:"Seven questions on this theme.",
+  pack:"Themed expeditions", pickPack:"Choose an expedition", packRounds:"Rounds per expedition",
+  packIntro:n=>`${n} questions on this theme.`, packPool:n=>`${n} questions in the pool`,
   packReplay:"New expedition", archiveNew:"Not played", archiveResume:"Continue", archiveDone:"Finished",
   company:"Group room", companyIntro:"Play with 2–8 people. Share the code and compare finds after each round.",
   companyName:"Nickname", companyTheme:"Theme", companyRoundCount:"Questions", companyAll:"All themes",
@@ -163,11 +164,17 @@ Object.assign(strings.en, {
   companyNeedPlayers:"At least two players are needed to start.", companyPlayer:"Miner", companyYou:"you",
   companyHost:"host", companyStandings:"Room standings", companyUnique:"Unique in this room",
   companyStarted:"This expedition has already started.", directCompany:"Open room directly",
-  chartTitle:"Points by round", chartHint:"Select a point to open its round below.", chartPrev:"Earlier rounds", chartNext:"Later rounds",
+  scoreChart:"Player score distribution", scoreSelf:n=>`You · ${n} pts`, scoreLoading:"Loading scores…",
+  scoreNotEnough:"Comparison appears after three players finish.",
+  scoreUnavailable:"Player scores are temporarily unavailable.",
+  scoreDaily:n=>`${n} finishes in this edition`,
+  scorePack:n=>`${n} personal bests for this theme and run length`,
+  scoreBand:(from,to,n)=>`${from}–${to} points · ${n} ${n===1 ? "player" : "players"}`,
   recapTitle:"Round review"
 });
 Object.assign(strings.ru, {
-  pack:"Тематические экспедиции", pickPack:"Выберите экспедицию", packIntro:"Семь вопросов на эту тему.",
+  pack:"Тематические экспедиции", pickPack:"Выберите экспедицию", packRounds:"Раундов в экспедиции",
+  packIntro:n=>`${n} вопросов на эту тему.`, packPool:n=>`В наборе ${n} вопросов`,
   packReplay:"Новая экспедиция", archiveNew:"Не сыграно", archiveResume:"Продолжить", archiveDone:"Завершено",
   company:"Комната для компании", companyIntro:"Играйте вдвоём или компанией до 8 человек. Поделитесь кодом и сравнивайте находки после каждого раунда.",
   companyName:"Ник", companyTheme:"Тема", companyRoundCount:"Вопросов", companyAll:"Все темы",
@@ -175,7 +182,12 @@ Object.assign(strings.ru, {
   companyNeedPlayers:"Для старта нужны хотя бы два игрока.", companyPlayer:"Шахтёр", companyYou:"вы",
   companyHost:"ведущий", companyStandings:"Таблица комнаты", companyUnique:"Уникальный ответ в комнате",
   companyStarted:"Экспедиция в этой комнате уже началась.", directCompany:"Открыть комнату напрямую",
-  chartTitle:"Очки по раундам", chartHint:"Выберите точку, чтобы раскрыть её раунд в списке.", chartPrev:"Предыдущие раунды", chartNext:"Следующие раунды",
+  scoreChart:"Распределение очков игроков", scoreSelf:n=>`Вы · ${n} очков`, scoreLoading:"Загружаем результаты игроков…",
+  scoreNotEnough:"Сравнение появится, когда сыграют три игрока.",
+  scoreUnavailable:"Результаты игроков пока недоступны.",
+  scoreDaily:n=>`Завершено экспедиций в этом выпуске: ${n}`,
+  scorePack:n=>`Личных рекордов в этой теме с таким числом раундов: ${n}`,
+  scoreBand:(from,to,n)=>`${from}–${to} очков · игроков: ${n}`,
   recapTitle:"Разбор раундов"
 });
 const get = id => document.getElementById(id);
@@ -209,6 +221,7 @@ function normalizeRoomCode(value) {
   if (/^[a-f0-9]{16}$/i.test(value ?? "")) return value.toLowerCase();
   return null;
 }
+const packKey = (id,length) => `pack:${id}${length===minePackLengths[0] ? "" : `:${length}`}`;
 const editionKey = (day, revision) => `daily:${day}${revision>1 ? `:${revision}` : ""}`;
 function readRoute() {
   const args=new URLSearchParams(location.search);
@@ -230,7 +243,11 @@ function readRoute() {
   const duel=normalizeRoomCode(args.get("room"));
   if ((mode==="duel" && duel?.length===16) || (mode==="live" && duel)) return {mode,duel,company,key:`${mode}:${duel}`};
   const pack=args.get("pack");
-  if (mode==="pack" && minePack(pack)) return {mode,pack,key:`pack:${pack}`};
+  if (mode==="pack" && minePack(pack)) {
+    const rounds=Number(args.get("rounds"));
+    const length=minePackLengths.includes(rounds) ? rounds : minePackLengths[0];
+    return {mode,pack,length,key:packKey(pack,length)};
+  }
   if (mode==="endless") {
     const requested=args.get("difficulty");
     const difficulty=endlessModes.includes(requested) ? requested : "easy";
@@ -266,11 +283,12 @@ function questionAt(index) {
   return mineQuestion(cachedDeck.ids[index%size]);
 }
 function expeditionLength() {
-  if (route.mode==="pack") return minePackLength;
+  if (route.mode==="pack") return route.length;
   if (route.mode==="live") return liveView?.state?.rounds ?? questionsPerRound;
   return questionsPerRound;
 }
 function depthAt(points) {
+  if (route.mode==="pack") points*=questionsPerRound/route.length;
   const stop = depthThresholds.findLastIndex(threshold => points >= threshold);
   const lower = depthThresholds[stop];
   const upper = depthThresholds[stop+1];
@@ -392,7 +410,7 @@ function intro(focus = false) {
   if (route.mode !== "daily") {
     get("stage").querySelector("[data-text=daily]").hidden = true;
     get("topic").textContent = route.mode==="pack" ? minePack(route.pack)[lang] : ui[route.difficulty ?? route.mode];
-    get("pitch").textContent = route.mode==="pack" ? ui.packIntro : route.difficulty ? ui.endlessModes[endlessModes.indexOf(route.difficulty)] : ui.matchIntro;
+    get("pitch").textContent = route.mode==="pack" ? ui.packIntro(route.length) : route.difficulty ? ui.endlessModes[endlessModes.indexOf(route.difficulty)] : ui.matchIntro;
     get("lobby-status").textContent = route.mode === "duel" ? ui.matchReady : "";
   }
   invite.hidden = route.mode !== "duel";
@@ -415,7 +433,10 @@ function intro(focus = false) {
       if (route !== current || !button.isConnected) return;
     }
     round = existing ?? { answers:[], feedback:false, done:false, deckVersion, seed:seed ?? crypto.getRandomValues(new Uint32Array(1))[0] };
-    if (current.mode==="pack" && !round.prompts) round.prompts=packIds(current.pack,round.seed).slice(0,minePackLength);
+    if (current.mode==="pack" && !round.prompts) {
+      round.packVersion=minePackVersion;
+      round.prompts=packIds(current.pack,round.seed).slice(0,current.length);
+    }
     if (current.mode==="endless" && !round.done && (round.deckVersion ?? 1)<MINE_DECK_VERSION) {
       round.answers=round.answers.map((answer,index)=>({...answer,prompt:questionAt(index).id}));
       round.deckVersion=MINE_DECK_VERSION;
@@ -587,11 +608,18 @@ function results(focus = true) {
   get("comparison").hidden = route.company || (!["duel","live"].includes(route.mode) && route.rival == null);
   if (route.mode === "daily" && route.rival !== null) showComparison(route.rival,points);
   const recapUpdates=[];
+  const recap=get("recap");
   get("round-review").hidden=!round.answers.length;
   round.answers.forEach((answer,index)=>{
     const model=route.mode==="live" ? mineQuestion(answer.prompt) : questionAt(index);
     const row=element("li","");
     const details=element("details","");
+    details.name="round-review";
+    details.addEventListener("toggle",()=>{
+      if (details.open) recap.querySelectorAll("details[open]").forEach(other=>{
+        if (other!==details) other.open=false;
+      });
+    });
     const summary=element("summary","");
     const answerText=answer[lang] ?? (answer.text || (answer.reason==="timeout" ? ui.timeUp : ui.skipped));
     const label=element("span","");
@@ -605,9 +633,8 @@ function results(focus = true) {
     recapUpdates.push(bindRecap(details,extras,model,answer,round.rivalAnswers?.[index]));
     details.append(summary,extras);
     row.append(details);
-    get("recap").append(row);
+    recap.append(row);
   });
-  renderAnswerChart();
   get("share").hidden = endless || route.mode === "live" || route.mode==="pack";
   get("refresh-duel").hidden = route.mode !== "duel";
   get("today").onclick = () => {
@@ -630,7 +657,7 @@ ${ui.dare}
 ${url.href}`);
   };
   get("answer-source").hidden = route.mode !== "daily";
-  if (route.mode === "daily") showAnswerSurvey(recapUpdates);
+  if (route.mode==="daily" || route.mode==="pack") showResultStatistics(recapUpdates,points);
   if (route.mode === "duel") {
     get("refresh-duel").onclick = refreshMatch;
     refreshMatch();
@@ -642,112 +669,6 @@ ${url.href}`);
   }
 }
 
-function renderAnswerChart() {
-  const answers = round.answers;
-  if (!answers.length) return;
-  const chart = get("answer-chart");
-  const plot = get("chart-points");
-  const canvas = get("chart-line");
-  const previous = get("chart-prev");
-  const next = get("chart-next");
-  const details = [...get("recap").querySelectorAll("details")];
-  const perPage = 10;
-  const max = Math.max(...scores);
-  const height = points => (1-points/max)*100;
-  const ui = words();
-  let end = answers.length;
-  chart.hidden = false;
-  get("chart-pages").hidden = answers.length<=perPage;
-  previous.setAttribute("aria-label",ui.chartPrev);
-  next.setAttribute("aria-label",ui.chartNext);
-  for (const points of [120,85,55,25,0]) {
-    const tick = element("span",points);
-    const position = `${height(points)}%`;
-    tick.style.setProperty("--height",position);
-    get("chart-scale").append(tick);
-    if (points>0 && points<max) {
-      const rule = element("span","");
-      rule.className = "chart-rule";
-      rule.style.setProperty("--height",position);
-      rule.setAttribute("aria-hidden","true");
-      canvas.before(rule);
-    }
-  }
-
-  details.forEach((card,index)=>card.addEventListener("toggle",()=>{
-    const start = Math.max(0,end-perPage);
-    plot.children[index-start]?.setAttribute("aria-expanded",String(card.open));
-  }));
-
-  function showPage() {
-    const start = Math.max(0,end-perPage);
-    const picks = answers.slice(start,end);
-    previous.disabled = start===0;
-    next.disabled = end===answers.length;
-    const range = picks.length===1 ? String(end) : `${start+1}–${end}`;
-    get("chart-range").textContent = `${range} / ${answers.length}`;
-    plot.style.setProperty("--columns",picks.length);
-    plot.replaceChildren(...picks.map((answer,index)=>{
-      const i = start+index;
-      const points = pointsFor(answer);
-      const point = element("button","");
-      point.type = "button";
-      point.style.setProperty("--height",`${height(points)}%`);
-      point.dataset.points = points;
-      const label = answer[lang] ?? (answer.text || (answer.reason==="timeout" ? ui.timeUp : ui.skipped));
-      const card = details[i];
-      point.setAttribute("aria-label",`${ui.question} ${i+1} · ${label} · +${points}`);
-      point.setAttribute("aria-expanded",String(card.open));
-      point.setAttribute("aria-controls",`recap-detail-${i}`);
-      const number = element("span",i+1);
-      number.setAttribute("aria-hidden","true");
-      point.append(number);
-      point.onclick = () => {
-        card.open = !card.open;
-        if (card.open) card.scrollIntoView({block:"nearest"});
-      };
-      return point;
-    }));
-    drawAnswerChart(canvas,picks.map(pointsFor),max);
-  }
-
-  function turnPage(step) {
-    end += step;
-    showPage();
-    if (previous.disabled) next.focus();
-    else if (next.disabled) previous.focus();
-  }
-  previous.onclick = () => turnPage(-perPage);
-  next.onclick = () => turnPage(perPage);
-  showPage();
-}
-
-function drawAnswerChart(canvas,values,max) {
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-  const {width,height} = canvas;
-  ctx.clearRect(0,0,width,height);
-  const line = values.map((points,i)=>[(i+.5)/values.length*width,(1-points/max)*height]);
-  const [firstX] = line[0];
-  const [lastX] = line.at(-1);
-  const trace = () => line.forEach(([x,y])=>ctx.lineTo(x,y));
-  const shade = ctx.createLinearGradient(0,0,0,height);
-  shade.addColorStop(0,"#f1c47954");
-  shade.addColorStop(1,"#c8884112");
-  ctx.beginPath();
-  ctx.moveTo(firstX,height);
-  trace();
-  ctx.lineTo(lastX,height);
-  ctx.closePath();
-  ctx.fillStyle = shade;
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(...line[0]);
-  trace();
-  ctx.strokeStyle = "#eec37d";
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
-}
 function showComparison(rival, player) {
   const ui = words();
   const outcome = rival === player ? ui.tied : player > rival ? ui.won : ui.lost;
@@ -928,19 +849,73 @@ function bindRecap(details,root,model,answer,rival) {
     if (details.open) render();
   };
 }
-async function showAnswerSurvey(recapUpdates) {
-  const status=get("answer-source");
-  const data={edition:iso(route.day),editionRevision:route.revision,picks:round.answers.map(answer=>answer.id)};
-  status.textContent=words().pending;
-  let survey;
-  try { survey=await request("mine-answers",data); } catch { survey=null; }
-  if (!status.isConnected) return;
+function showScoreDistribution(chart,distribution,points,isDaily) {
   const ui=words();
-  const counts=survey?.counts;
-  status.textContent=counts ? ui.surveyData : survey ? ui.noData : ui.surveyError;
-  if (counts) recapUpdates.forEach((update,index)=>update(counts[index],survey.rounds));
+  const status=chart.querySelector("#score-peers");
+  if (!distribution?.bins?.length) {
+    status.textContent=ui.scoreNotEnough;
+    return;
+  }
+  const {pointsMax,bins,players}=distribution;
+  const peak=Math.max(...bins);
+  const bandWidth=pointsMax/bins.length;
+  const marker=chart.querySelector("#score-marker");
+  const band=chart.querySelector("#score-band");
+  const bars=chart.querySelector("#score-bars");
+  const markerIndex=Math.min(bins.length-1,Math.floor(points/bandWidth));
+  const number=n=>n.toLocaleString(lang);
+  status.textContent=(isDaily ? ui.scoreDaily : ui.scorePack)(number(players));
+  const describe=(index,count)=>{
+    const start=index*bandWidth;
+    const end=start+bandWidth-Number(index<bins.length-1);
+    return ui.scoreBand(number(start),number(end),number(count));
+  };
+  const yourBand=describe(markerIndex,bins[markerIndex]);
+  bars.style.setProperty("--bins",bins.length);
+  bars.replaceChildren(...bins.map((count,index)=>{
+    const button=element("button","");
+    const label=describe(index,count);
+    button.type="button";
+    button.setAttribute("aria-label",label);
+    button.title=label;
+    button.style.setProperty("--height",`${count/peak*100}%`);
+    button.classList.toggle("is-player-band",index===markerIndex);
+    button.onfocus=button.onpointerenter=()=>{ band.textContent=label; };
+    button.onblur=button.onpointerleave=()=>{ if (document.activeElement!==button) band.textContent=yourBand; };
+    button.onclick=()=>{ band.textContent=label; };
+    return button;
+  }));
+  marker.style.setProperty("--position",`${Math.min(100,points/pointsMax*100)}%`);
+  marker.style.setProperty("--height",`${bins[markerIndex]/peak*100}%`);
+  chart.querySelector("#score-axis").replaceChildren(...[0,pointsMax/2,pointsMax].map(n=>element("span",number(n))));
+  band.textContent=yourBand;
+  chart.querySelector("#score-plot").hidden=false;
 }
-function openEdition(day,mode,duel,revision) {
+async function showResultStatistics(recapUpdates,points) {
+  const chart=get("score-chart");
+  const peerStatus=get("score-peers");
+  const status=get("answer-source");
+  const ui=words();
+  const isDaily=route.mode==="daily";
+  const picks=round.answers.map(answer=>answer.id);
+  const data=isDaily ? {edition:iso(route.day),editionRevision:route.revision,picks}
+    : {pack:route.pack,seed:round.seed,rounds:route.length,version:round.packVersion ?? 1,picks};
+  chart.hidden=false;
+  get("score-self").textContent=ui.scoreSelf(points.toLocaleString(lang));
+  peerStatus.textContent=ui.scoreLoading;
+  if (isDaily) status.textContent=ui.pending;
+  let survey;
+  try { survey=await request(isDaily ? "mine-answers" : "pack-scores",data); } catch { survey=null; }
+  if (!chart.isConnected) return;
+  if (survey) showScoreDistribution(chart,survey.distribution,points,isDaily);
+  else peerStatus.textContent=ui.scoreUnavailable;
+  if (isDaily) {
+    const counts=survey?.counts;
+    status.textContent=counts ? ui.surveyData : survey ? ui.noData : ui.surveyError;
+    if (counts) recapUpdates.forEach((update,index)=>update(counts[index],survey.rounds));
+  }
+}
+function openEdition(day,mode,duel,revision,packLength) {
   const url=new URL(gameRoot);
   if (day!==undefined) {
     url.searchParams.set("mode","mine");
@@ -950,6 +925,7 @@ function openEdition(day,mode,duel,revision) {
   } else if (mode) {
     url.searchParams.set("mode",mode);
     if (duel) url.searchParams.set(mode==="endless" ? "difficulty" : mode==="pack" ? "pack" : "room",duel);
+    if (mode==="pack") url.searchParams.set("rounds",packLength);
   }
   history.pushState(browserId ? {minePlayer:browserId} : null,"",url);
   route=readRoute();
@@ -978,18 +954,32 @@ function showEndlessMenu() {
 function showPackMenu() {
   const ui=words();
   const list=element("div","");
-  list.className="mode-picker";
+  list.className="mode-picker pack-menu";
+  const label=element("label",ui.packRounds);
+  label.className="pack-length";
+  const length=element("select","");
+  for (const rounds of minePackLengths) length.add(new Option(rounds,rounds));
+  length.value=route.mode==="pack" ? route.length : minePackLengths.at(-1);
+  label.append(length);
+  const update=[];
   for (const [id,pack] of Object.entries(minePacks)) {
     const button=element("button",pack[lang]);
     button.className="quiet";
-    button.append(element("small",`${minePackLength} · ${library[`pack:${id}`]?.done ? ui.replay : library[`pack:${id}`] ? ui.resume : ui.play}`));
+    const status=element("small","");
+    button.append(element("small",ui.packPool(pack.ids.length)),status);
+    update.push(()=>{
+      const saved=library[packKey(id,Number(length.value))];
+      status.textContent=saved?.done ? ui.replay : saved ? ui.resume : "";
+    });
     button.onclick=()=>{
       get("modal").close();
-      openEdition(undefined,"pack",id);
+      openEdition(undefined,"pack",id,undefined,Number(length.value));
     };
     list.append(button);
   }
-  modal(ui.pickPack,list);
+  length.onchange=()=>update.forEach(render=>render());
+  length.onchange();
+  modal(ui.pickPack,label,list);
 }
 async function copyChallenge(text, status = "share-status") {
   try {

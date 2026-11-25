@@ -7,21 +7,22 @@
 <meta name="description" content="A daily open-answer quiz. Find the facts that others overlook. Play in English or Russian.">
 <title>Rare Below</title>
 <link rel="icon" href="art/mark.png">
-<link rel="stylesheet" href="style.css?v=expanded-answers">
+<link rel="stylesheet" href="style.css?v=expedition-scores">
 <script defer src="catalog-data.js"></script>
 <script defer src="question-bank.js?v=full-recap"></script>
 <script defer src="everyday-questions.js?v=everyday"></script>
 <script defer src="theme-questions.js?v=daily-20261124"></script>
+<script defer src="pack-questions.js?v=expedition-scores"></script>
 <script defer src="answer-expansions.js?v=20261125b"></script>
-<script defer src="open-questions.js?v=expanded-answers"></script>
-<script defer src="answer-notes.js?v=daily-20261124"></script>
+<script defer src="open-questions.js?v=expedition-scores"></script>
+<script defer src="answer-notes.js?v=expedition-scores"></script>
 <script defer src="suggestions.js?v=expanded-answers"></script>
 <script defer src="live-client.js?v=live-answer-check"></script>
 <script defer src="company.js?v=round-chart"></script>
-<script defer src="audio.js?v=full-recap"></script>
+<script defer src="audio.js?v=expedition-scores"></script>
 <script defer src="friends.js?v=round-chart"></script>
 <script defer src="mine-scene.js?v=round-chart"></script>
-<script defer src="game.js?v=expanded-answers"></script>
+<script defer src="game.js?v=expedition-scores"></script>
 </head>
 <body>
 <header class="top"><div class="shell top-inner">
@@ -94,13 +95,14 @@
     <p id="badge" class="challenge"></p>
     <p id="comparison" role="status" hidden></p><button class="quiet" id="refresh-duel" data-text="refresh" hidden></button>
     <div id="company-results" hidden></div>
-    <section id="answer-chart" aria-labelledby="chart-title" hidden>
-      <div class="chart-heading"><h2 id="chart-title" data-text="chartTitle"></h2><div class="chart-pages" id="chart-pages" hidden><button class="quiet" type="button" id="chart-prev">‹</button><span id="chart-range" aria-live="polite"></span><button class="quiet" type="button" id="chart-next">›</button></div></div>
-      <div class="chart-grid">
-        <div class="chart-scale" id="chart-scale" aria-hidden="true"></div>
-        <div class="chart-plot"><canvas id="chart-line" width="480" height="116" aria-hidden="true"></canvas><div id="chart-points"></div></div>
+    <section id="score-chart" aria-labelledby="score-chart-title" hidden>
+      <div class="score-chart-heading"><h2 id="score-chart-title" data-text="scoreChart"></h2><strong id="score-self"></strong></div>
+      <p id="score-peers" role="status"></p>
+      <div id="score-plot" hidden>
+        <div class="score-plot-graph"><div id="score-bars"></div><div id="score-marker" aria-hidden="true"></div></div>
+        <div id="score-axis" aria-hidden="true"></div>
+        <p id="score-band" aria-live="polite"></p>
       </div>
-      <p id="chart-hint" data-text="chartHint"></p>
     </section>
     <section id="round-review" aria-labelledby="recap-title" hidden><h2 id="recap-title" data-text="recapTitle"></h2><ol id="recap"></ol></section>
     <div class="actions"><button class="primary" id="share" data-text="share"></button><button class="quiet" id="today" data-text="todayButton"></button></div>

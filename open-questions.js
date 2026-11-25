@@ -1212,12 +1212,14 @@ const originalMinePacks = {
   food:{en:"Food",ru:"Еда",ids:["potato-dishes","jam-fruits","citrus","fruit-pits","herbs","breakfast-dishes","breads","desserts","fermented-foods","flat-baked-foods","plants-you-can-eat-leaves"]},
   nature:{en:"Nature",ru:"Природа",ids:["trees","birds","houseplants","striped-animals","animal-shells","freshwater-fish","swimming-birds","underwater-mammals","visible-weather","birds-red","plants-climb"]}
 };
-const minePackLength=7;
+const minePackLengths=[7,12];
+const minePackVersion=2;
 function minePack(id) {
   return Object.hasOwn(minePacks,id) ? minePacks[id] : null;
 }
-function packIds(id,seed,version=MINE_DECK_VERSION) {
-  return shuffleMine((version===7 ? originalMinePacks[id] : minePack(id)).ids,seed);
+function packIds(id,seed,version=MINE_DECK_VERSION,packVersion=minePackVersion) {
+  const pack=(version===7 && originalMinePacks[id]) || (packVersion===1 ? previousMinePacks[id] : minePack(id));
+  return pack ? shuffleMine(pack.ids,seed) : [];
 }
 const themedGroups = [
   [...everydayGroups[0],"things-on-fridges","kitchen-grates","round-kitchen-objects"],
@@ -1249,9 +1251,25 @@ const rotationGroups = themedGroups.map(ids=>replaceRetired(ids));
 const activeIds = new Set(rotationGroups.flat());
 rotationGroups.at(-1).push(...rotationCards.map(([id])=>id).filter(id=>!activeIds.has(id)));
 const musicReplacements = {...rotationReplacements,"named-soundtracks":"music-duos"};
-const minePacks = Object.fromEntries(Object.entries(originalMinePacks).map(([id,pack])=>[
+const previousMinePacks = Object.fromEntries(Object.entries(originalMinePacks).map(([id,pack])=>[
   id,{...pack,ids:replaceRetired(pack.ids,id==="music" ? musicReplacements : rotationReplacements)}
 ]));
-minePacks.household.ids.push("things-that-fold","things-with-pockets");
+previousMinePacks.household.ids.push("things-that-fold","things-with-pockets");
+for (const card of packQuestionCards) add(...card);
+const additionsByPack={
+  cinema:["school-shows","fictional-robots","fictional-vehicles","daily-heist-films","films-with-submarines","films-with-storms"],
+  music:["daily-rain-titles","daily-seventies-guitarists","instruments-with-hammers","albums-with-animals"],
+  household:["measuring-scales","headwear","paper-marks","inflatable-things","first-aid-kit","daily-without-hands","things-with-hand-cranks","things-that-squeak"],
+  food:["daily-dipping-foods","foods-on-skewers","foods-in-edible-wraps"],
+  nature:["fruit-pits","gemstones","marsupials","animals-that-build-nests","plants-with-thorns","animals-that-change-color"]
+};
+const minePacks=Object.fromEntries(Object.entries(previousMinePacks).map(([id,pack])=>[
+  id,{...pack,ids:[...new Set([...pack.ids,...additionsByPack[id]])]}
+]));
+Object.assign(minePacks,{
+  geography:{en:"Around the world",ru:"Вокруг света",ids:["countries","capitals","star-flags","rivers","mountains","islands","daily-metropolitan-capitals","public-transport","lake-countries","volcanic-islands","rivers-through-capitals","bridge-cities"]},
+  science:{en:"Science and technology",ru:"Наука и техника",ids:["elements","metals","constellations","programming","water-machines","length-units","lens","spacecraft","observatory","gemstones","solar-system-moons","measuring-scales"]},
+  games:{en:"Sports and games",ru:"Спорт и игры",ids:["sports-with-a-ball","races-with-wheels","card-games","board-games","video-games","daily-fishing-games","goal-sports","ice-sports","tile-laying-games","games-with-a-glider","things-on-wheels","dice-games"]}
+});
 mineDecks[8]=rotationGroups.flat();
 mineCalendars.push({from:MINE_DAY+2,order:interleaveQuestionGroups(rotationGroups,20261125)});

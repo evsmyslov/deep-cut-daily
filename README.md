@@ -4,9 +4,10 @@ An English/Russian quiz where specific answers earn points for rarity. The miner
 
 - Daily has eight questions and opens at 00:00 UTC.
 - Endless shuffles the open prompts in successive cycles and can be ended at any point.
-- Themed expeditions have seven questions. Group rooms let 2–8 players join by code or link, play 5, 7 or 10 questions and compare answers after each round.
+- Themed expeditions draw 7 or 12 questions from a chosen topic. Group rooms let 2–8 players join by code or link, play 5, 7 or 10 questions and compare answers after each round.
 - Friend duels start when both players press Ready. The same eight questions and timers run on both devices; the first submitted answer limits the other player’s remaining time to ten seconds. Scores are compared after the last question. Older asynchronous room links still work. New invitations open the guest seat directly. Players can also enter the room code from the game menu.
 - After the daily round, community picks are ordered by observed frequency once there are three completed rounds. Scores use fixed rarity tiers.
+- The score chart compares completed daily runs for the same edition or personal bests for the same theme and run length. The chart uses anonymous counts and appears once three players have finished.
 
 The game checks answers when they are submitted. Catalog matches are instant. The server checks additional names against Wikidata where available and can ask an answer model for unfamiliar entries. Prior versions and their links are kept in `shaft/`, `expedition/`, and `classic/`.
 
@@ -15,6 +16,8 @@ The game checks answers when they are submitted. Catalog matches are instant. Th
 New editorial questions live in `theme-questions.js`. Each question has a stable ID, both prompt languages, and bilingual answer rows with aliases and a rarity tier. Use `node scripts/check-content.mjs` to check new entries and pack coverage. Append answers to keep their existing numeric IDs stable in saved rounds.
 
 Bulk reference answers and aliases live in `answer-expansions.js`, grouped by question ID. Append entries within each group, since their numeric IDs follow the original answers. Imported answers start at +55 until their tiers are reviewed with play data. Round review offers bilingual search and pagination for the full catalog.
+
+Questions written for themed expeditions live in `pack-questions.js`. The topic pools live in `open-questions.js`.
 
 ### Writing questions and answers
 
