@@ -1,4 +1,4 @@
-// Match spelling only when an answer is submitted.
+// Offer possible spellings while typing and apply them before submission.
 function spellingDistance(left,right,limit) {
   if (Math.abs(left.length-right.length)>limit) return limit+1;
   let row=Array.from({length:right.length+1},(_,index)=>index);
@@ -95,31 +95,70 @@ function bindAnswerCorrection(model) {
   const field=get("answer");
   const form=get("answer-form");
   const container=get("suggestions");
+  let previewTimer, cachedText, cachedItems;
   const clear=()=>{
+    clearTimeout(previewTimer);
     container.replaceChildren();
     container.hidden=true;
   };
-  field.addEventListener("input",clear);
+  const matches=text=>{
+    if (cachedText!==text) {
+      cachedText=text;
+      cachedItems=suggestAnswers(model,text);
+    }
+    return cachedItems;
+  };
+  const apply=({entry,text})=>{
+    clear();
+    const display=entry[lang];
+    field.value=model.aliases.get(answerKey(display))===entry ? display : text;
+    const status=element("span",words().correctionApplied);
+    status.setAttribute("role","status");
+    container.removeAttribute("aria-label");
+    container.replaceChildren(status);
+    container.hidden=false;
+    field.focus({preventScroll:true});
+  };
+  const show=items=>{
+    clear();
+    if (!items.length) return;
+    container.setAttribute("aria-label",words().suggestion);
+    container.hidden=false;
+    container.append(element("span",words().suggestion));
+    for (const item of items) {
+      const choice=element("button",item.entry[lang]);
+      choice.type="button";
+      choice.className="quiet";
+      choice.onclick=()=>apply(item);
+      container.append(choice);
+    }
+  };
+  const preview=event=>{
+    clear();
+    if (event?.isComposing) return;
+    previewTimer=setTimeout(()=>{
+      if (field.isConnected && !form.hidden && !field.disabled && !field.readOnly) {
+        show(matches(field.value.trim()));
+      }
+    },120);
+  };
+  field.addEventListener("input",preview);
+  field.addEventListener("compositionend",preview);
+  form.addEventListener("keydown",event=>{
+    if (event.key==="Enter" && event.repeat) event.preventDefault();
+  });
+  if (field.value) preview();
   return text=>{
     clear();
     const entry=model.aliases.get(answerKey(text));
     if (entry) return {entry,text};
-    const items=suggestAnswers(model,text);
-    if (items.length<2) return items[0] ?? {text};
-    container.setAttribute("aria-label",words().suggestion);
-    container.hidden=false;
-    container.append(element("span",words().suggestion));
-    for (const {entry,text:choiceText} of items) {
-      const choice=element("button",entry[lang]);
-      choice.type="button";
-      choice.className="quiet";
-      choice.onclick=()=>{
-        field.value=choiceText;
-        form.requestSubmit();
-      };
-      container.append(choice);
+    const items=matches(text);
+    if (!items.length) return {text};
+    if (items.length===1) apply(items[0]);
+    else {
+      show(items);
+      container.querySelector("button").focus({preventScroll:true});
     }
-    container.querySelector("button").focus({preventScroll:true});
     return null;
   };
 }
