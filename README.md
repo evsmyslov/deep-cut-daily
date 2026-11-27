@@ -36,6 +36,8 @@ On the Sites Worker, set either `GROQ_API_KEY` or `OPENAI_API_KEY` as a runtime 
 
 The front end is static GitHub Pages, served from `main` at the repository root. Run `python -m http.server 8000` to open a local copy. Online modes use a separate Sites Worker with a D1 database. The production service accepts requests from the GitHub Pages origin.
 
+[Answer counts by question](docs/answer-coverage.tsv) · [Additional catalog sources](docs/answer-sources.md)
+
 ## Data sources
 
 - [Country and regional data](https://github.com/mledoze/countries)
