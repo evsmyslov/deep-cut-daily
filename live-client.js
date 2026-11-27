@@ -385,7 +385,7 @@ function paintLive(view,force=false) {
         view.feedback=null;
         updateLiveNotice(view);
         const resolved=resolveAnswer(text);
-        if (resolved) submitLive(view,resolved.text);
+        submitLive(view,resolved.text);
       };
       get("answer").addEventListener("input",()=>{
         view.feedback=null;
