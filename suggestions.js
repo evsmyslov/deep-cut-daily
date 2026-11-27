@@ -1,4 +1,4 @@
-// Offer possible spellings while typing and apply them before submission.
+// Offer spellings while typing. Only replace the answer when the player chooses one.
 function spellingDistance(left,right,limit) {
   if (Math.abs(left.length-right.length)>limit) return limit+1;
   let row=Array.from({length:right.length+1},(_,index)=>index);
@@ -150,15 +150,6 @@ function bindAnswerCorrection(model) {
   if (field.value) preview();
   return text=>{
     clear();
-    const entry=model.aliases.get(answerKey(text));
-    if (entry) return {entry,text};
-    const items=matches(text);
-    if (!items.length) return {text};
-    if (items.length===1) apply(items[0]);
-    else {
-      show(items);
-      container.querySelector("button").focus({preventScroll:true});
-    }
-    return null;
+    return {text,entry:model.aliases.get(answerKey(text))};
   };
 }

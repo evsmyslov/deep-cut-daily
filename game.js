@@ -519,7 +519,6 @@ function question(draft = "", focus = true) {
     }
     status.textContent="";
     const resolved=resolveAnswer(text);
-    if (!resolved) return;
     if (resolved.entry) { settle(text,resolved.entry,"answer"); return; }
     const checkedAt = Date.now();
     const pending = {text};
@@ -531,7 +530,7 @@ function question(draft = "", focus = true) {
     status.textContent=words().checking;
     let failure="wrongRetry";
     let entry;
-    try { entry = (await request("verify", { id:model.id, text, language:lang }, 6500)).answer; }
+    try { entry = (await request("verify", { id:model.id, text, language:lang }, 20000)).answer; }
     catch { failure="lookupRetry"; }
     if (!form.isConnected || round.pending!==pending) return;
     round.deadline += Date.now()-checkedAt;
